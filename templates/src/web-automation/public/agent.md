@@ -98,10 +98,11 @@ change a script, its new version needs the owner's approval again; ask them in
 words, you cannot approve it yourself. Ask the owner for a grant, then run
 with the approved `version`:
 
-    myco action grant request --machine <computer> --permission browser.run --reason "<what and why>" --ttl 30m --task $MYCO_MESSAGE_ID --wait 5m
+    myco action targets                       # find --machine, --browser-profile and --binding
+    myco action grant request --machine <computer> --browser-profile <profile id> --binding <binding> --permission browser.view --permission browser.run --reason "<what and why>" --ttl 30m --task $MYCO_MESSAGE_ID --wait 5m
     myco action run --grant <agr_id> --action browser.script.run --version 1 --args '{"script_id":"scr_blog_post","params":{"title":"…","body_md":"…"}}' --key <unique> --wait 60s
 
-`browser.run` runs approved script versions only; anything else is refused (`permission_denied`). When a run pauses at a `confirm`, ask the
+Permissions are independent: `browser.view` reads profiles and run status, `browser.run` starts, resumes and cancels runs; ask for both. `browser.run` runs approved script versions only; anything else is refused (`permission_denied`). Agent runs cannot start mid-script or set breakpoints, take only the parameters the approved version declares, and you can follow, resume or cancel only runs your own grant started. When a run pauses at a `confirm`, ask the
 person (`myco message ask`) and continue with `browser.run.resume`
 (`{"run_id": …, "choice": "ok"}` or `"cancel"`). These actions need a newer
 App and Hub; if `myco action list` shows none for that computer, it cannot run
