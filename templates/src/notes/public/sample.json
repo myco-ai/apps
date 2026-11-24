@@ -15,7 +15,7 @@
    "order": 1,
    "favorite": true,
    "trashed": false,
-   "by": "glenn",
+   "by": "alex",
    "created": "2026-11-10T10:00:00+08:00"
   },
   {
@@ -27,19 +27,19 @@
    "order": 1,
    "favorite": false,
    "trashed": false,
-   "by": "glenn",
+   "by": "alex",
    "created": "2026-11-11T10:00:00+08:00"
   },
   {
    "id": "process",
-   "title": "发版流程",
+   "title": "演示准备",
    "icon": "i:rocket:clay",
    "cover": "",
    "parent": "home",
    "order": 2,
    "favorite": false,
    "trashed": false,
-   "by": "glenn",
+   "by": "alex",
    "created": "2026-11-12T10:00:00+08:00"
   },
   {
@@ -51,7 +51,7 @@
    "order": 2,
    "favorite": false,
    "trashed": false,
-   "by": "glenn",
+   "by": "alex",
    "created": "2026-11-13T10:00:00+08:00"
   },
   {
@@ -63,7 +63,7 @@
    "order": 1,
    "favorite": false,
    "trashed": false,
-   "by": "glenn",
+   "by": "alex",
    "created": "2026-11-14T10:00:00+08:00"
   },
   {
@@ -75,7 +75,7 @@
    "order": 3,
    "favorite": true,
    "trashed": false,
-   "by": "glenn",
+   "by": "alex",
    "created": "2026-11-15T10:00:00+08:00"
   }
  ],
@@ -84,7 +84,7 @@
    "id": "home-b1",
    "page": "home",
    "type": "p",
-   "text": "这里放团队都要知道的事：怎么上手、怎么发版、每周开会记了什么。",
+   "text": "这里是虚构团队的样例手册：演示安排、入门清单和会议记录。",
    "order": 1
   },
   {
@@ -105,7 +105,7 @@
    "id": "home-b4",
    "page": "home",
    "type": "li",
-   "text": "要发版看「发版流程」",
+   "text": "准备演示先看「演示准备」",
    "order": 4
   },
   {
@@ -149,7 +149,7 @@
    "id": "onboard-b5",
    "page": "onboard",
    "type": "todo",
-   "text": "跟一次发版",
+   "text": "参加一次样例演练",
    "order": 5,
    "checked": false
   },
@@ -164,35 +164,35 @@
    "id": "process-b1",
    "page": "process",
    "type": "ol",
-   "text": "确认 main 上的测试都过了",
+   "text": "准备一组虚构联系人和预约记录",
    "order": 1
   },
   {
    "id": "process-b2",
    "page": "process",
    "type": "ol",
-   "text": "写 CHANGELOG 和 VERSION，在同一个提交里",
+   "text": "检查演示页面中的文案与布局",
    "order": 2
   },
   {
    "id": "process-b3",
    "page": "process",
    "type": "ol",
-   "text": "推到 main，等 release 工作流跑完",
+   "text": "练习创建、修改和取消一条样例预约",
    "order": 3
   },
   {
    "id": "process-b4",
    "page": "process",
    "type": "ol",
-   "text": "在服务器上 sudo myco upgrade",
+   "text": "确认所有链接指向 example.com 等示例域名",
    "order": 4
   },
   {
    "id": "process-b5",
    "page": "process",
    "type": "code",
-   "text": "scripts/release-status.sh \"$(git rev-parse HEAD)\" release --wait",
+   "text": "{\"name\":\"Alex\",\"email\":\"alex@example.com\",\"demo\":true}",
    "order": 5
   },
   {
@@ -213,14 +213,14 @@
    "id": "m1-b2",
    "page": "m1",
    "type": "li",
-   "text": "视频剪辑能导出了，存到下载",
+   "text": "示例预约表单已完成布局预览",
    "order": 2
   },
   {
    "id": "m1-b3",
    "page": "m1",
    "type": "li",
-   "text": "任务追踪上线，颜色调得柔和一些",
+   "text": "演示清单中增加空状态检查",
    "order": 3
   },
   {
@@ -234,7 +234,7 @@
    "id": "m1-b5",
    "page": "m1",
    "type": "todo",
-   "text": "做笔记应用",
+   "text": "补充预约取消说明",
    "order": 5,
    "checked": false
   },
@@ -242,7 +242,7 @@
    "id": "m1-b6",
    "page": "m1",
    "type": "todo",
-   "text": "官方应用打开时检查更新",
+   "text": "用虚构记录检查手机布局",
    "order": 6,
    "checked": false
   },

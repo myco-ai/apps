@@ -38,7 +38,7 @@ const app = `<!doctype html><html><body><iframe id="f" src="/page"></iframe><scr
     const d = e.data;
     if (!d || d.myco !== "call") return;
     let value = null;
-    if (d.method === "ready") value = { page: { id: "pg_test", name: "t" }, me: { name: "glenn" } };
+    if (d.method === "ready") value = { page: { id: "pg_test", name: "t" }, me: { name: "alex" } };
     else if (d.method === "data.list") {
       window.lastQuery = d.args.query;
       value = d.args.query?.count ? { count: 1, seq: 10, query_version: 1 } : { records, seq: 10 };

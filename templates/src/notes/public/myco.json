@@ -1,7 +1,7 @@
 {
   "id": "myco/notes",
   "name": "笔记",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "permissions": ["download"],
   "kind": "doc",
   "category": "tools",

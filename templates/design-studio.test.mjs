@@ -93,7 +93,7 @@ try {
       window.myco = {
         ready: Promise.resolve({
           page: { id: "pg_test" },
-          me: { name: "Glenn" },
+          me: { name: "Alex" },
         }),
         data: {
           list: async (c) => ({

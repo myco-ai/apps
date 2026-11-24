@@ -12,3 +12,5 @@ This repository owns myco's official apps, SDK (`templates/src/_lib`), build scr
 - Main builds use immutable release artifacts pinned by `apps.lock.json`; application source and generated ZIPs are not committed there. Do not recreate main-repository app copies. The main release skill documents cache/offline preparation and pin rollback; see [host build instructions](https://github.com/myco-ai/myco/blob/main/docs/building.md).
 - Add draft promotional material for visible features to the project's media kit using `templates/src/media-kit/public/agent.md`: fake data, separate English/Chinese images, light/dark, per-image language/theme/platform/tags/description.
 - Documents, code comments and commit messages are English. Keep credentials out of logs, source, screenshots and messages.
+
+- This is a public repository. Use fictional people, machines, workspace identifiers and reserved example domains in tests, samples and screenshot fixtures. Keep production operations, private workspace data, workstation paths and credentials in restricted repositories. Review image pixels and metadata as well as text before publishing.

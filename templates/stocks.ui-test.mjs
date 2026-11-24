@@ -96,7 +96,7 @@ try {
           features: ["os"],
           ready: Promise.resolve({
             page: { id: "pg_stocks" },
-            me: { name: "Glenn" },
+            me: { name: "Alex" },
           }),
           data: {
             list: async () => ({ records: structuredClone(records), seq: 0 }),

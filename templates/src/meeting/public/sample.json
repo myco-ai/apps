@@ -2,14 +2,14 @@
  "meetings": [
   {
    "id": "m1",
-   "title": "0.22 版发布对齐",
+   "title": "示例预约页面评审",
    "started_at": "2026-11-20T07:30:00Z",
    "seconds": 243,
    "status": "done",
-   "computer": "glenn-mbp",
+   "computer": "demo-mac",
    "source_name": "腾讯会议",
    "speakers": {
-    "me": "Glenn",
+    "me": "Alex",
     "them:0": "小周",
     "them:1": "小李"
    },
@@ -18,7 +18,7 @@
     "them": "app:com.tencent.meeting"
    },
    "model": "sensevoice",
-   "by": "glenn",
+   "by": "alex",
    "dir": "~/.myco/recordings/20261120-153000",
    "files": {
     "them": "~/.myco/recordings/20261120-153000/them.wav",
@@ -26,54 +26,58 @@
    },
    "voices": 2,
    "notes": {
-    "summary": "0.22 版下周三先发 Mac 和 Linux，Windows 的系统录音放到下一个小版本。转写模型不放进安装包，第一次用时下载；权限和下载失败都要给出清楚的提示。",
+    "summary": "虚构团队讨论预约页面演示：周三内部试用，使用样例数据，补充空状态和取消说明。此内容仅用于展示会议纪要。",
     "chapters": [
      {
       "start": 2.0,
-      "title": "发布时间和平台",
-      "summary": "桌面端还有两个问题，先发 Mac 和 Linux。"
+      "title": "试用时间",
+      "summary": "周三试用预约页面，先检查基本操作。"
      },
      {
       "start": 41.39,
-      "title": "转写模型怎么装",
-      "summary": "不进安装包，首次使用时下载，走系统代理。"
+      "title": "演示数据",
+      "summary": "所有联系人、预约和邮箱均为虚构样例。"
      },
      {
       "start": 70.0,
-      "title": "系统录音的权限提示"
+      "title": "表单提示",
+      "summary": "说明必填项和日期范围。"
      },
      {
       "start": 105.5,
-      "title": "转写速度和分说话人"
+      "title": "预览与反馈",
+      "summary": "使用固定演示记录检查预览。"
      },
      {
       "start": 146.77,
-      "title": "agent 写纪要"
+      "title": "整理纪要",
+      "summary": "根据演示讨论整理待办。"
      },
      {
       "start": 174.65,
-      "title": "分工：文档、测试、值班"
+      "title": "分工与检查",
+      "summary": "分配演示资料和检查任务。"
      }
     ],
     "decisions": [
-     "下周三发 Mac 和 Linux，Windows 下周再定",
-     "模型不放进安装包，第一次用时再下载",
-     "权限提示里写清楚去哪里打开"
+     "周三用虚构样例试用预约页面",
+     "不导入任何真实联系人或预约",
+     "清楚展示空状态和取消说明"
     ],
     "todos": [
      {
-      "what": "写文档和更新说明",
-      "who": "Glenn",
+      "what": "准备演示说明",
+      "who": "Alex",
       "when": "周二前"
      },
      {
-      "what": "用腾讯会议、Zoom、飞书各录一场，问题记进任务追踪",
-      "who": "Glenn"
+      "what": "用虚构记录检查预约与取消",
+      "who": "Alex"
      },
      {
-      "what": "发版当天下午值班",
+      "what": "整理试用反馈",
       "who": "小李",
-      "when": "下周三"
+      "when": "周三"
      }
     ],
     "by": "cloud-agent",
@@ -86,10 +90,10 @@
    "started_at": "2026-11-18T02:00:00Z",
    "seconds": 96,
    "status": "done",
-   "computer": "glenn-mbp",
+   "computer": "demo-mac",
    "source_name": "Zoom",
    "speakers": {
-    "me": "Glenn",
+    "me": "Alex",
     "them": "对方"
    },
    "sources": {
@@ -97,7 +101,7 @@
     "them": "app:us.zoom.xos"
    },
    "model": "sensevoice",
-   "by": "glenn"
+   "by": "alex"
   }
  ],
  "segments": [
@@ -107,7 +111,7 @@
    "track": "them",
    "start": 2.0,
    "end": 10.01,
-   "text": "好，人都到齐了，我们开始吧。今天主要对一下 0.22 版的发布计划。",
+   "text": "大家好，今天评审一个虚构的预约页面演示。",
    "edited": false,
    "speaker": "them:0"
   },
@@ -117,7 +121,7 @@
    "track": "them",
    "start": 10.49,
    "end": 17.28,
-   "text": "先说时间，原定下周三发，现在桌面端还有两个问题没收尾。",
+   "text": "计划周三试用，先检查表单和列表两处布局。",
    "edited": false,
    "speaker": "them:0"
   },
@@ -127,7 +131,7 @@
    "track": "me",
    "start": 18.8,
    "end": 28.07,
-   "text": "录音和转写这边已经在 Mac 上跑通了，Windows 的系统声音还没接上。",
+   "text": "表单里已经放好示例姓名和预约时间。",
    "edited": false
   },
   {
@@ -136,7 +140,7 @@
    "track": "me",
    "start": 28.98,
    "end": 36.86,
-   "text": "我建议先发 Mac 和 Linux，Windows 放到下一个小版本。",
+   "text": "建议先看创建预约，再看取消和修改。",
    "edited": false
   },
   {
@@ -145,7 +149,7 @@
    "track": "them",
    "start": 38.49,
    "end": 40.89,
-   "text": "可以，这样不卡整体进度。",
+   "text": "可以，按操作顺序演示比较清楚。",
    "edited": false,
    "speaker": "them:0"
   },
@@ -155,7 +159,7 @@
    "track": "them",
    "start": 41.39,
    "end": 44.48,
-   "text": "那安装包里要不要带上转写模型？",
+   "text": "演示时要导入真实联系人吗？",
    "edited": false,
    "speaker": "them:0"
   },
@@ -165,7 +169,7 @@
    "track": "me",
    "start": 46.79,
    "end": 54.94,
-   "text": "不带。模型一百六十兆，第一次用的时候再下载，走系统代理，国内也能下。",
+   "text": "不用，全部使用虚构联系人和 example.com 邮箱。",
    "edited": false
   },
   {
@@ -174,7 +178,7 @@
    "track": "them",
    "start": 56.22,
    "end": 59.64,
-   "text": "下载失败的时候用户看得到原因吗？",
+   "text": "空列表时会显示什么？",
    "edited": false,
    "speaker": "them:1"
   },
@@ -184,7 +188,7 @@
    "track": "me",
    "start": 62.15,
    "end": 68.43,
-   "text": "看得到，会直接写出是哪一步没下成，还能点再试一次。",
+   "text": "会提示创建第一条示例预约，也能重新载入样例。",
    "edited": false
   },
   {
@@ -193,7 +197,7 @@
    "track": "them",
    "start": 70.0,
    "end": 76.93,
-   "text": "好。第二个问题是权限，第一次录电脑声音会弹系统的授权框。",
+   "text": "日期范围也需要说明一下。",
    "edited": false,
    "speaker": "them:1"
   },
@@ -203,7 +207,7 @@
    "track": "me",
    "start": 77.91,
    "end": 87.79,
-   "text": "对，macOS 叫「系统录音」，没给的话那条波形会一直是平的，页面上会提醒。",
+   "text": "可以，日期选择器下面加一句简短说明。",
    "edited": false
   },
   {
@@ -212,7 +216,7 @@
    "track": "them",
    "start": 89.19,
    "end": 94.83,
-   "text": "这个提示要写清楚去哪里打开，别让人自己找。",
+   "text": "提示尽量写出下一步应该怎么做。",
    "edited": false,
    "speaker": "them:0"
   },
@@ -222,7 +226,7 @@
    "track": "me",
    "start": 95.93,
    "end": 103.21,
-   "text": "嗯，我把路径写进提示里：系统设置、隐私与安全性、屏幕与系统录音。",
+   "text": "我把必填项和时间范围都标出来。",
    "edited": false
   },
   {
@@ -231,7 +235,7 @@
    "track": "them",
    "start": 105.5,
    "end": 108.45,
-   "text": "说到体验，转写大概要多久？",
+   "text": "预览的检查顺序怎么定？",
    "edited": false,
    "speaker": "them:0"
   },
@@ -241,7 +245,7 @@
    "track": "me",
    "start": 110.34,
    "end": 115.99,
-   "text": "本机转，一小时的会两三分钟，边转边出字，不用干等。",
+   "text": "先看桌面，再看窄屏，两种主题都检查。",
    "edited": false
   },
   {
@@ -250,7 +254,7 @@
    "track": "them",
    "start": 117.52,
    "end": 120.7,
-   "text": "那挺快的。区分说话人呢？",
+   "text": "收到反馈后怎么记录？",
    "edited": false,
    "speaker": "them:0"
   },
@@ -260,7 +264,7 @@
    "track": "me",
    "start": 121.71,
    "end": 129.07,
-   "text": "现在先按两条音轨分：我自己是麦克风，别人是电脑放出来的声音。",
+   "text": "按表单、列表和说明三类记录。",
    "edited": false
   },
   {
@@ -269,7 +273,7 @@
    "track": "me",
    "start": 129.68,
    "end": 137.8,
-   "text": "对方有好几个人的话，下一步用声纹再分开，改过一次名字以后就能自动认出来。",
+   "text": "每条反馈附上使用的虚构样例编号。",
    "edited": false
   },
   {
@@ -278,7 +282,7 @@
    "track": "them",
    "start": 139.43,
    "end": 145.78,
-   "text": "这个很关键，开周会的时候五六个人，分不开就没法看。",
+   "text": "这样比较容易复现。",
    "edited": false,
    "speaker": "them:0"
   },
@@ -288,7 +292,7 @@
    "track": "them",
    "start": 146.77,
    "end": 152.85,
-   "text": "另外纪要那块，我们是不是可以直接让 agent 写？",
+   "text": "会议之后整理一份演示纪要吧。",
    "edited": false,
    "speaker": "them:0"
   },
@@ -298,7 +302,7 @@
    "track": "me",
    "start": 154.26,
    "end": 162.69,
-   "text": "可以，文字稿就在网页的数据里，agent 读了就能写总结、决定和待办。",
+   "text": "可以，纪要写清楚决定、负责人和时间。",
    "edited": false
   },
   {
@@ -307,7 +311,7 @@
    "track": "me",
    "start": 163.79,
    "end": 169.1,
-   "text": "还能顺手画一张白板，把讨论的方案画出来。",
+   "text": "再附一张操作流程示意图。",
    "edited": false
   },
   {
@@ -316,7 +320,7 @@
    "track": "them",
    "start": 170.98,
    "end": 173.38,
-   "text": "好，这个放到第三步。",
+   "text": "好，放在演示资料里。",
    "edited": false,
    "speaker": "them:0"
   },
@@ -326,7 +330,7 @@
    "track": "them",
    "start": 174.65,
    "end": 177.67,
-   "text": "那文档和更新说明谁来写？",
+   "text": "示例说明由谁准备？",
    "edited": false,
    "speaker": "them:0"
   },
@@ -336,7 +340,7 @@
    "track": "me",
    "start": 179.06,
    "end": 182.6,
-   "text": "我来写，周二之前给大家看。",
+   "text": "我来准备，周二前给大家看。",
    "edited": false
   },
   {
@@ -345,7 +349,7 @@
    "track": "them",
    "start": 183.7,
    "end": 187.35,
-   "text": "测试这边呢，谁来过一遍？",
+   "text": "检查预约和取消的任务呢？",
    "edited": false,
    "speaker": "them:0"
   },
@@ -355,7 +359,7 @@
    "track": "me",
    "start": 189.54,
    "end": 197.69,
-   "text": "我在自己的 Mac 上录几场真实的会，腾讯会议和 Zoom 各一场。",
+   "text": "我用固定的虚构记录各走一遍。",
    "edited": false
   },
   {
@@ -364,7 +368,7 @@
    "track": "them",
    "start": 199.42,
    "end": 203.35,
-   "text": "飞书会议也录一场吧，我们自己天天用。",
+   "text": "也检查一下空列表的提示。",
    "edited": false,
    "speaker": "them:1"
   },
@@ -374,7 +378,7 @@
    "track": "me",
    "start": 205.39,
    "end": 209.16,
-   "text": "好的，三场都录，问题记在任务追踪里。",
+   "text": "好的，反馈都记录到演示清单。",
    "edited": false
   },
   {
@@ -383,7 +387,7 @@
    "track": "them",
    "start": 211.03,
    "end": 213.43,
-   "text": "发版那天谁值班？",
+   "text": "周三试用后谁来整理意见？",
    "edited": false,
    "speaker": "them:1"
   },
@@ -393,7 +397,7 @@
    "track": "me",
    "start": 214.87,
    "end": 218.37,
-   "text": "我值上午，下午交给小李。",
+   "text": "上午我整理，下午请小李补充。",
    "edited": false
   },
   {
@@ -402,7 +406,7 @@
    "track": "them",
    "start": 220.28,
    "end": 229.78,
-   "text": "行，那就这么定：下周三发 Mac 和 Linux，Windows 下周再说。",
+   "text": "那就周三使用虚构样例试用，不接入真实数据。",
    "edited": false,
    "speaker": "them:0"
   },
@@ -412,7 +416,7 @@
    "track": "them",
    "start": 230.63,
    "end": 234.92,
-   "text": "还有别的吗？没有的话今天就到这里。",
+   "text": "今天就这些，感谢大家。",
    "edited": false,
    "speaker": "them:0"
   },
@@ -422,7 +426,7 @@
    "track": "me",
    "start": 237.43,
    "end": 240.17,
-   "text": "没有了，谢谢大家。",
+   "text": "谢谢，演示资料准备好后再对一遍。",
    "edited": false
   },
   {
@@ -431,7 +435,7 @@
    "track": "them",
    "start": 1.5,
    "end": 6.0,
-   "text": "这周主要三件事：发版、会议记录、修图。",
+   "text": "这周检查示例表单、演示列表和帮助说明。",
    "edited": false
   },
   {
@@ -440,7 +444,7 @@
    "track": "me",
    "start": 7.2,
    "end": 13.1,
-   "text": "会议记录这周把分说话人和纪要做完，下周给大家试。",
+   "text": "表单本周先用虚构样例检查，下周再改进布局。",
    "edited": false
   },
   {
@@ -449,7 +453,7 @@
    "track": "them",
    "start": 14.0,
    "end": 19.5,
-   "text": "好，修图那边有人反馈导出慢，看一下。",
+   "text": "好，帮助说明也检查一下手机显示。",
    "edited": false
   }
  ]

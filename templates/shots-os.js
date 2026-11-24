@@ -22,7 +22,7 @@
     ".docker": 6.3 * G, ".cache": 4.4 * G, "*": [74, 3.1 * G],
   };
   const disk = {
-    Users: { glenn: home, Shared: 1.2 * G },
+    Users: { alex: home, Shared: 1.2 * G },
     Applications: { "Xcode.app": 12.1 * G, "Docker.app": 2.9 * G, "Final Cut Pro.app": 5.8 * G, "Microsoft Word.app": 2.4 * G, "Google Chrome.app": 1.6 * G, "*": [84, 9.7 * G] },
     opt: { homebrew: 8.9 * G },
     private: { var: { vm: 8.6 * G, folders: 5.4 * G, db: 1.2 * G, "*": [40, 0.9 * G] } },
@@ -60,7 +60,7 @@
         // (the root's folders finish one by one, the largest last)
         const kids = [...tree.children].reverse();
         const done = kids.slice(0, Math.floor(kids.length * i / steps)).map((k) => ({ name: k.name, path: k.path, dir: k.dir, disk: k.disk, files: k.files })).sort((a, b) => b.disk - a.disk);
-        emit("progress", { files: Math.round(tree.files * i / steps), disk: tree.disk * i / steps, current: ROOT + "/Users/glenn/Library/Caches/com.spotify.client", top: done });
+        emit("progress", { files: Math.round(tree.files * i / steps), disk: tree.disk * i / steps, current: ROOT + "/Users/alex/Library/Caches/com.spotify.client", top: done });
         if (i >= steps) resolve(value); else setTimeout(tick, window.__SCAN_MS__ || 120);
       };
       setTimeout(tick, 60);
@@ -82,11 +82,11 @@
     return { on: (t, f) => { (subs[t] ||= []).push(f); return () => {}; }, done, cancel: async () => { finish(); return true; },
       write: async (d) => { if (d === "stop") finish(); if (d === "pause") emit("paused", {}); if (d === "resume") emit("resumed", {}); return true; }, end: async () => true };
   };
-  const REC = "/Users/glenn/.myco/recordings/20261120-153000";
+  const REC = "/Users/alex/.myco/recordings/20261120-153000";
   const SAID = [
-    [2.1, 7.8, "好，人都到齐了，我们开始吧。今天主要对一下 0.22 版的发布计划。"],
-    [8.4, 15.2, "先说时间，原定下周三发，现在桌面端还有两个问题没收尾。"],
-    [30.2, 36.9, "可以，这样不卡整体进度。那安装包里要不要带上转写模型？"],
+    [2.1, 7.8, "好，人都到齐了，我们开始吧。今天评审一个虚构的预约页面演示。"],
+    [8.4, 15.2, "先说时间，计划周三试用，先检查表单和列表两处布局。"],
+    [30.2, 36.9, "可以，按操作顺序演示。需要导入真实联系人吗？"],
   ];
   window.__FAKE_OS__ = {
     list: () => call({ os: "darwin", arch: "arm64", caps: ["system.info", "system.disks", "system.settings", "fs.scan", "fs.trash", "fs.reveal", "fs.pick", "fs.stat",
@@ -118,7 +118,7 @@
       },
     },
     speech: {
-      status: () => call({ ready: !window.__NO_SPEECH__, diarize: !window.__NO_SPEECH__, engine: true, engine_version: "v2.0.2", vad: true, dir: "/Users/glenn/.myco/speech", engine_size_mb: window.__NO_SPEECH__ ? 25 : 0,
+      status: () => call({ ready: !window.__NO_SPEECH__, diarize: !window.__NO_SPEECH__, engine: true, engine_version: "v2.0.2", vad: true, dir: "/Users/alex/.myco/speech", engine_size_mb: window.__NO_SPEECH__ ? 25 : 0,
         models: [{ id: "sensevoice", name: "SenseVoice", languages: ["zh", "en"], size_mb: 158, installed: !window.__NO_SPEECH__ }] }),
       install: () => timed(200, (i, emit) => { emit("progress", { step: "model", received: i * 16e6, total: 165e6 }); return i < 10; }, () => ({ ready: true })),
       transcribe: () => timed(150, (i, emit) => {
@@ -131,7 +131,7 @@
     },
     has: async () => true,
     system: {
-      info: () => call({ os: "darwin", name: "macOS", version: "15.1", arch: "arm64", model: "Mac15,6", hostname: "glenn-mbp", user: "glenn", home: "/Users/glenn", cpus: 12, cpu_model: "Apple M3 Pro", memory: 36 * G, uptime: 400000 }),
+      info: () => call({ os: "darwin", name: "macOS", version: "15.1", arch: "arm64", model: "Mac15,6", hostname: "demo-mac", user: "alex", home: "/Users/alex", cpus: 12, cpu_model: "Apple M3 Pro", memory: 36 * G, uptime: 400000 }),
       disks: () => call([
         { mount: "/", device: "/dev/disk3s1s1", fs: "apfs", label: "/", total: 494.4 * G, free: 70.1 * G, available: 61.8 * G, scan_path: ROOT },
         { mount: "/Volumes/备份", device: "/dev/disk5s2", fs: "apfs", label: "备份", total: 2000 * G, free: 812 * G, available: 812 * G, removable: true },

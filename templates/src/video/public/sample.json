@@ -14,7 +14,7 @@
     { "id": "b1", "type": "blur", "start": 7, "end": 11, "x": 0.62, "y": 0.06, "w": 0.3, "h": 0.1, "strength": 0.7, "lane": 1 }
   ],
   "notes": [
-    { "id": "n1", "time": 6.5, "text": "右上角的邮箱要打码", "done": true, "by": "glenn" },
-    { "id": "n2", "time": 15, "text": "最后一段太长，剪到 8 秒以内，结尾加一句「现在就试试」", "done": false, "by": "glenn" }
+    { "id": "n1", "time": 6.5, "text": "右上角的邮箱要打码", "done": true, "by": "alex" },
+    { "id": "n2", "time": 15, "text": "最后一段太长，剪到 8 秒以内，结尾加一句「现在就试试」", "done": false, "by": "alex" }
   ]
 }

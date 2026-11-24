@@ -1,7 +1,7 @@
 {
   "id": "myco/table",
   "name": "表格",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "kind": "table",
   "category": "office",
   "icon": "icon.svg",

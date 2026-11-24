@@ -151,7 +151,7 @@
       "busy": true,
       "repeat": "weekly",
       "until": "",
-      "owner": "glenn"
+      "owner": "alex"
     },
     {
       "id": "focus",
@@ -166,7 +166,7 @@
       "busy": true,
       "repeat": "daily",
       "until": "2026-11-27",
-      "owner": "glenn"
+      "owner": "alex"
     },
     {
       "id": "design",
@@ -181,7 +181,7 @@
       "busy": true,
       "repeat": "weekly",
       "until": "",
-      "owner": "glenn"
+      "owner": "alex"
     },
     {
       "id": "planning",
@@ -196,7 +196,7 @@
       "busy": true,
       "repeat": "none",
       "until": "",
-      "owner": "glenn"
+      "owner": "alex"
     },
     {
       "id": "interview",
@@ -211,7 +211,7 @@
       "busy": false,
       "repeat": "none",
       "until": "",
-      "owner": "glenn"
+      "owner": "alex"
     },
     {
       "id": "walk",
@@ -226,7 +226,7 @@
       "busy": true,
       "repeat": "none",
       "until": "",
-      "owner": "glenn"
+      "owner": "alex"
     },
     {
       "id": "offsite",
@@ -241,7 +241,7 @@
       "busy": true,
       "repeat": "none",
       "until": "",
-      "owner": "glenn"
+      "owner": "alex"
     },
     {
       "id": "birthday",
@@ -256,7 +256,7 @@
       "busy": false,
       "repeat": "none",
       "until": "",
-      "owner": "glenn"
+      "owner": "alex"
     },
     {
       "id": "review",
@@ -271,7 +271,7 @@
       "busy": true,
       "repeat": "monthly",
       "until": "",
-      "owner": "glenn"
+      "owner": "alex"
     },
     {
       "id": "reading",
@@ -286,7 +286,7 @@
       "busy": false,
       "repeat": "none",
       "until": "",
-      "owner": "glenn"
+      "owner": "alex"
     }
   ]
 }

@@ -49,7 +49,7 @@ const bridge = `(() => {
     remote: window.__REMOTE_FIXTURE__ ? {call: async action => action === "devices" ? [{machine:"mac",name:"Studio Mac",os:"darwin",control:true},{machine:"win",name:"Windows 工作站",os:"windows",control:true},{machine:"mini",name:"Mac mini",os:"darwin",control:false}] : {protocol:1,version:"0.1.0",supported:true,installed:false,running:false}} : undefined,
     os: fakeOS,
     ...(["tutor", "logo-studio"].includes(location.pathname.split("/")[1]) ? { send: async () => ({ id: "msg_preview" }) } : {}),
-    ready: Promise.resolve({ page: { id: "pg_shots", name: "shots" }, me: { name: "glenn" } }),
+    ready: Promise.resolve({ page: { id: "pg_shots", name: "shots" }, me: { name: "alex" } }),
     data: {
       list: async (c) => ({ records: Object.values(recs).filter((r) => !c || r.collection === c).map((r) => ({ ...r })), seq }),
       get: async (c, id) => { const r = recs[c + "/" + id]; if (!r) throw {code:"not_found"}; return { ...r }; },
@@ -177,7 +177,7 @@ const plans = {
   "remote-desktop": [null, async (p) => { await p.locator(".rd-tabs button").nth(1).click(); await wait(p,300); }],
   base: [null, async (p) => { await p.locator("text=看板").first().click(); await wait(p, 600); }],
   issues: [async (p) => { await p.locator(".is-row").nth(5).click(); await wait(p, 500); }, async (p) => { await p.keyboard.press("Escape"); await p.click('button[title="看板"]'); await wait(p, 500); }],
-  notes: [null, async (p) => { await p.locator('.nt-kid:has-text("发版流程")').click(); await wait(p, 700); }],
+  notes: [null, async (p) => { await p.locator('.nt-kid:has-text("演示准备")').click(); await wait(p, 700); }],
   // 空间清理: a made-up Mac (shots-os.js): the disks, then the map with two things to clean
   disk: { os: true, steps: [null, async (p) => {
     await p.locator(".dk-disk .btn-primary").first().click();
@@ -192,7 +192,7 @@ const plans = {
     await wait(p, 400);
   }, async (p) => {
     await p.locator(".dk-row", { hasText: "Users" }).click();
-    await p.locator(".dk-row", { hasText: "glenn" }).click();
+    await p.locator(".dk-row", { hasText: "alex" }).click();
     await p.locator(".dk-row", { hasText: "Library" }).hover();
     await wait(p, 400);
   }] },

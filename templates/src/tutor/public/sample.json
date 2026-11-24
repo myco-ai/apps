@@ -93,7 +93,7 @@
       "choice": 1,
       "correct": true,
       "date": "2026-11-19T10:00:00.000Z",
-      "who": "glenn"
+      "who": "alex"
     },
     {
       "id": "a2",
@@ -101,7 +101,7 @@
       "choice": 0,
       "correct": false,
       "date": "2026-11-20T10:00:00.000Z",
-      "who": "glenn"
+      "who": "alex"
     }
   ]
 }

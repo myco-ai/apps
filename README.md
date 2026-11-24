@@ -37,3 +37,12 @@ During the migration, the main repository automatically mirrors these exact asse
 ## History and license
 
 The first 156 commits were extracted from `myco-ai/myco` with `git filter-repo`, retaining the history of `templates/`, `scripts/pack-apps.sh`, and `.github/workflows/apps.yml`. Authors, timestamps and messages are preserved; filtered commit IDs change. The [commit map](docs/history-map.txt) and [migration snapshot](migration.json) identify the original revisions. See [LICENSE](LICENSE).
+
+## Public examples
+
+Sample records, screenshot fixtures and preview images use fictional people,
+machines and workflows. They demonstrate the app schemas and interactions; they
+are not operational records or release instructions. Keep private service
+addresses, workspace/page identifiers, workstation paths, credentials and team
+operations out of public examples. Use reserved domains such as `example.com`
+and clearly synthetic identities such as `alex`, `demo-mac` and `pg_test`.

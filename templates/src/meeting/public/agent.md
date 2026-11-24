@@ -8,7 +8,7 @@ sentences. The recording itself stays on the computer that made it.
   (its length), `status` (`recording`, `recorded`: not transcribed yet,
   `transcribing`, `done`, `failed` with `error`), `source_name` (the
   meeting app recorded: Zoom, 腾讯会议…), `speakers` (names by speaker:
-  `{"me": "Glenn", "me:1": "小王", "them:0": "小周", "them:1": "小李"}`;
+  `{"me": "Alex", "me:1": "小王", "them:0": "小周", "them:1": "小李"}`;
   `me:1`, `me:2`… are others at the same microphone), `voices` and
   `mic_voices` (how many the others and the microphone were told apart
   into), `notes` (below), and `computer`,
@@ -39,7 +39,7 @@ every field you read, with `notes` changed):
       "summary": "两三句话：开了什么会，结论是什么",
       "chapters": [{"start": 2.0, "title": "发布时间和平台", "summary": "一句话"}],
       "decisions": ["下周三发 Mac 和 Linux"],
-      "todos": [{"what": "写更新说明", "who": "Glenn", "when": "周二前"}],
+      "todos": [{"what": "写更新说明", "who": "Alex", "when": "周二前"}],
       "doc": "", "board": "",
       "by": "<your name>", "at": "<now, ISO 8601>"
     }
