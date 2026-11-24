@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
+import os from "node:os";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 const root = path.resolve(
@@ -104,6 +105,25 @@ const browser = await chromium.launch(
     ? { executablePath: process.env.UI_SMOKE_EXECUTABLE }
     : {},
 );
+console.log("Localization browser", browser.version(), "parallelism", os.availableParallelism());
+const bounded = async (work) => {
+  let timer;
+  try { return await Promise.race([work(), new Promise(resolve => { timer = setTimeout(() => resolve({ unavailable: "renderer did not answer within 2s" }), 2000); })]); }
+  catch (error) { return { unavailable: error.message }; }
+  finally { clearTimeout(timer); }
+};
+async function bootFailure(page, frame, details, errors, consoleMessages, failures) {
+  const state = await bounded(() => frame.locator("html").evaluate(() => ({
+    readyState: document.readyState, visibility: document.visibilityState,
+    root: document.getElementById("root")?.innerHTML.slice(0, 3000),
+    boot: window.__localizationBoot,
+    ocean: window.__ocean ? { fps: window.__ocean.status?.fps, fft: window.__ocean.fftSea } : null,
+  })));
+  const result = { ...details, errors, consoleMessages, failures, state };
+  const file = path.join(shots, `boot-${details.app}-${details.width}-${details.language}-${details.theme}.json`);
+  fs.writeFileSync(file, JSON.stringify(result, null, 2));
+  console.error("Localization first screen failure", JSON.stringify(result));
+}
 const apps = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const all = apps.length ? apps : fs.readdirSync(root);
 const results = [];
@@ -120,18 +140,32 @@ try {
           colorScheme: theme === "dark" ? "light" : "dark",
         });
         for (const app of all) {
-          const page = await context.newPage(),
-            errors = [];
+          console.log("BEGIN", app, width, language, theme);
+          const page = await context.newPage(), errors = [], consoleMessages = [], failures = [];
+          page.on("console", message => { if (message.type() === "error" || message.type() === "warning") { consoleMessages.push(message.text().slice(0, 2000)); if (consoleMessages.length > 20) consoleMessages.shift(); } });
+          page.on("requestfailed", request => failures.push({ url: request.url(), error: request.failure()?.errorText }));
+          await page.addInitScript(() => {
+            const state = window.__localizationBoot = { started: performance.now(), rootAt: null, longTasks: [] };
+            const observer = new MutationObserver(() => {
+              if (document.getElementById("root")?.children.length) { state.rootAt = performance.now(); observer.disconnect(); }
+            });
+            observer.observe(document, { subtree: true, childList: true });
+            new PerformanceObserver(list => {
+              for (const task of list.getEntries()) state.longTasks.push({ start: task.startTime, duration: task.duration });
+              state.longTasks = state.longTasks.slice(-16);
+            }).observe({ type: "longtask", buffered: true });
+          });
           page.on("pageerror", (e) => errors.push(e.message));
           await page.goto(
             `http://127.0.0.1:${host.address().port}/?app=${app}&lang=${language}&theme=${theme}`,
           );
           const frame = page.frameLocator("#app");
-          await frame
-            .locator("#root")
-            .locator(":scope > *")
-            .first()
-            .waitFor({ timeout: 15000 });
+          try {
+            await frame.locator("#root").locator(":scope > *").first().waitFor({ timeout: 15000 });
+          } catch (error) {
+            await bootFailure(page, frame, { app, width, language, theme }, errors, consoleMessages, failures);
+            throw new Error(`${app} ${width} ${language} ${theme}: first screen failed`, { cause: error });
+          }
           await page.waitForTimeout(200);
           assert.equal(
             await frame.locator("html").getAttribute("lang"),
