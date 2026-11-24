@@ -72,6 +72,13 @@ assert.deepEqual(codes(withGraph([click("a"), { ...m.newNode("tab", "t", [0, 0])
 assert.deepEqual(codes(withGraph([click("a"), { ...m.newNode("dialog", "g", [0, 0]), value: "${pw}" }], [["a", "g"]], secret)), [], "a prompt may take a secret");
 assert.deepEqual(codes(withGraph([click("a"), { ...m.newNode("dialog", "g", [0, 0]), dialog: "maybe" }], [["a", "g"]])), ["dialog"]);
 
+// Sensitive recorded values become required secret parameters, once.
+const recorded = m.withSecretParams(withGraph([{ ...typing("${password}", true), id: "t1" }, { ...m.newNode("dialog", "g", [0, 0]), value: "${dialog_input}", sensitive: true }, { ...typing("${password}", true), id: "t2" }],
+  [["t1", "g"], ["g", "t2"]]));
+assert.deepEqual(recorded.params, [{ name: "password", type: "secret", required: true }, { name: "dialog_input", type: "secret", required: true }]);
+assert.deepEqual(codes(recorded), []);
+assert.equal(m.withSecretParams(recorded), recorded, "nothing to add leaves the script as it is");
+
 // Editing: connect replaces a port and refuses cycles; remove keeps a chain joined; append adds below the tail.
 let script = withGraph([nav("a"), click("b"), click("c")], [["a", "b"], ["b", "c"]]);
 assert.deepEqual(m.connect(script, "c", "a").graph.edges, script.graph.edges, "no cycles");
@@ -103,4 +110,4 @@ const run = { script_id: "s", script_version: 1, script_name: "s", state: "runni
 const fitted = m.fitRun(run);
 assert(m.bytes(fitted) < m.recordLimit && fitted.error.length === 1000 && fitted.steps.at(-1).node === "n1999", "runs keep their newest steps under 64 KB");
 assert(m.finished("offline") && !m.finished("paused"));
-console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, fork ports, editing, layout, run arguments, output masking, record budgets and sample");
+console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, fork ports, editing, layout, run arguments, output masking, record budgets and sample");

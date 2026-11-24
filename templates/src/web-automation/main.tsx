@@ -7,7 +7,7 @@ import { browser, errorCode, type Approval, type BrowserProfile, type BrowserSta
 import { Canvas } from "./canvas";
 import { NodeInspector, ScriptSettings, type AgentAccess, type Tools } from "./inspector";
 import { bridgeError, category, stateDot, stateName, typeName } from "./labels";
-import { append, bytes, columnGap, connect, cutOutput, finished, fitRun, layout, newNode, newScript, normalize, recordLimit,
+import { append, withSecretParams, bytes, columnGap, connect, cutOutput, finished, fitRun, layout, newNode, newScript, normalize, recordLimit,
   removeNode, runArguments, validate, type Draft, type NodeType, type Run, type RunStep, type Script } from "./model";
 import { Palette } from "./palette";
 import { Icon, StepIcon } from "./icons";
@@ -255,9 +255,10 @@ function App() {
   const points = breakpoints[scriptId] || [];
   const ready = Boolean(bridge && status?.installed);
   const canRun = Boolean(ready && !live && !recording);
-  const loadApprovals = useCallback(() => { if (bridge && status?.installed) void bridge.approvals.list().then(setApprovals, () => setApprovals([])); }, [bridge, status?.installed]);
+  // Hosts before approvals (the first protocol-1 builds) have no approvals: agents cannot run there yet.
+  const loadApprovals = useCallback(() => { if (bridge?.approvals && status?.installed) void bridge.approvals.list().then(setApprovals, () => setApprovals([])); }, [bridge, status?.installed]);
   useEffect(() => { loadApprovals(); }, [loadApprovals]);
-  const access: AgentAccess | undefined = ready && bridge && record && script ? {
+  const access: AgentAccess | undefined = ready && bridge?.approvals && record && script ? {
     version: record.version, profiles,
     approvals: approvals.filter(item => item.script_id === scriptId),
     approve: async profile => {
@@ -329,7 +330,7 @@ function App() {
       while (!stopped.current) {
         const events = await bridge.record.events(session.id, after);
         after = events.next;
-        if (events.steps.length) await update(target, current => append(current, events.steps.map(step => ({ ...step, id: step.id || uid("n_") }))));
+        if (events.steps.length) await update(target, current => withSecretParams(append(current, events.steps.map(step => ({ ...step, id: step.id || uid("n_") })))));
         if (events.done) break;
       }
     } catch (error) { kit.flash(bridgeError(errorCode(error))); }

@@ -217,6 +217,7 @@ try {
   await live.getByRole("button", { name: "Record", exact: true }).waitFor();
   const recorded = await live.evaluate(() => [...window.rows.values()].find(row => row.collection === "scripts" && row.data.start_url === "https://login.example.com/").data);
   assert.deepEqual(recorded.graph.edges, [["r1", "r2"]]);
+  assert.deepEqual(recorded.params, [{ name: "password", type: "secret", required: true }], "a recorded password becomes a secret parameter");
   assert.equal(recorded.profile, "发帖号");
   // Run the sample script; it pauses at the confirm and continues when approved.
   await live.locator(".wa-switcher").click();
@@ -262,7 +263,19 @@ try {
   const overflow = await live.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert(overflow <= 0, "no horizontal scroll on a phone");
   await live.close();
-  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install, agent-run approval, profiles, recording, paused run approval and narrow dark layout");
+  // A first protocol-1 host without approvals: the page works and offers no agent approval.
+  const early = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  early.on("pageerror", error => errors.push(error.message));
+  await early.addInitScript(bridge, { sample, withBrowser: true });
+  await early.addInitScript(() => { delete window.myco.browser.approvals; });
+  await early.goto(url);
+  await early.getByRole("button", { name: "Install component" }).click();
+  await early.getByRole("tab", { name: "Settings" }).click();
+  await early.getByRole("region", { name: "Script settings" }).getByLabel("Script name").waitFor();
+  assert.equal(await early.getByText("Agent runs").count(), 0);
+  assert.deepEqual(errors, []);
+  await early.close();
+  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");
 } finally {
   await browser.close();
   server.close();

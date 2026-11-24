@@ -134,6 +134,10 @@ export function bridgeError(code: string) {
     case "cancelled": return uiText("已取消。");
     case "timeout": return uiText("浏览器组件没有及时回应。");
     case "permission_denied": return uiText("没有得到使用浏览器的许可。");
+    case "unsupported_node": case "unsupported_branch": return uiText("这台电脑的浏览器组件还不支持脚本里的分支、循环或子流程。");
+    case "secret_required": return uiText("请填写所有敏感参数。");
+    case "profile_locked": return uiText("这个 profile 的浏览器正在被别的程序使用。");
+    case "install_failed": return uiText("浏览器组件没有装好，请稍后重试。");
     default: return uiText("浏览器组件没有完成这个操作。");
   }
 }

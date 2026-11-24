@@ -300,6 +300,20 @@ export function append(script: Script, steps: ScriptNode[]): Script {
   return { ...script, graph: { nodes: [...script.graph.nodes, ...nodes], edges: [...script.graph.edges, ...edges] } };
 }
 
+/** Declares a required secret parameter for every sensitive recorded value
+ *  (${password}, ${dialog_input}…) the script does not declare yet, so a
+ *  recording never stores what was typed and still validates. */
+export function withSecretParams(script: Script): Script {
+  const declared = new Set(script.params.map(param => param.name));
+  const added: Param[] = [];
+  for (const node of script.graph.nodes) {
+    if (!node.sensitive || !node.value || !onlyReference(node.value)) continue;
+    const name = references(node.value)[0];
+    if (!declared.has(name)) { declared.add(name); added.push({ name, type: "secret", required: true }); }
+  }
+  return added.length ? { ...script, params: [...script.params, ...added] } : script;
+}
+
 /** Removes a node and joins its single parent to its single child, so a
  *  linear recording stays connected. */
 export function removeNode(script: Script, id: string): Script {

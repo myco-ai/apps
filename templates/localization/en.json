@@ -4033,5 +4033,9 @@
   "版本 {0} 已允许 agent 用「{1}」运行": "Version {0} is approved for agents with “{1}”",
   "允许 agent 运行版本 {0}": "Allow agents to run version {0}",
   "先改好脚本里的问题，才能批准。": "Fix the script's problems and save before approving.",
-  "撤销批准": "Withdraw"
+  "撤销批准": "Withdraw",
+  "这台电脑的浏览器组件还不支持脚本里的分支、循环或子流程。": "The browser component on this computer does not support the script's branches, loops or sub-flows yet.",
+  "请填写所有敏感参数。": "Enter every sensitive parameter.",
+  "这个 profile 的浏览器正在被别的程序使用。": "Another program is using this profile's browser.",
+  "浏览器组件没有装好，请稍后重试。": "The browser component did not install. Try again later."
 }
