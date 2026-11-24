@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 const root = fileURLToPath(new URL("../", import.meta.url));
 mkdirSync(path.join(root, "artifacts"), { recursive: true });
-const browser = name => /(?:\.ui-test|\.browser|personality-ui\.test|design-studio\.test)\.mjs$/.test(name);
+const browser = name => /(?:\.ui-test|\.browser|personality-ui\.test|design-studio\.test|podcast-feed\.test)\.mjs$/.test(name);
 const mode = process.argv[2] || "unit";
 const shard = Number(process.env.TEST_SHARD || 0), shards = Number(process.env.TEST_SHARDS || 1);
 const names = readdirSync(path.join(root, "templates")).sort().filter(name =>
