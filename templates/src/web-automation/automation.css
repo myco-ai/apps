@@ -350,3 +350,12 @@ textarea.wa-input { height: auto; padding: 7px 10px; line-height: 1.5; resize: v
 }
 @media (pointer: coarse) { .wa-stage .react-flow__handle { width: 14px; height: 14px; } }
 @media (prefers-reduced-motion: reduce) { .ui-pop, .wa-node { transition: none; animation: none; } }
+.wa-settings-group { display: grid; gap: 10px; padding: 12px 0; border-top: 1px solid var(--wa-border); }
+.wa-settings-group:first-of-type { border-top: 0; padding-top: 2px; }
+.wa-settings-group h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--wa-text); }
+.wa-settings-group .ui-field { margin: 0; }
+.wa-settings-group .wa-error { margin: 4px 0 0; }
+.wa-settings-group > .wa-btn { justify-self: start; }
+.wa-settings-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+.wa-settings-pair .ui-field { align-content: start; }
+@media (max-width: 520px) { .wa-settings-pair { grid-template-columns: 1fr; } }

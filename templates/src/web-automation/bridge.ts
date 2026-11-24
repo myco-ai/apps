@@ -5,12 +5,15 @@
 // without it. Profiles, sign-ins, snapshots and secrets stay on the computer
 // that runs the browser: nothing here is written to shared records.
 import { myco } from "../_lib/myco";
-import type { Run, RunStep, Script, ScriptNode, Target } from "./model";
+import type { ProfileSettings, ProfileSettingsInput, Run, RunStep, Script, ScriptNode, Target } from "./model";
 
 export type BrowserProfile = {
   id: string; name: string; running: boolean;
   /** The owner allowed agents to use this profile (browser.view/run/control). */
   agents: boolean;
+  /** Proxy, user agent, language and launch arguments; components before
+   *  0.2.0 omit it. Proxy passwords never come back: see has_password. */
+  settings?: ProfileSettings;
 };
 export type BrowserStatus = {
   protocol: number;
@@ -74,6 +77,11 @@ export interface BrowserBridge {
      *  profile as it now is (unchanged, or rejected with "cancelled", when
      *  declined). Turning it off needs no confirmation. */
     allowAgents(id: string, allowed: boolean): Promise<BrowserProfile>;
+    /** Optional (older Apps lack it). The App lists every value in its own
+     *  confirmation, since a proxy sees this profile's traffic. Applies the
+     *  next time the profile's browser starts. Rejects with "cancelled"
+     *  when declined and "invalid_argument" for a disallowed value. */
+    configure?(id: string, settings: ProfileSettingsInput): Promise<BrowserProfile>;
   };
   record: {
     start(options: { profile: string; url: string }): Promise<{ id: string }>;

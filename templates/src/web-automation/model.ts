@@ -394,3 +394,45 @@ export function describeTarget(target?: Target) {
   const first = target?.locators?.[0];
   return first ? locatorText(first) : "";
 }
+
+// Per-profile browser settings (proxy, user agent, language, launch
+// arguments). They live only in the local component; passwords are
+// write-only and never come back.
+export type ProxyKind = "http" | "https" | "socks5";
+export type ProfileSettings = {
+  proxy: { server: string; bypass: string[]; username: string; has_password: boolean } | null;
+  user_agent: string; lang: string; args: string[];
+};
+export type ProfileSettingsInput = Omit<ProfileSettings, "proxy"> & {
+  /** password: omitted keeps the saved one, "" clears it. */
+  proxy: { server: string; bypass: string[]; username: string; password?: string } | null;
+};
+export const emptySettings: ProfileSettings = { proxy: null, user_agent: "", lang: "", args: [] };
+
+// The component rejects everything else; checking here gives instant feedback.
+const flagArgs = ["--start-maximized", "--disable-gpu", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding"];
+const valueArgs: Record<string, RegExp> = {
+  "--window-size": /^\d{2,5},\d{2,5}$/,
+  "--force-device-scale-factor": /^(?:[0-3](?:\.\d{1,2})?|4)$/,
+  "--disable-features": /^[A-Za-z0-9_]+(?:,[A-Za-z0-9_]+)*$/,
+  "--enable-features": /^[A-Za-z0-9_]+(?:,[A-Za-z0-9_]+)*$/,
+  "--blink-settings": /^imagesEnabled=(?:true|false)$/,
+};
+export function launchArgOk(arg: string) {
+  if (flagArgs.includes(arg)) return true;
+  const at = arg.indexOf("=");
+  const pattern = at > 0 ? valueArgs[arg.slice(0, at)] : undefined;
+  return Boolean(pattern?.test(arg.slice(at + 1)));
+}
+/** "host:port" (an IPv6 host in brackets) and a scheme → a proxy server URL, or "". */
+export function proxyServer(kind: ProxyKind, address: string) {
+  const match = /^(\[[0-9a-fA-F:.]+\]|[A-Za-z0-9.-]{1,253}):(\d{1,5})$/.exec(address.trim());
+  const port = Number(match?.[2]);
+  return match && port > 0 && port < 65536 ? `${kind}://${match[1]}:${port}` : "";
+}
+export function splitProxy(server: string): { kind: ProxyKind; address: string } {
+  const match = /^(https?|socks5):\/\/(.+)$/.exec(server);
+  return match ? { kind: match[1] as ProxyKind, address: match[2] } : { kind: "http", address: "" };
+}
+export const langOk = (lang: string) => !lang || /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(lang);
+export const userAgentOk = (ua: string) => ua.length <= 512 && !/[\u0000-\u001f\u007f]/.test(ua);

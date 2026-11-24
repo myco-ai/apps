@@ -57,6 +57,13 @@ function bridge({ sample, withBrowser, outdated = false }) {
       profiles: {
         create: async name => { const profile = { id: "pf_" + profiles.length, name, running: false, agents: false }; profiles.push(profile); return profile; },
         open: async () => true,
+        configure: async (id, settings) => {
+          browserCalls.push(["configure", id, JSON.parse(JSON.stringify(settings))]);
+          const profile = profiles.find(item => item.id === id);
+          const { password, ...proxy } = settings.proxy || {};
+          profile.settings = { ...settings, proxy: settings.proxy ? { ...proxy, has_password: Boolean(password) } : null };
+          return { ...profile };
+        },
         allowAgents: async (id, agents) => { browserCalls.push(["allow", id, agents]); const profile = profiles.find(item => item.id === id); profile.agents = agents; return { ...profile }; },
       },
       record: {
@@ -200,6 +207,36 @@ try {
   const profiles = live.getByRole("dialog", { name: "Profiles" });
   await profiles.getByRole("switch", { name: "Allow agents" }).click();
   await live.waitForFunction(() => document.querySelector('[role=switch]')?.getAttribute("aria-checked") === "true");
+  // Per-profile browser settings: proxy, UA, language and allowlisted launch arguments.
+  await profiles.getByRole("button", { name: "Browser settings for “发帖号”" }).click();
+  const profileSettings = live.getByRole("dialog", { name: "Browser settings for “发帖号”" });
+  await profileSettings.getByRole("tab", { name: "SOCKS5" }).click();
+  await profileSettings.getByLabel("Address").fill("proxy.example.com");
+  await profileSettings.getByText("Use host:port, for example 127.0.0.1:7890").waitFor();
+  assert(await profileSettings.getByRole("button", { name: "Save", exact: true }).isDisabled());
+  await profileSettings.getByLabel("Address").fill("proxy.example.com:1080");
+  await profileSettings.getByLabel("Username (optional)").fill("alice");
+  await profileSettings.getByLabel("Password (optional)").fill("s3cret");
+  await profileSettings.getByLabel("Bypass the proxy for").fill("localhost, *.internal.test");
+  await profileSettings.getByLabel("One per line").fill("--start-maximized\n--remote-debugging-port=9222");
+  await profileSettings.getByText("Not supported: --remote-debugging-port=9222").waitFor();
+  await profileSettings.getByLabel("One per line").fill("--start-maximized\n--window-size=1440,900");
+  await profileSettings.getByLabel("Language").fill("zh-CN");
+  await profileSettings.getByRole("button", { name: "Save", exact: true }).click();
+  await profiles.getByText("Proxy proxy.example.com:1080").waitFor();
+  const configured = await live.evaluate(() => window.browserCalls.find(call => call[0] === "configure"));
+  assert.deepEqual(configured, ["configure", "pf_post", { proxy: { server: "socks5://proxy.example.com:1080", username: "alice", bypass: ["localhost", "*.internal.test"], password: "s3cret" },
+    user_agent: "", lang: "zh-CN", args: ["--start-maximized", "--window-size=1440,900"] }]);
+  assert(!(await live.evaluate(() => JSON.stringify([...window.rows.values()]))).includes("s3cret"), "the proxy password never reaches page data");
+  // Reopening keeps the saved password unless it is replaced or cleared.
+  await profiles.getByRole("button", { name: "Browser settings for “发帖号”" }).click();
+  await profileSettings.getByText("Saved; leave empty to keep it").waitFor();
+  assert.equal(await profileSettings.getByLabel("Password (optional)").inputValue(), "");
+  await profileSettings.getByLabel("Language").fill("en-US");
+  await profileSettings.getByRole("button", { name: "Save", exact: true }).click();
+  await profiles.getByText("en-US").waitFor();
+  const kept = await live.evaluate(() => window.browserCalls.filter(call => call[0] === "configure")[1][2].proxy);
+  assert(!("password" in kept), "an untouched saved password is kept");
   await profiles.getByLabel("New profile name").fill("工作号");
   await profiles.getByRole("button", { name: "New", exact: true }).click();
   await profiles.getByText("工作号").waitFor();
@@ -268,8 +305,13 @@ try {
   early.on("pageerror", error => errors.push(error.message));
   await early.addInitScript(bridge, { sample, withBrowser: true });
   await early.addInitScript(() => { delete window.myco.browser.approvals; });
+  await early.addInitScript(() => { delete window.myco.browser.profiles.configure; });
   await early.goto(url);
   await early.getByRole("button", { name: "Install component" }).click();
+  await early.getByRole("button", { name: "Profiles" }).click();
+  await early.getByRole("dialog", { name: "Profiles" }).getByText("发帖号").waitFor();
+  assert.equal(await early.getByRole("button", { name: /^Browser settings/ }).count(), 0, "no settings on Apps without configure");
+  await early.getByRole("dialog", { name: "Profiles" }).getByRole("button", { name: "Done" }).click();
   await early.getByRole("tab", { name: "Settings" }).click();
   await early.getByRole("region", { name: "Script settings" }).getByLabel("Script name").waitFor();
   assert.equal(await early.getByText("Agent runs").count(), 0);
@@ -286,7 +328,7 @@ try {
   assert.deepEqual(await stale.evaluate(() => window.browserCalls), [["install"]]);
   await stale.close();
   assert.deepEqual(errors, []);
-  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");
+  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, profile proxy/UA/argument settings, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");
 } finally {
   await browser.close();
   server.close();

@@ -115,4 +115,14 @@ const run = { script_id: "s", script_version: 1, script_name: "s", state: "runni
 const fitted = m.fitRun(run);
 assert(m.bytes(fitted) < m.recordLimit && fitted.error.length === 1000 && fitted.steps.at(-1).node === "n1999", "runs keep their newest steps under 64 KB");
 assert(m.finished("offline") && !m.finished("paused"));
-console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets and sample");
+// Profile settings: only allowlisted launch arguments, well-formed proxies and languages.
+assert(m.launchArgOk("--start-maximized") && m.launchArgOk("--window-size=1440,900") && m.launchArgOk("--disable-features=Translate,AutofillServerCommunication"));
+for (const bad of ["--remote-debugging-port=9222", "--user-data-dir=/tmp/x", "--load-extension=/x", "--disable-web-security", "--no-sandbox", "--proxy-server=http://x:1",
+  "--headless", "--enable-automation", "--window-size=1,1;rm", "--disable-features=", "--host-resolver-rules=MAP * 1.2.3.4", "--start-maximized=1"]) assert(!m.launchArgOk(bad), bad);
+assert.equal(m.proxyServer("socks5", " proxy.example.com:1080 "), "socks5://proxy.example.com:1080");
+assert.equal(m.proxyServer("http", "[::1]:8080"), "http://[::1]:8080");
+for (const bad of ["proxy.example.com", "user:pw@host:80", "host:0", "host:70000", "http://host:80"]) assert.equal(m.proxyServer("http", bad), "", bad);
+assert.deepEqual(m.splitProxy("https://p.example.com:443"), { kind: "https", address: "p.example.com:443" });
+assert(m.langOk("") && m.langOk("zh-CN") && m.langOk("en") && !m.langOk("zh_CN") && !m.langOk("--lang"));
+assert(m.userAgentOk("Mozilla/5.0") && !m.userAgentOk("a\nb"));
+console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets, profile settings and sample");

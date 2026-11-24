@@ -7,11 +7,12 @@ import { browser, errorCode, type Approval, type BrowserProfile, type BrowserSta
 import { Canvas } from "./canvas";
 import { NodeInspector, ScriptSettings, type AgentAccess, type Tools } from "./inspector";
 import { bridgeError, category, stateDot, stateName, typeName } from "./labels";
-import { append, withSecretParams, bytes, columnGap, connect, cutOutput, finished, fitRun, layout, newNode, newScript, normalize, recordLimit,
-  removeNode, runArguments, validate, type Draft, type NodeType, type Run, type RunStep, type Script } from "./model";
+import { append, withSecretParams, bytes, columnGap, connect, cutOutput, emptySettings, finished, fitRun, langOk, launchArgOk, layout, newNode, newScript, normalize,
+  proxyServer, recordLimit, removeNode, runArguments, splitProxy, userAgentOk, validate, type Draft, type NodeType, type ProfileSettings, type ProfileSettingsInput,
+  type ProxyKind, type Run, type RunStep, type Script } from "./model";
 import { Palette } from "./palette";
 import { Icon, StepIcon } from "./icons";
-import { Popover, Segmented, Select, Switch, Toggle } from "./ui";
+import { Field, Popover, Segmented, Select, Switch, Toggle } from "./ui";
 import "../_lib/sheet.css";
 import "./automation.css";
 
@@ -127,17 +128,32 @@ function RecordDialog({ script, profiles, close, start }: {
   </Dialog>;
 }
 
+function profileSummary(settings?: ProfileSettings) {
+  if (!settings) return "";
+  const parts = [settings.proxy ? uiText("代理 {0}", splitProxy(settings.proxy.server).address) : "",
+    settings.user_agent ? uiText("自定义 UA") : "", settings.lang ? settings.lang : "",
+    settings.args.length ? uiText("{0} 个启动参数", settings.args.length) : ""];
+  return parts.filter(Boolean).join(" · ");
+}
+
 function ProfilesDialog({ status, refresh, close }: { status: BrowserStatus; refresh: () => void; close: () => void }) {
   const [name, setName] = useState("");
+  const [editing, setEditing] = useState("");
   const bridge = browser()!;
   const act = (task: Promise<unknown>) => void task.then(refresh, error => kit.flash(bridgeError(errorCode(error))));
+  const configure = bridge.profiles.configure?.bind(bridge.profiles);
+  const current = status.profiles.find(profile => profile.id === editing);
+  if (current && configure) return <ProfileSettingsDialog profile={current} close={close} back={() => setEditing("")}
+    save={settings => configure(current.id, settings).then(() => { refresh(); setEditing(""); kit.flash(current.running ? uiText("已保存，关掉这个浏览器后再打开生效") : uiText("已保存")); },
+      error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); })}/>;
   return <Dialog title={uiText("Profile")} close={close} wide footer={<button type="button" className="wa-btn is-primary" onClick={closeDialog}>{uiText("完成")}</button>}>
     <p className="wa-muted">{uiText("每个 profile 是一组单独的浏览器登录状态，只存在 {0} 上。打开「允许 agent 使用」后，agent 才能申请用它跑脚本。", status.machine)}</p>
     <ul className="wa-profiles">
       {status.profiles.map(profile => <li key={profile.id}>
         <span className="wa-avatar"><Icon.profile size={16}/></span>
-        <span className="wa-profile-name"><strong>{profile.name}</strong><small>{profile.running ? uiText("浏览器开着") : uiText("未打开")}</small></span>
+        <span className="wa-profile-name"><strong>{profile.name}</strong><small>{[profile.running ? uiText("浏览器开着") : uiText("未打开"), profileSummary(profile.settings)].filter(Boolean).join(" · ")}</small></span>
         <button type="button" className="wa-btn is-ghost is-small" onClick={() => act(bridge.profiles.open(profile.id))}>{uiText("打开浏览器登录")}</button>
+        {configure && <button type="button" className="wa-btn is-ghost is-small" aria-label={uiText("「{0}」的浏览器设置", profile.name)} onClick={() => setEditing(profile.id)}><Icon.settings size={14}/>{uiText("设置")}</button>}
         <span className="wa-profile-agents">{uiText("允许 agent 使用")}<Switch label={uiText("允许 agent 使用")} checked={profile.agents} onChange={value => act(bridge.profiles.allowAgents(profile.id, value))}/></span>
       </li>)}
       {!status.profiles.length && <li className="wa-muted">{uiText("还没有 profile。")}</li>}
@@ -146,6 +162,95 @@ function ProfilesDialog({ status, refresh, close }: { status: BrowserStatus; ref
       <input className="wa-input" aria-label={uiText("新 profile 的名字")} placeholder={uiText("例如：发帖号")} value={name} maxLength={40} onChange={event => setName(event.target.value)}/>
       <button className="wa-btn" disabled={!name.trim()}><Icon.plus size={14}/>{uiText("新建")}</button>
     </form>
+  </Dialog>;
+}
+
+type ProxyChoice = "none" | ProxyKind;
+function ProfileSettingsDialog({ profile, close, back, save }: {
+  profile: BrowserProfile; close: () => void; back: () => void; save: (settings: ProfileSettingsInput) => Promise<void>;
+}) {
+  const saved = profile.settings || emptySettings;
+  const split = saved.proxy ? splitProxy(saved.proxy.server) : { kind: "http" as ProxyKind, address: "" };
+  const [kind, setKind] = useState<ProxyChoice>(saved.proxy ? split.kind : "none");
+  const [address, setAddress] = useState(split.address);
+  const [username, setUsername] = useState(saved.proxy?.username || "");
+  const [password, setPassword] = useState("");
+  const [clearPassword, setClearPassword] = useState(false);
+  const [bypass, setBypass] = useState((saved.proxy?.bypass || []).join(", "));
+  const [ua, setUA] = useState(saved.user_agent);
+  const [lang, setLang] = useState(saved.lang);
+  const [args, setArgs] = useState(saved.args.join("\n"));
+  const [busy, setBusy] = useState(false);
+  const argList = args.split("\n").map(line => line.trim()).filter(Boolean);
+  const badArgs = argList.filter(arg => !launchArgOk(arg));
+  const server = kind === "none" ? "" : proxyServer(kind, address);
+  const errors = {
+    address: kind !== "none" && address.trim() && !server ? uiText("写成 主机:端口，例如 127.0.0.1:7890") : kind !== "none" && !address.trim() ? uiText("请填写代理地址") : "",
+    ua: userAgentOk(ua) ? "" : uiText("UA 不能换行，最长 512 个字符"),
+    lang: langOk(lang) ? "" : uiText("写成语言代码，例如 zh-CN、en-US"),
+    args: badArgs.length ? uiText("不支持：{0}", badArgs.join("  ")) : "",
+  };
+  const invalid = Object.values(errors).some(Boolean);
+  const hadPassword = Boolean(saved.proxy?.has_password);
+  const submit = () => {
+    if (invalid) return;
+    const proxy = kind === "none" ? null : {
+      server, username: username.trim(), bypass: bypass.split(/[,\s]+/).map(item => item.trim()).filter(Boolean),
+      ...(password ? { password } : clearPassword || !username.trim() ? { password: "" } : {}),
+    };
+    setBusy(true);
+    void save({ proxy, user_agent: ua.trim(), lang: lang.trim(), args: argList }).finally(() => setBusy(false));
+  };
+  const proxyOptions: { value: ProxyChoice; label: string }[] = [{ value: "none", label: uiText("不用代理") }, { value: "http", label: "HTTP" }, { value: "https", label: "HTTPS" }, { value: "socks5", label: "SOCKS5" }];
+  return <Dialog title={uiText("「{0}」的浏览器设置", profile.name)} close={close} wide footer={<>
+    <button type="button" className="wa-btn" onClick={back}>{uiText("返回")}</button>
+    <button type="button" className="wa-btn is-primary" disabled={invalid || busy} onClick={submit}>{busy ? uiText("正在保存…") : uiText("保存")}</button>
+  </>}>
+    <p className="wa-muted">{uiText("这些设置只存在这台电脑上，不会写进页面数据。保存时 App 会让你再确认一次；浏览器开着的话，关掉后再打开生效。")}</p>
+    <section className="wa-settings-group" aria-label={uiText("代理")}>
+      <h3>{uiText("代理")}</h3>
+      <Segmented label={uiText("代理类型")} value={kind} options={proxyOptions} onChange={setKind}/>
+      {kind !== "none" && <>
+        <Field label={uiText("地址")} htmlFor="wa-proxy-address">
+          <input id="wa-proxy-address" className="wa-input is-mono" value={address} placeholder="127.0.0.1:7890" autoComplete="off" spellCheck={false}
+            aria-invalid={Boolean(errors.address)} onChange={event => setAddress(event.target.value)}/>
+          {errors.address && <p className="wa-error">{errors.address}</p>}
+        </Field>
+        <div className="wa-settings-pair">
+          <Field label={uiText("账号（可选）")} htmlFor="wa-proxy-user">
+            <input id="wa-proxy-user" className="wa-input" value={username} autoComplete="off" spellCheck={false} onChange={event => setUsername(event.target.value)}/>
+          </Field>
+          <Field label={uiText("密码（可选）")} htmlFor="wa-proxy-password" hint={hadPassword && !password && !clearPassword ? uiText("已保存，留空不改") : undefined}>
+            <input id="wa-proxy-password" className="wa-input" type="password" value={password} autoComplete="new-password" disabled={!username.trim()}
+              placeholder={hadPassword && !clearPassword ? "••••••••" : ""} onChange={event => { setPassword(event.target.value); setClearPassword(false); }}/>
+          </Field>
+        </div>
+        {hadPassword && username.trim() && !password && <button type="button" className="wa-btn is-ghost is-small" aria-pressed={clearPassword}
+          onClick={() => setClearPassword(value => !value)}>{clearPassword ? uiText("保留已保存的密码") : uiText("清除已保存的密码")}</button>}
+        <Field label={uiText("不走代理的地址")} htmlFor="wa-proxy-bypass" hint={uiText("用逗号分开，例如 localhost, *.example.com")}>
+          <input id="wa-proxy-bypass" className="wa-input is-mono" value={bypass} autoComplete="off" spellCheck={false} onChange={event => setBypass(event.target.value)}/>
+        </Field>
+      </>}
+    </section>
+    <section className="wa-settings-group" aria-label={uiText("浏览器身份")}>
+      <h3>{uiText("浏览器身份")}</h3>
+      <Field label="User-Agent" htmlFor="wa-ua" hint={errors.ua ? undefined : uiText("留空就用 Chrome 自带的（推荐）。改了以后和浏览器真实版本对不上，反而更容易被网站识别。")}>
+        <input id="wa-ua" className="wa-input is-mono" value={ua} placeholder={uiText("用 Chrome 自带的")} spellCheck={false} aria-invalid={Boolean(errors.ua)} onChange={event => setUA(event.target.value)}/>
+        {errors.ua && <p className="wa-error">{errors.ua}</p>}
+      </Field>
+      <Field label={uiText("语言")} htmlFor="wa-lang" hint={errors.lang ? undefined : uiText("网页看到的首选语言；留空跟随系统")}>
+        <input id="wa-lang" className="wa-input is-mono" value={lang} placeholder="zh-CN" spellCheck={false} aria-invalid={Boolean(errors.lang)} onChange={event => setLang(event.target.value)}/>
+        {errors.lang && <p className="wa-error">{errors.lang}</p>}
+      </Field>
+    </section>
+    <section className="wa-settings-group" aria-label={uiText("启动参数")}>
+      <h3>{uiText("启动参数")}</h3>
+      <Field label={uiText("每行一个")} htmlFor="wa-args" hint={errors.args ? undefined : uiText("只支持窗口大小、缩放、GPU、后台节流、功能开关和不加载图片这几类，其余会被拒绝。")}>
+        <textarea id="wa-args" className="wa-input is-mono" rows={3} value={args} placeholder={"--start-maximized\n--window-size=1440,900"} spellCheck={false}
+          aria-invalid={Boolean(errors.args)} onChange={event => setArgs(event.target.value)}/>
+        {errors.args && <p className="wa-error">{errors.args}</p>}
+      </Field>
+    </section>
   </Dialog>;
 }
 
