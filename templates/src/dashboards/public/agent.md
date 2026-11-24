@@ -35,10 +35,10 @@ personal data out of shared records. The page never fetches the data source.
 
 ## Set up a layout
 
-The viewer can choose the dataset ID and columns in **Edit layout**. When asked to
+The viewer can choose the dataset ID and columns in **Panel settings**. In **Edit layout**, drag a panel header to move it or its lower-right corner to resize it, then save the layout. When asked to
 create or edit a layout, write a record to the `dashboards` collection. Use the
 same version check as for datasets. Keep panel IDs unique within the dashboard. Panel
-array order controls placement. Each dashboard supports up to 24 panels.
+coordinates control placement. Overlapping panels are moved down to free space. Each dashboard supports up to 24 panels.
 
 ```json
 {
@@ -51,7 +51,7 @@ array order controls placement. Each dashboard supports up to 24 panels.
     "dataset": "weekly_usage",
     "label": "Day",
     "values": ["Requests"],
-    "width": "half",
+    "position": {"x": 0, "y": 0, "w": 6, "h": 4},
     "unit": "requests"
   }]
 }
@@ -62,6 +62,6 @@ array order controls placement. Each dashboard supports up to 24 panels.
 - Donut uses one numeric column and positive values. Supply one row per category. Categories after the first five are grouped as Other.
 - Metric displays the last non-null numeric value in its column. Sort the rows in chronological order when using a dated dataset.
 - Table displays all dataset columns. The label column is optional for charts and metrics.
-- Widths: `compact` (one third), `half`, `wide` (full). Narrow windows reflow the panels.
+- Position uses zero-based `x` and `y` with column span `w` (12 columns total) and row span `h` (up to 12). Earlier layouts with `width` still load. Narrow viewing windows reflow panels in reading order.
 
 A link ending with `#dashboard?id=RECORD_ID` opens that dashboard on clients with page fragment support.

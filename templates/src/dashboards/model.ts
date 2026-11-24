@@ -1,5 +1,6 @@
 import { language } from "../_lib/i18n";
 import type { MycoRecord } from "../_lib/myco";
+import { readPosition, type Position } from "./layout";
 
 export const tr = (en: string, zh: string) => language() === "zh" ? zh : en;
 export const kinds = ["line", "bar", "area", "donut", "metric", "table"] as const;
@@ -11,7 +12,7 @@ export const kindTitle = (kind: Kind) => ({
 
 export type Panel = {
   id: string; title: string; kind: Kind; dataset: string; label: string; values: string[];
-  width: "compact" | "half" | "wide"; unit: string;
+  width: "compact" | "half" | "wide"; unit: string; position?: Position;
 };
 export type Board = { title: string; description: string; panels: Panel[] };
 type Cell = string | number | null;
@@ -45,6 +46,7 @@ export function boardFrom(record: MycoRecord): MycoRecord<Board> {
         id, kind: p.kind as Kind, title: string(p.title, 80), dataset: string(p.dataset, 80),
         label: string(p.label, 80), values: strings(p.values, 6), unit: string(p.unit, 24),
         width: p.width === "wide" || p.width === "compact" ? p.width : "half",
+        position: readPosition(p.position, p.kind as Kind),
       }];
     }),
   } };

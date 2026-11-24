@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { memo, useEffect, useId, useRef, useState } from "react";
 import { BarChart3 } from "lucide-react";
 import { language } from "../_lib/i18n";
 import { kindTitle, number, seriesFor, tr, type Dataset, type Panel } from "./model";
@@ -45,6 +45,19 @@ function Donut({ names, values, title }: { names: string[]; values: (number | nu
 function Cartesian({ panel, names, series }: { panel: Panel } & ReturnType<typeof seriesFor>) {
   const [active, setActive] = useState<number | null>(null);
   const fillId = useId();
+  const plot = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 480, height: 150 });
+  const hasNumbers = series.some(item => item.values.some(value => value !== null));
+  useEffect(() => {
+    if (!plot.current) return;
+    const observer = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      const next = { width: Math.max(140, Math.round(width)), height: Math.max(80, Math.round(height)) };
+      setSize(current => current.width === next.width && current.height === next.height ? current : next);
+    });
+    observer.observe(plot.current);
+    return () => observer.disconnect();
+  }, [hasNumbers]);
   const numeric = series.flatMap(item => item.values.filter(value => value !== null));
   if (!numeric.length) return <Empty text={tr("No numeric data to chart", "没有可绘制的数值")}/>;
   const first = Math.min(0, ...numeric), last = Math.max(0, ...numeric);
@@ -53,13 +66,14 @@ function Cartesian({ panel, names, series }: { panel: Panel } & ReturnType<typeo
   const step = ([1, 2, 2.5, 5, 10].find(value => value >= stepSize / power) ?? 10) * power;
   const low = Math.floor(first / step) * step;
   const high = Math.ceil((last || (first === 0 ? step : 0)) / step) * step;
-  const width = 620, top = 10, left = 51, right = 607, bottom = 188;
+  const { width, height } = size;
+  const top = 9, left = width < 210 ? 35 : 44, right = width - 10, bottom = height - 26;
   const band = (right - left) / names.length;
   const x = (index: number) => left + band * (index + .5);
   const y = (value: number) => bottom - (value - low) / (high - low) * (bottom - top);
   const baseline = y(0);
   const ticks = Array.from({ length: Math.round((high - low) / step) + 1 }, (_, index) => low + index * step);
-  const spacing = Math.max(1, Math.ceil(names.length / 6));
+  const spacing = Math.max(1, Math.ceil(names.length / Math.max(2, Math.floor((right - left) / 78))));
   const bars = panel.kind === "bar";
   const barWidth = Math.min(30, band * .72 / series.length);
   const hovered = active === null || active >= names.length ? null : active;
@@ -68,8 +82,8 @@ function Cartesian({ panel, names, series }: { panel: Panel } & ReturnType<typeo
 
   return <>
     {series.length > 1 && <Legend labels={series.map(item => item.name)}/>}
-    <div className="dash-plot" onPointerLeave={() => setActive(null)}>
-      <svg viewBox={`0 0 ${width} 216`} role="img" aria-label={`${panel.title} · ${kindTitle(panel.kind)}`}
+    <div className="dash-plot" ref={plot} onPointerLeave={() => setActive(null)}>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${panel.title} · ${kindTitle(panel.kind)}`}
         onPointerMove={event => {
           const rect = event.currentTarget.getBoundingClientRect();
           const px = (event.clientX - rect.left) / rect.width * width;
@@ -113,7 +127,7 @@ function Cartesian({ panel, names, series }: { panel: Panel } & ReturnType<typeo
   </>;
 }
 
-export function Chart({ panel, dataset }: { panel: Panel; dataset?: Dataset }) {
+export const Chart = memo(function Chart({ panel, dataset }: { panel: Panel; dataset?: Dataset }) {
   if (!dataset) return <Empty text={panel.dataset ? tr("Waiting for a dataset", "等待数据集") : tr("Choose a dataset in Edit layout", "请在编辑布局中选择数据集")}/>;
   if (!dataset.rows.length) return <Empty text={tr("This snapshot has no rows", "这个快照没有数据行")}/>;
   if (panel.kind === "table") return <DataTable dataset={dataset} columns={dataset.columns}/>;
@@ -131,4 +145,4 @@ export function Chart({ panel, dataset }: { panel: Panel; dataset?: Dataset }) {
       <Cartesian panel={panel} names={names} series={series}/>}
     <details className="dash-chart-data"><summary>{tr("View data", "查看数据")}</summary><DataTable dataset={dataset} columns={displayColumns}/></details>
   </>;
-}
+});

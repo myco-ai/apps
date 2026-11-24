@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2, X } from "lucide-react";
-import { kindTitle, kinds, maxPanels, newPanel, tr, validID, type Board, type Dataset, type Kind, type Panel } from "./model";
+import { X } from "lucide-react";
+import { kindTitle, kinds, tr, validID, type Board, type Dataset, type Kind, type Panel } from "./model";
 
 export function Dialog({ title, children, close }: { title: string; children: ReactNode; close: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -24,9 +24,6 @@ function PanelFields({ panel, datasets, change }: { panel: Panel; datasets: Map<
       const kind = event.target.value as Kind;
       change({ ...panel, kind, values: kind === "metric" || kind === "donut" ? panel.values.slice(0, 1) : panel.values });
     }}>{kinds.map(kind => <option key={kind} value={kind}>{kindTitle(kind)}</option>)}</select></label>
-    <label>{tr("Width", "宽度")}<select value={panel.width} onChange={event => set("width", event.target.value as Panel["width"])}>
-      <option value="compact">{tr("One third", "三分之一")}</option><option value="half">{tr("Half", "半宽")}</option><option value="wide">{tr("Full", "整行")}</option>
-    </select></label>
     <label>{tr("Dataset", "数据集")}<select aria-label={tr("Dataset", "数据集")} value={customDataset ? "*" : panel.dataset} onChange={event => {
       setCustomDataset(event.target.value === "*");
       bind(event.target.value === "*" ? "" : event.target.value);
@@ -58,66 +55,65 @@ function PanelFields({ panel, datasets, change }: { panel: Panel; datasets: Map<
   </div>;
 }
 
-export function Editor({ board, datasets, save, remove, close }: { board?: Board; datasets: Map<string, Dataset>;
-  save: (draft: Board) => Promise<void>; remove?: () => Promise<void>; close: () => void }) {
-  const [draft, setDraft] = useState<Board>(board ?? { title: "", description: "", panels: [] });
-  const [openPanel, setOpenPanel] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+export function PanelEditor({ panel, datasets, isNew, apply, remove, close }: {
+  panel: Panel; datasets: Map<string, Dataset>; isNew: boolean; apply: (panel: Panel) => void; remove: () => void; close: () => void;
+}) {
+  const [draft, setDraft] = useState(panel);
   const [error, setError] = useState("");
-  const [confirm, setConfirm] = useState(false);
-  const visible = draft.panels.find(panel => panel.id === openPanel);
-  const changePanels = (panels: Panel[]) => setDraft(current => ({ ...current, panels }));
-  const move = (index: number, by: number) => {
-    const panels = [...draft.panels];
-    [panels[index], panels[index + by]] = [panels[index + by], panels[index]];
-    changePanels(panels);
-  };
-  async function run(action: () => Promise<void>) {
-    setBusy(true);
-    setError("");
-    try { await action(); }
-    catch (error) {
-      setError((error as { code?: string })?.code === "conflict"
-        ? tr("This dashboard changed elsewhere. Copy any unsaved changes, then reopen the editor.", "此仪表盘已被修改，请先复制未保存的内容，再重新打开编辑器。")
-        : tr("Could not save changes. Try again.", "无法保存更改，请重试。"));
-    } finally { setBusy(false); }
-  }
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (!draft.title.trim() || draft.panels.some(panel => !panel.title.trim() || (panel.dataset && !validID(panel.dataset)))) {
-      setError(tr("Enter a dashboard name and a name for every panel. Dataset IDs use letters, numbers, hyphens or underscores.", "请填写仪表盘和各面板的名称。数据集 ID 只允许字母、数字、连字符和下划线。"));
+    if (!draft.title.trim() || (draft.dataset && !validID(draft.dataset))) {
+      setError(tr("Enter a panel name and a valid dataset ID.", "请填写面板名称和有效的数据集 ID。"));
       return;
     }
-    void run(() => save({ ...draft, title: draft.title.trim(), panels: draft.panels.map(panel => ({ ...panel, title: panel.title.trim() })) }));
+    apply({ ...draft, title: draft.title.trim() });
   }
-  return <Dialog title={board ? tr("Edit layout", "编辑布局") : tr("New dashboard", "新建仪表盘")} close={() => { if (!busy) close(); }}>
+  return <Dialog title={isNew ? tr("Add panel", "添加面板") : tr("Panel settings", "面板设置")} close={close}>
     <form onSubmit={submit} className="dash-editor">
+      <PanelFields panel={draft} datasets={datasets} change={setDraft}/>
+      {error && <p className="dash-error" role="alert">{error}</p>}
+      <footer className="dash-editor-foot">
+        {!isNew && <button type="button" className="dash-btn dash-danger" onClick={remove}>{tr("Remove panel", "移除面板")}</button>}
+        <div className="dash-actions"><button type="button" className="dash-btn" onClick={close}>{tr("Cancel", "取消")}</button><button type="submit" className="dash-btn primary">
+          {isNew ? tr("Add to dashboard", "加入仪表盘") : tr("Apply", "应用")}
+        </button></div>
+      </footer>
+    </form>
+  </Dialog>;
+}
+
+export function DetailsEditor({ board, apply, remove, close }: {
+  board?: Board; apply: (title: string, description: string) => void; remove?: () => Promise<void>; close: () => void;
+}) {
+  const [title, setTitle] = useState(board?.title || "");
+  const [description, setDescription] = useState(board?.description || "");
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function deleteBoard() {
+    setError("");
+    setBusy(true);
+    try { await remove?.(); }
+    catch { setError(tr("Could not delete this dashboard. Close the editor and reload data.", "无法删除仪表盘。请关闭编辑器并重新加载数据。")); }
+    finally { setBusy(false); }
+  }
+  return <Dialog title={board ? tr("Dashboard settings", "仪表盘设置") : tr("New dashboard", "新建仪表盘")} close={() => { if (!busy) close(); }}>
+    <form className="dash-editor" onSubmit={event => { event.preventDefault();
+      if (title.trim()) apply(title.trim(), description.trim());
+      else setError(tr("Enter a dashboard name.", "请填写仪表盘名称。")); }}>
       <fieldset disabled={busy}>
-        <label>{tr("Dashboard name", "仪表盘名称")}<input autoFocus required maxLength={80} value={draft.title} onChange={event => setDraft({ ...draft, title: event.target.value })}/></label>
-        <label>{tr("Description", "描述")}<textarea maxLength={240} rows={2} value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })}/></label>
-        <div className="dash-between"><h3>{tr("Panels", "面板")}</h3><button type="button" className="dash-btn" disabled={draft.panels.length >= maxPanels} onClick={() => {
-          const panel = newPanel();
-          changePanels([...draft.panels, panel]);
-          setOpenPanel(panel.id);
-        }}><Plus size={15}/>{tr("Add panel", "添加面板")}</button></div>
-        {draft.panels.map((panel, index) => <section className="dash-panel-edit" key={panel.id}>
-          <div className="dash-panel-row">
-            <button type="button" className="dash-panel-name" aria-expanded={openPanel === panel.id} onClick={() => setOpenPanel(current => current === panel.id ? null : panel.id)}>
-              <strong>{panel.title || tr("Untitled panel", "未命名面板")}</strong><small>{kindTitle(panel.kind)}</small>
-            </button>
-            <button type="button" className="dash-icon" disabled={index === 0} onClick={() => move(index, -1)} aria-label={tr("Move panel up", "上移面板")}><ArrowUp size={15}/></button>
-            <button type="button" className="dash-icon" disabled={index === draft.panels.length - 1} onClick={() => move(index, 1)} aria-label={tr("Move panel down", "下移面板")}><ArrowDown size={15}/></button>
-            <button type="button" className="dash-icon dash-danger" onClick={() => changePanels(draft.panels.filter(item => item.id !== panel.id))} aria-label={tr("Remove panel", "移除面板")}><Trash2 size={15}/></button>
-          </div>
-          {visible?.id === panel.id && <PanelFields panel={panel} datasets={datasets} change={value => changePanels(draft.panels.map(item => item.id === panel.id ? value : item))}/>}
-        </section>)}
-        {error && <p role="alert" className="dash-error">{error}</p>}
+        <label>{tr("Dashboard name", "仪表盘名称")}<input autoFocus required maxLength={80} value={title} onChange={event => setTitle(event.target.value)}/></label>
+        <label>{tr("Description", "描述")}<textarea maxLength={240} rows={2} value={description} onChange={event => setDescription(event.target.value)}/></label>
+        {error && <p className="dash-error" role="alert">{error}</p>}
         <footer className="dash-editor-foot">
           {remove && <button type="button" className="dash-btn dash-danger" onClick={() => setConfirm(current => !current)}>{tr("Delete dashboard", "删除仪表盘")}</button>}
-          <div className="dash-actions"><button type="button" className="dash-btn" onClick={close}>{tr("Cancel", "取消")}</button><button className="dash-btn primary" type="submit">{busy ? tr("Saving…", "正在保存…") : tr("Save layout", "保存布局")}</button></div>
+          <div className="dash-actions"><button type="button" className="dash-btn" onClick={close}>{tr("Cancel", "取消")}</button><button type="submit" className="dash-btn primary">
+            {board ? tr("Apply", "应用") : tr("Continue", "继续")}
+          </button></div>
         </footer>
-        {confirm && remove && <div className="dash-delete"><p>{tr("Delete this dashboard? Its datasets will be kept.", "删除这个仪表盘？数据集仍会保留。")}</p>
-          <button type="button" className="dash-btn dash-danger" onClick={() => void run(remove)}>{tr("Confirm deletion", "确认删除")}</button></div>}
+        {confirm && <div className="dash-delete"><p>{tr("Delete this dashboard? Its datasets will be kept.", "删除这个仪表盘？数据集仍会保留。")}</p>
+          <button type="button" className="dash-btn dash-danger" onClick={() => void deleteBoard()}>{tr("Confirm deletion", "确认删除")}</button>
+        </div>}
       </fieldset>
     </form>
   </Dialog>;

@@ -15,7 +15,13 @@
             "Requests"
           ],
           "width": "compact",
-          "unit": ""
+          "unit": "",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "w": 4,
+            "h": 2
+          }
         },
         {
           "id": "success",
@@ -27,7 +33,13 @@
             "Success rate"
           ],
           "width": "compact",
-          "unit": "%"
+          "unit": "%",
+          "position": {
+            "x": 4,
+            "y": 0,
+            "w": 4,
+            "h": 2
+          }
         },
         {
           "id": "response",
@@ -39,7 +51,13 @@
             "Median response"
           ],
           "width": "compact",
-          "unit": "ms"
+          "unit": "ms",
+          "position": {
+            "x": 8,
+            "y": 0,
+            "w": 4,
+            "h": 2
+          }
         },
         {
           "id": "trend",
@@ -51,7 +69,13 @@
             "Requests"
           ],
           "width": "half",
-          "unit": ""
+          "unit": "",
+          "position": {
+            "x": 0,
+            "y": 2,
+            "w": 8,
+            "h": 5
+          }
         },
         {
           "id": "teams",
@@ -63,7 +87,13 @@
             "Requests"
           ],
           "width": "half",
-          "unit": ""
+          "unit": "",
+          "position": {
+            "x": 8,
+            "y": 2,
+            "w": 4,
+            "h": 5
+          }
         },
         {
           "id": "sources",
@@ -75,7 +105,13 @@
             "Requests"
           ],
           "width": "half",
-          "unit": ""
+          "unit": "",
+          "position": {
+            "x": 0,
+            "y": 7,
+            "w": 5,
+            "h": 4
+          }
         },
         {
           "id": "health",
@@ -85,7 +121,13 @@
           "label": "",
           "values": [],
           "width": "half",
-          "unit": ""
+          "unit": "",
+          "position": {
+            "x": 5,
+            "y": 7,
+            "w": 7,
+            "h": 4
+          }
         }
       ]
     },
@@ -105,7 +147,13 @@
             "P95 (ms)"
           ],
           "width": "wide",
-          "unit": "ms"
+          "unit": "ms",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 5
+          }
         },
         {
           "id": "errors",
@@ -117,7 +165,13 @@
             "Errors"
           ],
           "width": "half",
-          "unit": ""
+          "unit": "",
+          "position": {
+            "x": 0,
+            "y": 5,
+            "w": 6,
+            "h": 4
+          }
         },
         {
           "id": "details",
@@ -127,7 +181,13 @@
           "label": "",
           "values": [],
           "width": "half",
-          "unit": ""
+          "unit": "",
+          "position": {
+            "x": 6,
+            "y": 5,
+            "w": 6,
+            "h": 4
+          }
         }
       ]
     }
