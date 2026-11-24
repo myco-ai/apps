@@ -49,6 +49,16 @@
       "description": "VS Code 同款的编辑器：文件树、多标签、语法高亮、查找替换、多光标、小地图；agent 直接写文件，你在里面改；HTML 和 Markdown 能直接预览，整个项目能下载成 zip。"
     }
   },
+  "myco/dashboards": {
+    "en": {
+      "name": "Dashboards",
+      "description": "Build dashboards from data collected by agents. View snapshots as line, bar and donut charts, number cards, and tables."
+    },
+    "zh": {
+      "name": "数据仪表盘",
+      "description": "把 Agent 收集的数据做成多个仪表盘。用折线、柱形、环形、指标卡和表格查看数据快照。"
+    }
+  },
   "myco/database": {
     "en": {
       "name": "Database studio",

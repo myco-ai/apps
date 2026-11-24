@@ -163,5 +163,9 @@
   "web-automation": [
     "Web Automation",
     "Arrange web actions on a canvas: click, type, wait, extract, branch and loop, with several locators per step. Scripts and runs are shared with agents; recording and replay need a newer App with the browser component and use myco's own browser profiles."
+  ],
+  "dashboards": [
+    "Dashboards",
+    "Build dashboards from data collected by agents. View snapshots as line, bar and donut charts, number cards, and tables."
   ]
 }

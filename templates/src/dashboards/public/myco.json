@@ -1,0 +1,18 @@
+{
+  "id": "myco/dashboards",
+  "name": "数据仪表盘",
+  "version": "1.0.0",
+  "kind": "custom",
+  "category": "office",
+  "icon": "icon.svg",
+  "description": "把 Agent 收集的数据做成多个仪表盘。用折线、柱形、环形、指标卡和表格查看数据快照。",
+  "data": {
+    "dashboards": {
+      "fields": { "title": "text", "description": "text", "panels": "json" }
+    },
+    "datasets": {
+      "fields": { "title": "text", "captured": "text", "columns": "json", "rows": "json" }
+    }
+  },
+  "requires": { "hub": "0.20.7" }
+}

@@ -1,0 +1,10 @@
+{
+  "en": {
+    "name": "Dashboards",
+    "description": "Build dashboards from data collected by agents. View snapshots as line, bar and donut charts, number cards, and tables."
+  },
+  "zh": {
+    "name": "数据仪表盘",
+    "description": "把 Agent 收集的数据做成多个仪表盘。用折线、柱形、环形、指标卡和表格查看数据快照。"
+  }
+}

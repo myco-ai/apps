@@ -1,0 +1,309 @@
+{
+  "dashboards": [
+    {
+      "id": "overview",
+      "title": "Service overview",
+      "description": "Traffic, reliability and activity from the latest service report.",
+      "panels": [
+        {
+          "id": "requests",
+          "title": "Total requests",
+          "kind": "metric",
+          "dataset": "service_totals",
+          "label": "Period",
+          "values": [
+            "Requests"
+          ],
+          "width": "compact",
+          "unit": ""
+        },
+        {
+          "id": "success",
+          "title": "Success rate",
+          "kind": "metric",
+          "dataset": "service_totals",
+          "label": "Period",
+          "values": [
+            "Success rate"
+          ],
+          "width": "compact",
+          "unit": "%"
+        },
+        {
+          "id": "response",
+          "title": "Median response",
+          "kind": "metric",
+          "dataset": "service_totals",
+          "label": "Period",
+          "values": [
+            "Median response"
+          ],
+          "width": "compact",
+          "unit": "ms"
+        },
+        {
+          "id": "trend",
+          "title": "Traffic over time",
+          "kind": "area",
+          "dataset": "daily_traffic",
+          "label": "Day",
+          "values": [
+            "Requests"
+          ],
+          "width": "half",
+          "unit": ""
+        },
+        {
+          "id": "teams",
+          "title": "Requests by service",
+          "kind": "bar",
+          "dataset": "service_traffic",
+          "label": "Service",
+          "values": [
+            "Requests"
+          ],
+          "width": "half",
+          "unit": ""
+        },
+        {
+          "id": "sources",
+          "title": "Traffic sources",
+          "kind": "donut",
+          "dataset": "traffic_sources",
+          "label": "Source",
+          "values": [
+            "Requests"
+          ],
+          "width": "half",
+          "unit": ""
+        },
+        {
+          "id": "health",
+          "title": "Service health",
+          "kind": "table",
+          "dataset": "service_health",
+          "label": "",
+          "values": [],
+          "width": "half",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "id": "quality",
+      "title": "Quality report",
+      "description": "Daily latency and errors across the last week.",
+      "panels": [
+        {
+          "id": "latency",
+          "title": "Response time",
+          "kind": "line",
+          "dataset": "daily_traffic",
+          "label": "Day",
+          "values": [
+            "Median (ms)",
+            "P95 (ms)"
+          ],
+          "width": "wide",
+          "unit": "ms"
+        },
+        {
+          "id": "errors",
+          "title": "Daily errors",
+          "kind": "bar",
+          "dataset": "daily_traffic",
+          "label": "Day",
+          "values": [
+            "Errors"
+          ],
+          "width": "half",
+          "unit": ""
+        },
+        {
+          "id": "details",
+          "title": "Most recent checks",
+          "kind": "table",
+          "dataset": "service_health",
+          "label": "",
+          "values": [],
+          "width": "half",
+          "unit": ""
+        }
+      ]
+    }
+  ],
+  "datasets": [
+    {
+      "id": "service_totals",
+      "title": "Weekly totals",
+      "captured": "2026-11-24T09:30:00Z",
+      "columns": [
+        "Period",
+        "Requests",
+        "Success rate",
+        "Median response"
+      ],
+      "rows": [
+        [
+          "Nov 18–24",
+          84326,
+          99.84,
+          182
+        ]
+      ]
+    },
+    {
+      "id": "daily_traffic",
+      "title": "Daily traffic",
+      "captured": "2026-11-24T09:30:00Z",
+      "columns": [
+        "Day",
+        "Requests",
+        "Median (ms)",
+        "P95 (ms)",
+        "Errors"
+      ],
+      "rows": [
+        [
+          "Nov 18",
+          7310,
+          173,
+          284,
+          14
+        ],
+        [
+          "Nov 19",
+          10240,
+          195,
+          311,
+          17
+        ],
+        [
+          "Nov 20",
+          9672,
+          191,
+          298,
+          12
+        ],
+        [
+          "Nov 21",
+          13683,
+          181,
+          276,
+          22
+        ],
+        [
+          "Nov 22",
+          12117,
+          205,
+          319,
+          26
+        ],
+        [
+          "Nov 23",
+          15183,
+          186,
+          291,
+          17
+        ],
+        [
+          "Nov 24",
+          16121,
+          182,
+          278,
+          16
+        ]
+      ]
+    },
+    {
+      "id": "service_traffic",
+      "title": "Traffic by service",
+      "captured": "2026-11-24T09:30:00Z",
+      "columns": [
+        "Service",
+        "Requests"
+      ],
+      "rows": [
+        [
+          "Console",
+          31420
+        ],
+        [
+          "Agent API",
+          24420
+        ],
+        [
+          "Pages",
+          15120
+        ],
+        [
+          "Webhooks",
+          8110
+        ],
+        [
+          "Files",
+          5256
+        ]
+      ]
+    },
+    {
+      "id": "traffic_sources",
+      "title": "Traffic sources",
+      "captured": "2026-11-24T09:30:00Z",
+      "columns": [
+        "Source",
+        "Requests"
+      ],
+      "rows": [
+        [
+          "Desktop",
+          37947
+        ],
+        [
+          "API",
+          23611
+        ],
+        [
+          "Mobile",
+          15179
+        ],
+        [
+          "Web",
+          7589
+        ]
+      ]
+    },
+    {
+      "id": "service_health",
+      "title": "Latest checks",
+      "captured": "2026-11-24T09:30:00Z",
+      "columns": [
+        "Service",
+        "Status",
+        "P95 (ms)"
+      ],
+      "rows": [
+        [
+          "Console",
+          "Healthy",
+          225
+        ],
+        [
+          "Agent API",
+          "Healthy",
+          179
+        ],
+        [
+          "Pages",
+          "Healthy",
+          305
+        ],
+        [
+          "Webhooks",
+          "Healthy",
+          281
+        ]
+      ]
+    }
+  ]
+}
