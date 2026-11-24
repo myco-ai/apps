@@ -1,0 +1,528 @@
+{
+ "scripts": [
+  {
+   "id": "scr_blog_post",
+   "name": "博客发文章（填好等确认）",
+   "description": "填好标题和正文，截图后停下等确认，再点发布并记下链接。",
+   "start_url": "https://blog.example.com/editor",
+   "profile": "发帖号",
+   "params": [
+    {
+     "name": "title",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "body_md",
+     "type": "text"
+    }
+   ],
+   "graph": {
+    "nodes": [
+     {
+      "id": "n1",
+      "type": "navigate",
+      "pos": [
+       0,
+       0
+      ],
+      "title": "打开写文章页",
+      "url": "https://blog.example.com/editor"
+     },
+     {
+      "id": "n2",
+      "type": "wait",
+      "pos": [
+       0,
+       128
+      ],
+      "title": "等编辑器出现",
+      "wait": "element",
+      "target": {
+       "locators": [
+        {
+         "kind": "role",
+         "role": "textbox",
+         "name": "文章标题"
+        },
+        {
+         "kind": "css",
+         "value": "input.title"
+        }
+       ]
+      }
+     },
+     {
+      "id": "n3",
+      "type": "type",
+      "pos": [
+       0,
+       256
+      ],
+      "title": "填标题",
+      "value": "${title}",
+      "clear": true,
+      "target": {
+       "locators": [
+        {
+         "kind": "role",
+         "role": "textbox",
+         "name": "文章标题"
+        },
+        {
+         "kind": "placeholder",
+         "value": "请输入文章标题"
+        },
+        {
+         "kind": "css",
+         "value": "input.title"
+        }
+       ]
+      }
+     },
+     {
+      "id": "n4",
+      "type": "type",
+      "pos": [
+       0,
+       384
+      ],
+      "title": "填正文",
+      "value": "${body_md}",
+      "target": {
+       "locators": [
+        {
+         "kind": "testid",
+         "value": "editor-body"
+        },
+        {
+         "kind": "css",
+         "value": ".editor [contenteditable]"
+        }
+       ]
+      }
+     },
+     {
+      "id": "n5",
+      "type": "screenshot",
+      "pos": [
+       0,
+       512
+      ],
+      "title": "截图留档"
+     },
+     {
+      "id": "n6",
+      "type": "confirm",
+      "pos": [
+       0,
+       640
+      ],
+      "title": "确认发布",
+      "message": "标题和正文已填好，确认发布吗？"
+     },
+     {
+      "id": "n7",
+      "type": "click",
+      "pos": [
+       0,
+       768
+      ],
+      "title": "点发布",
+      "button": "left",
+      "count": 1,
+      "target": {
+       "locators": [
+        {
+         "kind": "role",
+         "role": "button",
+         "name": "发布"
+        },
+        {
+         "kind": "text",
+         "value": "发布文章"
+        }
+       ]
+      }
+     },
+     {
+      "id": "n8",
+      "type": "extract",
+      "pos": [
+       0,
+       896
+      ],
+      "title": "记下文章链接",
+      "what": "attribute",
+      "attr": "href",
+      "into": "post_url",
+      "target": {
+       "locators": [
+        {
+         "kind": "role",
+         "role": "link",
+         "name": "查看文章"
+        }
+       ]
+      }
+     },
+     {
+      "id": "n9",
+      "type": "note",
+      "pos": [
+       290,
+       640
+      ],
+      "note": "到「确认发布」会停下，等运行的人或 agent 同意。"
+     }
+    ],
+    "edges": [
+     [
+      "n1",
+      "n2"
+     ],
+     [
+      "n2",
+      "n3"
+     ],
+     [
+      "n3",
+      "n4"
+     ],
+     [
+      "n4",
+      "n5"
+     ],
+     [
+      "n5",
+      "n6"
+     ],
+     [
+      "n6",
+      "n7",
+      "ok"
+     ],
+     [
+      "n7",
+      "n8"
+     ]
+    ]
+   },
+   "on_error": "stop",
+   "source": "record"
+  },
+  {
+   "id": "scr_price_list",
+   "name": "抓取商品价格",
+   "description": "按关键词搜索，读出商品表格。",
+   "start_url": "https://shop.example.com/",
+   "profile": "工作号",
+   "params": [
+    {
+     "name": "keyword",
+     "type": "string",
+     "required": true,
+     "default": "机械键盘"
+    }
+   ],
+   "graph": {
+    "nodes": [
+     {
+      "id": "p1",
+      "type": "navigate",
+      "pos": [
+       0,
+       0
+      ],
+      "title": "打开商品列表",
+      "url": "https://shop.example.com/list?q=${keyword}"
+     },
+     {
+      "id": "p2",
+      "type": "extract",
+      "pos": [
+       0,
+       128
+      ],
+      "title": "读取商品表",
+      "what": "table",
+      "into": "rows",
+      "target": {
+       "locators": [
+        {
+         "kind": "role",
+         "role": "table",
+         "name": "商品"
+        },
+        {
+         "kind": "css",
+         "value": "table.products"
+        }
+       ]
+      }
+     },
+     {
+      "id": "p3",
+      "type": "branch",
+      "pos": [
+       0,
+       256
+      ],
+      "title": "有下一页吗",
+      "check": "visible",
+      "target": {
+       "locators": [
+        {
+         "kind": "role",
+         "role": "link",
+         "name": "下一页"
+        }
+       ]
+      }
+     },
+     {
+      "id": "p4",
+      "type": "click",
+      "pos": [
+       0,
+       384
+      ],
+      "title": "翻到下一页",
+      "button": "left",
+      "count": 1,
+      "target": {
+       "locators": [
+        {
+         "kind": "role",
+         "role": "link",
+         "name": "下一页"
+        }
+       ]
+      }
+     },
+     {
+      "id": "p5",
+      "type": "extract",
+      "pos": [
+       280,
+       384
+      ],
+      "title": "读取页码",
+      "what": "text",
+      "into": "page",
+      "target": {
+       "locators": [
+        {
+         "kind": "css",
+         "value": ".pager .current"
+        }
+       ]
+      }
+     }
+    ],
+    "edges": [
+     [
+      "p1",
+      "p2"
+     ],
+     [
+      "p2",
+      "p3"
+     ],
+     [
+      "p3",
+      "p4",
+      "true"
+     ],
+     [
+      "p3",
+      "p5",
+      "false"
+     ]
+    ]
+   },
+   "on_error": "retry:2",
+   "source": "manual"
+  }
+ ],
+ "runs": [
+  {
+   "id": "run_sample_ok",
+   "script_id": "scr_blog_post",
+   "script_version": 1,
+   "script_name": "博客发文章（填好等确认）",
+   "state": "succeeded",
+   "node": "n8",
+   "by": "写作助手",
+   "by_kind": "agent",
+   "machine": "Windows 工作站",
+   "profile": "发帖号",
+   "started_at": "2026-11-24T09:12:05Z",
+   "ended_at": "2026-11-24T09:13:05Z",
+   "error_node": "",
+   "error": "",
+   "output": {
+    "post_url": "https://blog.example.com/p/20261124-weekly"
+   },
+   "steps": [
+    {
+     "node": "n1",
+     "state": "ok",
+     "ms": 820
+    },
+    {
+     "node": "n2",
+     "state": "ok",
+     "ms": 340
+    },
+    {
+     "node": "n3",
+     "state": "ok",
+     "ms": 95
+    },
+    {
+     "node": "n4",
+     "state": "ok",
+     "ms": 210
+    },
+    {
+     "node": "n5",
+     "state": "ok",
+     "ms": 160
+    },
+    {
+     "node": "n6",
+     "state": "ok",
+     "ms": 48210
+    },
+    {
+     "node": "n7",
+     "state": "ok",
+     "ms": 130
+    },
+    {
+     "node": "n8",
+     "state": "ok",
+     "ms": 60
+    }
+   ],
+   "question": ""
+  },
+  {
+   "id": "run_sample_fail",
+   "script_id": "scr_price_list",
+   "script_version": 1,
+   "script_name": "抓取商品价格",
+   "state": "failed",
+   "node": "p2",
+   "by": "Ann",
+   "by_kind": "person",
+   "machine": "Studio Mac",
+   "profile": "工作号",
+   "started_at": "2026-11-23T15:40:00Z",
+   "ended_at": "2026-11-23T15:40:31Z",
+   "error_node": "p2",
+   "error": "30 秒内没找到元素：table.products",
+   "output": {},
+   "steps": [
+    {
+     "node": "p1",
+     "state": "ok",
+     "ms": 1200
+    },
+    {
+     "node": "p2",
+     "state": "failed",
+     "ms": 30000,
+     "error": "没找到元素"
+    }
+   ],
+   "question": ""
+  }
+ ],
+ "drafts": [
+  {
+   "id": "draft_sample",
+   "name": "查快递（agent 草稿）",
+   "description": "",
+   "start_url": "https://track.example.com/",
+   "profile": "工作号",
+   "params": [],
+   "on_error": "stop",
+   "source": "agent",
+   "by": "客服助手",
+   "created_at": "2026-11-24T08:02:00Z",
+   "graph": {
+    "nodes": [
+     {
+      "id": "d1",
+      "type": "navigate",
+      "pos": [
+       0,
+       0
+      ],
+      "url": "https://track.example.com/"
+     },
+     {
+      "id": "d2",
+      "type": "type",
+      "pos": [
+       0,
+       128
+      ],
+      "value": "SF1234567890",
+      "target": {
+       "locators": [
+        {
+         "kind": "label",
+         "value": "运单号"
+        }
+       ]
+      }
+     },
+     {
+      "id": "d3",
+      "type": "press",
+      "pos": [
+       0,
+       256
+      ],
+      "key": "Enter"
+     },
+     {
+      "id": "d4",
+      "type": "extract",
+      "pos": [
+       0,
+       384
+      ],
+      "what": "text",
+      "into": "status",
+      "target": {
+       "locators": [
+        {
+         "kind": "css",
+         "value": ".track-status"
+        }
+       ]
+      }
+     }
+    ],
+    "edges": [
+     [
+      "d1",
+      "d2"
+     ],
+     [
+      "d2",
+      "d3"
+     ],
+     [
+      "d3",
+      "d4"
+     ]
+    ]
+   }
+  }
+ ]
+}

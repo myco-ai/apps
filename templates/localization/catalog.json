@@ -159,5 +159,9 @@
     "Media Kit",
     "Organize launch screenshots and bilingual copy by feature. Share originals and publication status with your team and agents."
   ],
-  "password-vault": ["Password Vault", "Manage logins, generate passwords, and export encrypted backups in an isolated local browser origin."]
+  "password-vault": ["Password Vault", "Manage logins, generate passwords, and export encrypted backups in an isolated local browser origin."],
+  "web-automation": [
+    "Web Automation",
+    "Arrange web actions on a canvas: click, type, wait, extract, branch and loop, with several locators per step. Scripts and runs are shared with agents; recording and replay need a newer App with the browser component and use myco's own browser profiles."
+  ]
 }

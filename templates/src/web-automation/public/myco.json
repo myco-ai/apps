@@ -1,0 +1,60 @@
+{
+  "id": "myco/web-automation",
+  "name": "网页自动化",
+  "version": "0.1.0",
+  "kind": "custom",
+  "category": "tools",
+  "icon": "icon.svg",
+  "description": "在画布上编排网页操作：点击、输入、等待、提取、分支和循环，每一步有多组定位器。脚本和运行记录共享给 agent 读写；录制和回放需要支持浏览器组件的新版 App，使用 myco 专用的浏览器 profile。",
+  "data": {
+    "scripts": {
+      "fields": {
+        "name": "text",
+        "description": "text",
+        "start_url": "text",
+        "profile": "text",
+        "params": "json",
+        "graph": "json",
+        "on_error": "text",
+        "source": "text"
+      }
+    },
+    "runs": {
+      "fields": {
+        "script_id": "text",
+        "script_version": "number",
+        "script_name": "text",
+        "state": "text",
+        "node": "text",
+        "by": "text",
+        "by_kind": "text",
+        "machine": "text",
+        "profile": "text",
+        "started_at": "datetime",
+        "ended_at": "text",
+        "error_node": "text",
+        "error": "text",
+        "output": "json",
+        "steps": "json",
+        "question": "text"
+      }
+    },
+    "drafts": {
+      "fields": {
+        "name": "text",
+        "description": "text",
+        "start_url": "text",
+        "profile": "text",
+        "params": "json",
+        "graph": "json",
+        "on_error": "text",
+        "source": "text",
+        "by": "text",
+        "created_at": "datetime"
+      }
+    }
+  },
+  "requires": {
+    "hub": "0.20.7"
+  }
+}
