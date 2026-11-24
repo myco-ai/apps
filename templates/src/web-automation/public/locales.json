@@ -1,0 +1,10 @@
+{
+  "en": {
+    "name": "Web Automation",
+    "description": "Arrange web actions on a canvas: click, type, wait, extract, branch and loop, with several locators per step. Scripts and runs are shared with agents; recording and replay need a newer App with the browser component and use myco's own browser profiles."
+  },
+  "zh": {
+    "name": "网页自动化",
+    "description": "在画布上编排网页操作：点击、输入、等待、提取、分支和循环，每一步有多组定位器。脚本和运行记录共享给 agent 读写；录制和回放需要支持浏览器组件的新版 App，使用 myco 专用的浏览器 profile。"
+  }
+}
