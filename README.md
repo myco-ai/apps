@@ -26,7 +26,7 @@ scripts/check-host.sh
 make browser
 ```
 
-Browser suites use synthetic content and the real bridge from the locked host. Some suites need FFmpeg and CJK fonts. CI runs the complete browser suite in four shards. Native/real-Hub stdin fixtures remain available for the main repository's integration harness.
+Browser suites use synthetic content and the real bridge from the locked host. Some suites need FFmpeg and CJK fonts. CI runs the complete browser suite in four shards, distributing the 320 app/language/theme/width cases across the same workers. Native/real-Hub stdin fixtures remain available for the main repository's integration harness.
 
 ## Distribution
 

@@ -107,10 +107,14 @@ const browser = await chromium.launch(
 const apps = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const all = apps.length ? apps : fs.readdirSync(root);
 const results = [];
+const shard = Number(process.env.LOCALIZATION_SHARD || 0), shards = Number(process.env.LOCALIZATION_SHARDS || 1);
+if (!Number.isInteger(shard) || !Number.isInteger(shards) || shards < 1 || shard < 0 || shard >= shards) throw Error("Invalid localization shard");
+let combo = 0;
 try {
   for (const width of [1200, 760])
     for (const language of ["en", "zh"])
       for (const theme of ["light", "dark"]) {
+        if (combo++ % shards !== shard) continue;
         const context = await browser.newContext({
           viewport: { width, height: 900 },
           colorScheme: theme === "dark" ? "light" : "dark",
