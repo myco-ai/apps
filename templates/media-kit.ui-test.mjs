@@ -206,6 +206,7 @@ try {
   await content.getByRole("button", { name: "Next asset" }).click();
   await content.getByText("2 / 2", { exact: true }).waitFor();
   await content.getByRole("button", { name: "Copy text" }).last().click();
+  await content.getByText("Copied", { exact: true }).waitFor();
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "Share usage totals across the workspace.");
   await content.getByRole("button", { name: "Copy image" }).click();
   await content.getByText("Image copied", { exact: true }).waitFor();
@@ -326,6 +327,8 @@ try {
   await link.click();
   await page.waitForFunction(() => window.openedURL === "https://example.com/demo");
   await content.getByRole("button", { name: "Copy link" }).first().click();
+  // copyText confirms success only after the asynchronous clipboard write.
+  await content.getByText("Copied", { exact: true }).waitFor();
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "https://example.com/demo");
 
   await content.getByRole("button", { name: "Next asset" }).click();
