@@ -1,7 +1,7 @@
 {
   "id": "myco/password-vault",
   "name": "密码库",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "kind": "custom",
   "category": "tools",
   "icon": "icon.svg",

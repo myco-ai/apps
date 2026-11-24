@@ -9,7 +9,6 @@ import "./vault.css";
 
 type Session = { key: CryptoKey; records: Login[]; envelope: Envelope };
 const localOrigin = "http://127.0.0.1:47631";
-const hostedOrigin = "https://vault.myco.ing";
 const idleLimit = 5 * 60 * 1000;
 const blank = (): Login => ({ id: crypto.randomUUID(), title: "", site: "", login: "", password: "", notes: "" });
 
@@ -20,9 +19,8 @@ function Brand() {
 function Gate() {
   return <main className="pv-auth"><div className="pv-auth-card"><Brand/>
     <h1>{uiText("在独立浏览器窗口中使用")}</h1>
-    <p>{uiText("加密数据保存在打开密码库的浏览器中。")}</p>
-    <a className="btn btn-primary" href={hostedOrigin} target="_blank" rel="noopener noreferrer">{uiText("打开网页版密码库")}<ArrowUpRight size={16}/></a>
-    <a className="btn pv-local-link" href={localOrigin} target="_blank" rel="noopener noreferrer">{uiText("打开本机密码库")}<ArrowUpRight size={16}/></a>
+    <p>{uiText("密码库需要独立的本机窗口。先启动本机密码库，再打开下方入口。")}</p>
+    <a className="btn btn-primary" href={localOrigin} target="_blank" rel="noopener noreferrer">{uiText("打开本机密码库")}<ArrowUpRight size={16}/></a>
   </div></main>;
 }
 
@@ -187,7 +185,7 @@ function Vault({ session, update, lock }: { session: Session; update: (records: 
   </main>;
 }
 
-const standalone = window.parent === window && [localOrigin, hostedOrigin].includes(window.location.origin) && window.isSecureContext && !!crypto.subtle;
+const standalone = window.parent === window && window.location.origin === localOrigin && window.isSecureContext && !!crypto.subtle;
 function App() {
   const [store, setStore] = useState<{ db: IDBDatabase; envelope?: Envelope }>();
   const [failure, setFailure] = useState(false);

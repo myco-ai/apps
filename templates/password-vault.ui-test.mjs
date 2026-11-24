@@ -142,7 +142,6 @@ try {
       await route.fulfill({ response });
     });
     await untrusted.goto("http://127.0.0.1:47632/?myco_lang=en");
-    assert.equal(await untrusted.getByRole("link", { name: "Open Password Vault online" }).getAttribute("href"), "https://vault.myco.ing");
     await untrusted.getByRole("link", { name: "Open local vault" }).waitFor();
     assert.equal(await untrusted.locator("input").count(), 0);
     assert.ok(headers["content-security-policy"].includes("frame-ancestors 'none'"));

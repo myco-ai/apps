@@ -155,4 +155,3 @@ body { background: var(--pv-canvas); color: var(--pv-ink); overflow: auto; }
   .pv-record-icon svg { width: 20px; }
   .pv-back { display: inline-flex; }
 }
-.pv-local-link { background: transparent; border-color: transparent; color: var(--pv-muted); }
