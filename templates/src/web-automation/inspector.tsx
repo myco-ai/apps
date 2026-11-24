@@ -144,7 +144,7 @@ export function NodeInspector({ node, script, scripts, issues, editable, tools, 
   return <div className="wa-panel" aria-label={uiText("步骤详情")} role="region">
     <header className="wa-panel-head">
       <IconButton label={uiText("返回积木")} onClick={back}><Icon.back size={16}/></IconButton>
-      <span className="wa-tile" data-cat={category(node.type)}><StepIcon type={node.type} size={17}/></span>
+      <span className="wa-tile" data-cat={category(node.type)}><StepIcon type={node.type} size={16}/></span>
       <span className="wa-panel-title"><strong>{typeName(node.type)}</strong><small>{typeHint(node.type)}</small></span>
     </header>
     <div className="wa-panel-body">

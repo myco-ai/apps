@@ -46,7 +46,7 @@ const Card = memo(function Card({ id, data: { node, issue, mark, breakpoint, edi
     </NodeToolbar>}
     <div className="wa-node" data-cat={category(node.type)} data-fork={Boolean(ports)} data-selected={selected} data-mark={mark}>
       <Handle type="target" position={Position.Left} aria-label={uiText("输入端口")}/>
-      <span className="wa-tile"><StepIcon type={node.type} size={18}/></span>
+      <span className="wa-tile"><StepIcon type={node.type} size={16}/></span>
       <span className="wa-node-text">
         <strong>{node.title || typeName(node.type)}</strong>
         <small>{text || (node.title ? typeName(node.type) : uiText("点击编辑步骤"))}</small>

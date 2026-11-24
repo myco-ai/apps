@@ -398,7 +398,6 @@ function App() {
   return <div className="wa-app">
     <header className="wa-top">
       <div className="wa-top-left">
-        <span className="wa-logo"><Icon.logo size={17}/></span>
         <button ref={switcherButton} type="button" className="wa-switcher" aria-haspopup="dialog" aria-expanded={switcher} onClick={() => setSwitcher(!switcher)}>
           <span className="wa-switcher-text"><strong>{script ? script.name || uiText("未命名脚本") : uiText("网页自动化")}</strong>
             <small className={recording ? "is-recording" : kit.failed ? "is-error" : ""}>{saveState}</small></span>
@@ -409,7 +408,7 @@ function App() {
           <ul className="wa-script-list" aria-label={uiText("脚本")}>
             {filtered.map(row => { const last = lastRun(row.id); return <li key={row.id}>
               <button type="button" aria-current={row.id === scriptId} onClick={() => open(row.id)}>
-                <span className="wa-tile" data-cat="page"><Icon.file size={15}/></span>
+                <Icon.file size={16}/>
                 <span className="wa-script-text"><strong>{row.data.name || uiText("未命名脚本")}</strong>
                   <small>{last ? <><Dot state={last.data.state}/>{stateName(last.data.state)} · {when(last.data.started_at)}</> : uiText("还没运行过")}{row.data.profile ? ` · ${row.data.profile}` : ""}</small></span>
                 {row.id === scriptId && <Icon.check size={14}/>}
@@ -419,19 +418,21 @@ function App() {
           {kit.canEdit && <button type="button" className="wa-menu-action" onClick={() => void create()}><Icon.plus size={15}/>{uiText("新建脚本")}</button>}
         </Popover>
       </div>
-      <Segmented label={uiText("视图")} value={view} onChange={setView} options={[
-        { value: "editor", label: uiText("编辑器"), icon: <Icon.blocks size={14}/> },
-        { value: "runs", label: uiText("运行记录"), icon: <Icon.history size={14}/> },
-        { value: "drafts", label: drafts.rows.length ? uiText("草稿 {0}", drafts.rows.length) : uiText("草稿"), icon: <Icon.draft size={14}/> },
-      ]}/>
+      <nav className="wa-tabs" role="tablist" aria-label={uiText("视图")}>
+        {([["editor", uiText("编辑器")], ["runs", uiText("运行记录")], ["drafts", uiText("草稿")]] as [View, string][]).map(([value, label]) =>
+          <button type="button" role="tab" key={value} aria-selected={view === value} onClick={() => setView(value)}>{label}
+            {value === "drafts" && drafts.rows.length > 0 && <span className="wa-count">{drafts.rows.length}</span>}</button>)}
+      </nav>
       <div className="wa-top-right">
-        {ready && <button type="button" className="ui-icon-btn" aria-label={uiText("Profile")} title={uiText("Profile")} onClick={() => setDialog("profiles")}><Icon.profile size={17}/></button>}
         {view === "editor" && script && <>
-          <button type="button" className="ui-icon-btn" aria-label={uiText("自动排版")} title={uiText("自动排版")} disabled={!editable || !script.graph.nodes.length} onClick={() => void update(scriptId, layout)}><Icon.layout size={17}/></button>
-          {recording ? <button type="button" className="wa-btn is-recording" onClick={() => void bridge?.record.stop(recording.id).catch(() => undefined)}><Icon.stop size={11}/>{uiText("停止录制")}</button>
-            : <button type="button" className="wa-btn" disabled={!canRun || !kit.canEdit} title={unavailable} onClick={() => setDialog("record")}><Icon.record size={14} className="wa-rec-icon"/>{uiText("录制")}</button>}
-          <button type="button" className="wa-btn is-primary" disabled={!canRun} title={unavailable} onClick={() => { setStartAt(undefined); setDialog("run"); }}><Icon.play size={12}/>{uiText("运行")}</button>
+          <button type="button" className="wa-tool" disabled={!editable || !script.graph.nodes.length} onClick={() => void update(scriptId, layout)}><Icon.layout/>{uiText("自动排版")}</button>
+          {ready && <button type="button" className="wa-tool" onClick={() => setDialog("profiles")}><Icon.profile/>{uiText("Profile")}</button>}
+          <span className="wa-divider"/>
+          {recording ? <button type="button" className="wa-tool is-recording" onClick={() => void bridge?.record.stop(recording.id).catch(() => undefined)}><Icon.stop size={12}/>{uiText("停止录制")}</button>
+            : <button type="button" className="wa-tool" disabled={!canRun || !kit.canEdit} title={unavailable} onClick={() => setDialog("record")}><Icon.record/>{uiText("录制")}</button>}
+          <button type="button" className="wa-btn is-primary" disabled={!canRun} title={unavailable} onClick={() => { setStartAt(undefined); setDialog("run"); }}><Icon.play size={13}/>{uiText("运行")}</button>
         </>}
+        {view !== "editor" && ready && <button type="button" className="wa-tool" onClick={() => setDialog("profiles")}><Icon.profile/>{uiText("Profile")}</button>}
       </div>
     </header>
     {status === null && <div className="wa-banner" role="note">

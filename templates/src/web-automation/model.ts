@@ -57,7 +57,7 @@ export type Run = {
 export type Draft = Script & { by: string; created_at: string };
 
 export const recordLimit = 64 * 1024;
-export const nodeWidth = 232, nodeHeight = 64, columnGap = 300, rowGap = 104;
+export const nodeWidth = 212, nodeHeight = 60, columnGap = 256, rowGap = 96;
 
 export const targetTypes = new Set<NodeType>(["click", "type", "select", "hover", "drag", "upload", "extract"]);
 export const optionalTargetTypes = new Set<NodeType>(["press", "scroll", "wait", "assert", "branch", "screenshot"]);

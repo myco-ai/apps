@@ -133,7 +133,7 @@ try {
   assert.equal(stored.title, "Publish");
   assert.equal(stored.count, 2);
   assert.deepEqual(stored.target.locators.map(locator => locator.kind), ["text", "role"], "locators reorder");
-  assert.deepEqual(stored.pos, [600, 170], "editing a step keeps its place");
+  assert.deepEqual(stored.pos, [512, 150], "editing a step keeps its place");
   // Removing every locator is reported on the card and in the panel.
   await step.getByRole("button", { name: "Remove locator" }).first().click();
   await step.getByRole("button", { name: "Remove locator" }).first().click();
@@ -165,7 +165,7 @@ try {
   await page.locator(".wa-run").getByText("https://blog.example.com/p/20261124-weekly").waitFor();
   await page.locator(".wa-cards").getByText("抓取商品价格").click();
   await page.locator(".wa-run .wa-error-box").getByText("30 秒内没找到元素").waitFor();
-  await page.getByRole("tab", { name: /Drafts/ }).click();
+  await page.getByRole("tab", { name: /Draft/ }).click();
   await page.getByRole("button", { name: "Save as script" }).click();
   await page.waitForFunction(() => [...window.rows.values()].some(row => row.collection === "scripts" && row.data.name === "查快递（agent 草稿）" && row.data.source === "agent"));
   assert.equal(await page.evaluate(() => window.rows.has("drafts/draft_sample")), false, "the draft is gone once adopted");

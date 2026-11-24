@@ -32,6 +32,8 @@ export function typeHint(type: NodeType) {
   }
 }
 
+const groupIcon = { page: Icon.pointer, data: Icon.extract, flow: Icon.branch, note: Icon.note };
+
 export function Palette({ add, editable }: { add: (type: NodeType) => void; editable: boolean }) {
   const [query, setQuery] = useState("");
   const [closed, setClosed] = useState<string[]>([]);
@@ -44,28 +46,28 @@ export function Palette({ add, editable }: { add: (type: NodeType) => void; edit
       <input value={query} onChange={event => setQuery(event.target.value)} placeholder={uiText("搜索积木")} aria-label={uiText("搜索积木")}/>
       {query && <button type="button" onClick={() => setQuery("")} aria-label={uiText("清除搜索")}><Icon.close size={13}/></button>}
     </label>
-    <div className="wa-groups">
+    <div className="wa-tree">
       {shown.map(group => {
         const open = words !== "" || !closed.includes(group.key);
-        return <section key={group.key} className="wa-group" data-cat={group.key}>
-          <button type="button" className="wa-group-head" aria-expanded={open}
+        const GroupIcon = groupIcon[group.key];
+        return <section key={group.key} className="wa-group">
+          <button type="button" className="wa-tree-row wa-group-head" aria-expanded={open}
             onClick={() => setClosed(open ? [...closed, group.key] : closed.filter(key => key !== group.key))}>
-            <span className="wa-group-dot"/>{group.name()}<span className="wa-group-count">{group.types.length}</span>
-            <Icon.chevronDown size={14} className="wa-group-chevron"/>
+            <Icon.chevronRight size={14} className="wa-tree-chevron"/>
+            <GroupIcon size={16}/><span>{group.name()}</span>
           </button>
-          {open && <div className="wa-tiles">
-            {group.types.map(type => <button type="button" key={type} className="wa-block" data-cat={type === "note" ? "note" : group.key}
+          {open && <ul className="wa-blocks">
+            {group.types.map(type => <li key={type}><button type="button" className="wa-tree-row wa-block"
               draggable={editable} disabled={!editable} title={typeHint(type)}
               onDragStart={event => { event.dataTransfer.setData(dragType, type); event.dataTransfer.effectAllowed = "copy"; }}
               onClick={() => add(type)}>
-              <span className="wa-tile"><StepIcon type={type} size={18}/></span>
-              <span>{typeName(type)}</span>
-            </button>)}
-          </div>}
+              <StepIcon type={type} size={16}/><span>{typeName(type)}</span>
+              <Icon.plus size={14} className="wa-block-add"/>
+            </button></li>)}
+          </ul>}
         </section>;
       })}
       {!shown.length && <p className="wa-muted wa-pad">{uiText("没有匹配的积木。")}</p>}
     </div>
-    <p className="wa-palette-tip">{uiText("拖到画布上，或点一下加在选中步骤后面。")}</p>
   </div>;
 }
