@@ -202,8 +202,7 @@ try {
       }, png);
       const name = scheme === "dark" ? "1.dark.webp" : "1.webp";
       for (const dir of [
-        path.join(root, "shots"),
-        path.join(here, "src/proxy-console/public/shots"),
+        path.join(out, "shots"),
       ]) {
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(path.join(dir, name), Buffer.from(webp, "base64"));

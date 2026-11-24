@@ -327,7 +327,7 @@ try {
         c.getContext("2d").drawImage(img, 0, 0);
         return c.toDataURL("image/webp", 0.86).split(",")[1];
       }, png.toString("base64"));
-      const dir = path.join(here, "src/stocks/public/shots");
+      const dir = path.join(here, "stocks-shots");
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(
         path.join(dir, scheme === "dark" ? "1.dark.webp" : "1.webp"),
