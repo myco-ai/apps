@@ -4,7 +4,7 @@
 
 The source snapshot and original-to-filtered commit mapping are recorded in `migration.json` and `history-map.txt`. Only app sources, the pack script and apps workflow were selected from history; generated main-repository app output is not imported. Source paths remain `templates/` to preserve familiar navigation.
 
-This repository is the sole source for future app development. The main repository temporarily retains its source and embedded bundle so existing builds and releases work unchanged. Its original build/publish workflow is retired only after the new apps release and the scheduled legacy mirror are verified.
+This repository is the sole source for future app development. During phase 1 the main repository retained its source and embedded bundle so existing builds worked unchanged. Its original publisher was retired only after this repository published and the scheduled legacy mirror served the same verified bytes. Phase 2 replaces those retained copies with locked artifact preparation.
 
 Main's scheduled mirror downloads public assets without a cross-repository credential, verifies SHA256 and uploads the same bytes with its own repository-scoped token. Failed checks leave the previous release untouched. Mirroring must remain enabled for at least 90 days after cutover and two stable main releases; stopping requires a deliberate maintenance decision. Do not delete the old release or reuse the previous repository name in a way that breaks redirects.
 
@@ -18,10 +18,24 @@ Apps use advertised features and the manifest's minimum Hub version. New bridge 
 
 App-owned localized sidecars generate `templates/localization/app-locales.json`; this metadata ships with each immutable release for main's older-Hub UI fallback. Updating an app alone does not require rebuilding the main web dashboard.
 
-## Phase 2 (pending coordinator authorization)
+## Phase 2: locked host builds
 
-After the Go module rename merges, main will add `apps.lock.json` with repository, immutable tag, source commit, builtin list and the expected SHA256 of each consumed artifact. A preparation script downloads/verifies the pinned artifacts and uses a checksum-keyed cache, or explicitly supplied local files for offline builds. Missing or invalid files must fail production builds; never silently select a different release.
+The host keeps `apps.lock.json`: repository, immutable `apps-<full SHA>` tag,
+source commit, builtin membership and expected SHA256 for `builtin.zip`,
+`builtin.json`, `app-locales.json` and `apps.zip`. Its `make build`, `make cross`
+and `make app` run Python 3 preparation, verify exact bytes and generate ignored
+embed files. The checksum-keyed cache supports offline builds; empty or invalid
+caches fail. A pin update is reviewed separately from a host version release.
 
-Only then remove main's `templates/`, `internal/templates/official` and tracked `builtin.zip`, switch production embed/build jobs to prepared bundles, and replace Go test dependencies on full app output with small deterministic fixtures. Ordinary Go tests remain network-free. Production release jobs must verify the pinned real builtin set, not embed test fixtures. Keep app loading, cached catalog and the minimum Hub/version checks in main.
+Main no longer tracks `templates/`, `internal/templates/official` or its production
+ZIP. Ordinary Go tests load tiny explicit fixtures without Node or network.
+The host's `app-contract` CI checks out this repository at the locked commit,
+unpacks the exact released apps and tests real Hub/native adapters with
+`APPS_TEST_ROOT`. SDK/browser tests here still use `host.lock.json` or an explicit
+`MYCO_HOST_ROOT`; keep capability detection and per-platform acceptance.
 
-The release agent follows the `myco-release` skill for the first host release; app agents must not change VERSION. Step 2 does not run automatically after phase 1.
+Read the [host build instructions](https://github.com/myco-ai/myco/blob/main/docs/building.md)
+for pin changes, local artifacts, offline preparation and embedded-pack rollback.
+The host release agent follows `myco-release`; app agents never bump its VERSION.
+Runtime daily catalog refreshes still use rolling `apps`, independently of the
+build lock, and the main compatibility mirror remains active for older Hubs.
