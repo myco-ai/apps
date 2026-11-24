@@ -92,10 +92,16 @@ try {
   assert.equal(kept.title, "椰影群岛", "the other settings are kept");
   assert.equal(kept.weather, "cloudy");
   // the day runs on for everyone: a speed and the moment it was set are saved
+  const clockVersion = await page.evaluate(async () => (await window.myco.data.get("world", "main")).version);
   await page.locator(".oc-panel .seg button", { hasText: "一天 12 分钟" }).click();
-  await page.waitForFunction(async () => (await window.myco.data.get("world", "main")).data.time_speed === 120, null, { timeout: 5000 });
+  // The local Store updates optimistically before the debounced write commits.
+  // Reading its data alone can observe a draft with the previous timestamp.
+  await page.waitForFunction(async version => {
+    const record = await window.myco.data.get("world", "main");
+    return record.version > version && record.data.time_speed === 120 && record.data.time_at > 0;
+  }, clockVersion, { timeout: 15000 });
   const clockRec = await page.evaluate(async () => (await window.myco.data.get("world", "main")).data);
-  assert.ok(Math.abs(clockRec.time_at - Date.now()) < 60_000 && Math.abs(clockRec.time - 15.5) < 0.6, `the clock starts from the hour shown (${clockRec.time})`);
+  assert.ok(Math.abs(clockRec.time_at - Date.now()) < 60_000 && Math.abs(clockRec.time - 15.5) < 0.6, `the clock starts from the hour shown (${clockRec.time}); saved ${clockRec.time_at}, now ${Date.now()}`);
   await page.waitForFunction(() => window.__ocean.status.hour > 15.55, null, { timeout: 15000 });
   await page.locator(".oc-panel .seg button", { hasText: "停住" }).click();
   // storm: the record, and the chip says so
