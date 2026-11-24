@@ -1,0 +1,10 @@
+{
+  "en": {
+    "name": "Password Vault",
+    "description": "Manage logins, generate passwords, and export encrypted backups in an isolated local browser origin."
+  },
+  "zh": {
+    "name": "密码库",
+    "description": "在独立本机浏览器来源管理登录信息、生成密码和导出加密备份。"
+  }
+}

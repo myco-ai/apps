@@ -1,0 +1,50 @@
+body { background: var(--bg); color: var(--fg); overflow: auto; }
+.pv-auth { min-height: 100dvh; display: grid; place-items: center; padding: 28px 16px; background: var(--bg2); }
+.pv-auth-card { display: grid; gap: 14px; width: min(100%, 410px); padding: clamp(20px, 5vw, 32px); background: var(--bg); border: 1px solid var(--line); border-radius: 16px; }
+.pv-auth-card h1, .pv-auth-card p { margin: 0; }
+.pv-auth-card h1, .pv-detail h1 { font-size: clamp(20px, 3vw, 28px); line-height: 1.2; }
+.pv-auth-card p, .pv-import { color: var(--muted); }
+.pv-auth-card form, .pv-edit fieldset { display: grid; gap: 12px; }
+.pv-auth-card label, .pv-edit label { display: grid; gap: 5px; }
+.pv-auth-card .inp, .pv-edit .inp { width: 100%; }
+.pv-auth-card .btn { justify-content: center; }
+.pv-brand, .pv-actions, .pv-list-head, .pv-record-head, .pv-record-head > div { display: flex; align-items: center; gap: 10px; }
+.pv-brand { white-space: nowrap; }
+.pv-logo, .pv-row-icon { display: grid; place-items: center; flex: none; border-radius: 8px; background: var(--accent-bg); color: var(--fg); }
+.pv-logo { width: 36px; height: 36px; }
+.pv-row-icon { width: 34px; height: 34px; }
+.pv-shell { min-height: 100dvh; display: grid; grid-template-columns: minmax(235px,300px) minmax(0,1fr); grid-template-rows: auto 1fr; }
+.pv-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; grid-column: 1/-1; padding: 12px clamp(12px,3vw,32px); border-bottom: 1px solid var(--line); }
+.pv-sidebar { background: var(--bg2); padding: 16px; min-width: 0; }
+.pv-search { display: flex; gap: 8px; align-items: center; }
+.pv-search .inp { min-width: 0; width: 100%; }
+.pv-list-head { justify-content: space-between; margin-top: 12px; }
+.pv-list-head h2 { font-size: 14px; }
+.pv-list { display: grid; gap: 4px; }
+.pv-list p { color: var(--muted); }
+.pv-row { border: 0; border-radius: 8px; background: transparent; color: inherit; text-align: start; padding: 7px; display: flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
+.pv-row:is(:hover,[aria-pressed="true"]) { background: var(--accent-bg); }
+.pv-row small { display: block; color: var(--muted); }
+.pv-detail { padding: clamp(16px,4vw,48px); min-width: 0; }
+.pv-detail h1 { margin: 0 0 16px; overflow-wrap: anywhere; }
+.pv-edit,.pv-record { max-width: 640px; }
+.pv-edit fieldset { padding: 0; margin: 0; border: 0; min-width: 0; }
+.pv-edit textarea { height: auto; resize: vertical; }
+.pv-record-head { justify-content: space-between; }
+.pv-record-head h1 { margin: 0; }
+.pv-record dl { display: grid; margin: 18px 0; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; }
+.pv-record dl > div { padding: 10px 0; min-width: 0; }
+.pv-record dl > div + div { border-top: 1px solid var(--line); }
+.pv-record dt { color: var(--muted); font-size: 12px; }
+.pv-record dd { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 4px 0 0; overflow-wrap: anywhere; }
+.pv-record .pv-notes { display: block; white-space: pre-wrap; }
+.pv-secret { font-family: ui-monospace, monospace; }
+.pv-delete { color: var(--red); }
+.pv-empty { display: grid; justify-items: center; align-content: center; min-height: 40vh; color: var(--muted); }
+.pv-notice { color: var(--muted); }
+.pv-back { display: none; margin-bottom: 12px; }
+@media (max-width: 660px) {
+  .pv-shell { grid-template-columns: minmax(0, 1fr); }
+  .pv-shell[data-detail="true"] .pv-sidebar, .pv-shell[data-detail="false"] .pv-detail { display: none; }
+  .pv-back { display: inline-flex; }
+}

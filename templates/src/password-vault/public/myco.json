@@ -1,0 +1,12 @@
+{
+  "id": "myco/password-vault",
+  "name": "密码库",
+  "version": "1.0.0",
+  "kind": "custom",
+  "category": "tools",
+  "icon": "icon.svg",
+  "description": "在独立本机浏览器来源管理登录信息、生成密码和导出加密备份。",
+  "requires": {
+    "hub": "0.20.7"
+  }
+}

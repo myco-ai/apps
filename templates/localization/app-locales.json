@@ -219,6 +219,16 @@
       "description": "从图片提色，生成、调整与收藏配色方案，分析文字对比度，预览实际设计搭配。与团队和 agent 共享色卡及设计笔记，支持 SVG、CSS、JSON 导出。"
     }
   },
+  "myco/password-vault": {
+    "en": {
+      "name": "Password Vault",
+      "description": "Manage logins, generate passwords, and export encrypted backups in an isolated local browser origin."
+    },
+    "zh": {
+      "name": "密码库",
+      "description": "在独立本机浏览器来源管理登录信息、生成密码和导出加密备份。"
+    }
+  },
   "myco/personality": {
     "en": {
       "name": "Personality explorer",
