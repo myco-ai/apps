@@ -25,7 +25,7 @@ await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const url = `http://127.0.0.1:${server.address().port}/`;
 const browser = await chromium.launch({ executablePath: process.env.UI_SMOKE_EXECUTABLE });
 
-function bridge({ sample, withBrowser }) {
+function bridge({ sample, withBrowser, outdated = false }) {
   const rows = new Map();
   window.rows = rows;
   const listeners = [];
@@ -33,7 +33,7 @@ function bridge({ sample, withBrowser }) {
   const browserCalls = [];
   window.browserCalls = browserCalls;
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-  let recordQueue = [], recordDone = false, run = null, installed = false, approvals = [];
+  let recordQueue = [], recordDone = false, run = null, installed = outdated, approvals = [];
   const profiles = [{ id: "pf_post", name: "发帖号", running: false, agents: false }];
   window.myco = {
     features: withBrowser ? ["preferences", "browser"] : ["preferences"], preferences: { theme: "light", language: "en" },
@@ -52,8 +52,8 @@ function bridge({ sample, withBrowser }) {
       on: f => { listeners.push(f); return () => {}; },
     },
     browser: withBrowser ? {
-      status: async () => ({ protocol: 1, version: installed ? "0.1.0" : "", installed, supported: true, browsers: ["chrome"], machine: "Studio Mac", profiles: installed ? profiles.map(profile => ({ ...profile })) : [] }),
-      install: async () => { browserCalls.push(["install"]); installed = true; return window.myco.browser.status(); },
+      status: async () => ({ protocol: 1, version: installed ? (outdated ? "0.1.0" : "0.1.1") : "", installed, update_available: installed && outdated, supported: true, browsers: ["chrome"], machine: "Studio Mac", profiles: installed ? profiles.map(profile => ({ ...profile })) : [] }),
+      install: async () => { browserCalls.push(["install"]); installed = true; outdated = false; return window.myco.browser.status(); },
       profiles: {
         create: async name => { const profile = { id: "pf_" + profiles.length, name, running: false, agents: false }; profiles.push(profile); return profile; },
         open: async () => true,
@@ -273,9 +273,20 @@ try {
   await early.getByRole("tab", { name: "Settings" }).click();
   await early.getByRole("region", { name: "Script settings" }).getByLabel("Script name").waitFor();
   assert.equal(await early.getByText("Agent runs").count(), 0);
-  assert.deepEqual(errors, []);
   await early.close();
-  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");
+  // An older compatible component is installed: the page offers the App's release.
+  const stale = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  stale.on("pageerror", error => errors.push(error.message));
+  await stale.addInitScript(bridge, { sample, withBrowser: true, outdated: true });
+  await stale.goto(url);
+  await stale.getByText("Browser component update available").waitFor();
+  assert(!(await stale.getByRole("button", { name: "Run", exact: true }).isDisabled()), "an older compatible component still runs");
+  await stale.getByRole("button", { name: "Update component" }).click();
+  await stale.getByText("Browser component update available").waitFor({ state: "detached" });
+  assert.deepEqual(await stale.evaluate(() => window.browserCalls), [["install"]]);
+  await stale.close();
+  assert.deepEqual(errors, []);
+  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");
 } finally {
   await browser.close();
   server.close();

@@ -4039,5 +4039,9 @@
   "这个 profile 的浏览器正在被别的程序使用。": "Another program is using this profile's browser.",
   "浏览器组件没有装好，请稍后重试。": "The browser component did not install. Try again later.",
   "代码里不能用 ${…}：参数或网页内容拼进代码，就能执行任意代码。请写成固定代码。": "Code cannot use ${…}: a parameter or page text spliced into code could run anything. Write fixed code.",
-  "固定代码，不能用 ${…}。": "Fixed code; ${…} is not allowed."
+  "固定代码，不能用 ${…}。": "Fixed code; ${…} is not allowed.",
+  "浏览器组件有新版本": "Browser component update available",
+  "新版本修复了网站验证和兼容问题，更新后录制和回放更稳定。": "The new version fixes site verification and compatibility issues, so recording and replay are more reliable.",
+  "正在更新…": "Updating…",
+  "更新组件": "Update component"
 }

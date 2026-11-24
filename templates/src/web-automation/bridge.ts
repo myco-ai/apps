@@ -23,6 +23,9 @@ export type BrowserStatus = {
   supported: boolean;
   /** Why it is not supported or not ready, for the person. */
   reason?: string;
+  /** An older compatible release is installed; install() fetches the
+   *  release this App ships with. Older Apps never send it. */
+  update_available?: boolean;
   /** Installed browsers it can drive, e.g. ["chrome", "edge"]. */
   browsers: string[];
   machine: string;

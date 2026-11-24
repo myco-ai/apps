@@ -466,6 +466,15 @@ function App() {
       }}>{installing ? uiText("正在安装…") : uiText("安装组件")}</button>}
     </div>}
 
+    {status?.installed && status.update_available && bridge && <div className="wa-banner is-install" role="note">
+      <Icon.download size={15}/>
+      <span><strong>{uiText("浏览器组件有新版本")}</strong>{uiText("新版本修复了网站验证和兼容问题，更新后录制和回放更稳定。")}</span>
+      <button type="button" className="wa-btn is-small" disabled={installing} onClick={() => {
+        setInstalling(true);
+        void bridge.install().then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }).finally(() => setInstalling(false));
+      }}>{installing ? uiText("正在更新…") : uiText("更新组件")}</button>
+    </div>}
+
     {view === "editor" && (script ? <div className="wa-body">
       <aside className="wa-left">
         {node && !browsing ? <NodeInspector key={scriptId + node.id} node={node} script={script} issues={issues.filter(issue => issue.node === node.id)} editable={editable} tools={tools}
