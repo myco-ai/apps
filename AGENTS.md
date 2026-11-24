@@ -14,3 +14,4 @@ This repository owns myco's official apps, SDK (`templates/src/_lib`), build scr
 - Documents, code comments and commit messages are English. Keep credentials out of logs, source, screenshots and messages.
 
 - This is a public repository. Use fictional people, machines, workspace identifiers and reserved example domains in tests, samples and screenshot fixtures. Keep production operations, private workspace data, workstation paths and credentials in restricted repositories. Review image pixels and metadata as well as text before publishing.
+- Review commit metadata too: do not attach private conversation/session URLs, workstation hostnames or personal machine paths to public commit messages. Use a non-identifying automation identity for automated changes.
