@@ -14,13 +14,31 @@ A team's issues, like Linear. Four collections:
 - `projects`: `name`, `desc`, `status` (`planned`, `started`, `paused`, `done`), `lead`, `target` (a date).
 - `comments`: `issue` (the issue's id, e.g. `i12`), `body` (Markdown), `by`, `at`.
 
-Read first:
+Find the next issue number without downloading the whole collection:
 
-    myco page data list --page <pg_id> --collection issues
-    myco page data list --page <pg_id> --collection comments
+    myco page data list --page <pg_id> --collection issues --fields n --sort -n --limit 1
+
+Take its highest `data.n` plus one (start at 1 if empty). Find your active work
+and its comments directly:
+
+    myco page data list --page <pg_id> --collection issues --where assignee:<your-name> --where status:progress --fields n,title,status --sort -n
+    myco page data list --page <pg_id> --collection comments --where issue:i12 --sort at
+    myco page data list --page <pg_id> --collection issues --where status:in:todo,progress --count
+
+These options require a current CLI. With an older Hub the CLI filters locally
+and warns that upgrading the Hub avoids fetching the whole collection. Without
+options, `list` still returns all records. Queries retain each record's ID and
+version. `--fields` projects only `data`: **never write a projected record back**.
+Before editing, get the whole record:
+
+    myco page data get --page <pg_id> --collection issues --id i12
+
+Use `--limit 100` and the response's `next` cursor as `--after <cursor>` for
+long result sets. Repeat the same fields/where/sort. A concurrent page change
+invalidates the cursor (`conflict`); restart without `--after`.
 
 A new issue takes the next number: the highest `n` plus one, as id `i<n>`;
-`--if-version 0` makes sure nobody took it in between (take the next if so):
+`--if-version 0` makes sure nobody took it in between (query the highest number again if so; the lookup is not a reservation):
 
     myco page data put --page <pg_id> --collection issues --id i13 --if-version 0 --json '{"n":13,"title":"导出 CSV","status":"todo","priority":3,"assignee":null,"labels":["表格"],"project":null,"due":null,"by":"<your name>","created":"2026-11-20T10:00:00+08:00"}'
 

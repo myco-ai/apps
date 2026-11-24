@@ -39,7 +39,10 @@ const app = `<!doctype html><html><body><iframe id="f" src="/page"></iframe><scr
     if (!d || d.myco !== "call") return;
     let value = null;
     if (d.method === "ready") value = { page: { id: "pg_test", name: "t" }, me: { name: "glenn" } };
-    else if (d.method === "data.list") value = { records, seq: 10 };
+    else if (d.method === "data.list") {
+      window.lastQuery = d.args.query;
+      value = d.args.query?.count ? { count: 1, seq: 10, query_version: 1 } : { records, seq: 10 };
+    }
     else if (d.method === "data.watch") value = true;
     f.contentWindow.postMessage({ myco: "result", id: d.id, value }, "*");
   });
@@ -77,6 +80,14 @@ try {
   await p.evaluate(() => window.resetFeed());
   await p.waitForFunction(() => document.getElementById("f").contentWindow.log.length >= 4);
   assert.deepEqual(await log(), ["loaded a", "listening true", "change b", "reset c,d"], "the store holds what the hub holds after a reset");
+  // The actual native bridge preserves expressions, arrays and count semantics.
+  assert.equal(await frame().evaluate(() => myco.features.includes("data-query")), true);
+  const options = { fields: ["n", "title"], where: ["status:in:todo,progress", "n:>=:10"], sort: "-n", limit: 1, after: "opaque" };
+  await frame().evaluate(options => myco.data.list("items", options), options);
+  assert.deepEqual(await p.evaluate(() => window.lastQuery), options);
+  assert.deepEqual(await frame().evaluate(() => myco.data.list("items", { count: true })), { count: 1, seq: 10, query_version: 1 });
+  await frame().evaluate(() => myco.data.list("items"));
+  assert.equal(await p.evaluate(() => window.lastQuery), undefined, "legacy list has no query argument");
   // the App's word to the app's maker (an undeclared permission) lands in the page's console
   const warnings = [];
   p.on("console", (m) => { if (m.type() === "warning") warnings.push(m.text()); });

@@ -1,6 +1,17 @@
 // The myco bridge (internal/console/pagebridge.js), as the App puts it in a
 // page: a page's records and the person's Downloads.
 export type MycoRecord<T = Record<string, unknown>> = { collection: string; id: string; data: T; version: number; updated_by?: string };
+/** Optional desktop feature "data-query"; do not pass options to older hosts. */
+export type PageDataQuery = {
+  fields?: string | string[];
+  where?: string | string[];
+  sort?: string | string[];
+  limit?: number;
+  after?: string;
+  count?: boolean;
+};
+export type PageDataList = { records: MycoRecord[]; seq: number; next?: string; query_version?: number };
+export type PageDataCount = { count: number; seq: number; query_version: number };
 export type MycoChange = { seq: number; collection: string; record: string; op: "put" | "delete"; data?: Record<string, unknown>; version: number; by?: string };
 export type PagePreferences = { language: "zh" | "en"; theme: "light" | "dark" };
 export type PageActionDescriptor = { name: string; version: number; input_schema: Record<string, unknown> };
@@ -30,7 +41,11 @@ interface Bridge {
   on?(event: "reset", callback: (value: { reset: true }) => void): () => void;
   ready: Promise<Ctx>;
   data: {
-    list(collection?: string): Promise<{ records: MycoRecord[]; seq: number }>;
+    list(collection?: string): Promise<PageDataList>;
+    /** Query reads do not advance the editor's shared change-feed cursor. */
+    list(collection: string | undefined, options: PageDataQuery & { count: true }): Promise<PageDataCount>;
+    list(collection: string | undefined, options: PageDataQuery & { count?: false }): Promise<PageDataList>;
+    list(collection: string | undefined, options: PageDataQuery): Promise<PageDataList | PageDataCount>;
     get(collection: string, id: string): Promise<MycoRecord>;
     put(collection: string, data: unknown, opts?: { id?: string; ifVersion?: number }): Promise<MycoRecord>;
     remove(collection: string, id: string, opts?: { ifVersion?: number }): Promise<boolean>;

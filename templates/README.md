@@ -19,3 +19,5 @@ The page bridge is provided by the host: apps load their own local assets and us
 `node templates/shots.mjs [app ...]` captures sample content into source `public/shots/` (maximum width 1280). Build before and after capturing. FFmpeg is needed for video samples; a photo sample can be supplied with `MYCO_SHOTS_PHOTO`.
 
 See the root README for browser dependencies and the locked host checkout. Individual UI suites can be run from the repository root with `node templates/<app>.ui-test.mjs`.
+
+Record queries: see [SDK query options, pagination and compatibility](../docs/page-data-queries.md).
