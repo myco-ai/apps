@@ -90,13 +90,18 @@ masked), `steps` ([{node, state, ms, error}]), `question` (what a paused
 
 ## Running a script on another computer
 
-Runs happen on a computer whose myco App has the browser component and whose
-owner allowed the profile for agents. Ask the owner for a grant, then run:
+Runs happen on a computer whose myco App has the browser component. Agents
+run only script versions the computer's owner approved there (page: Settings ›
+Agent runs): the App keeps that exact version, and its sub-flows, on the
+computer and runs that copy, never the shared record's newest content. If you
+change a script, its new version needs the owner's approval again; ask them in
+words, you cannot approve it yourself. Ask the owner for a grant, then run
+with the approved `version`:
 
     myco action grant request --machine <computer> --permission browser.run --reason "<what and why>" --ttl 30m --task $MYCO_MESSAGE_ID --wait 5m
     myco action run --grant <agr_id> --action browser.script.run --version 1 --args '{"script_id":"scr_blog_post","params":{"title":"…","body_md":"…"}}' --key <unique> --wait 60s
 
-`browser.run` runs saved scripts only. When a run pauses at a `confirm`, ask the
+`browser.run` runs approved script versions only; anything else is refused (`permission_denied`). When a run pauses at a `confirm`, ask the
 person (`myco message ask`) and continue with `browser.run.resume`
 (`{"run_id": …, "choice": "ok"}` or `"cancel"`). These actions need a newer
 App and Hub; if `myco action list` shows none for that computer, it cannot run

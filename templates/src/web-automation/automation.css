@@ -199,6 +199,15 @@ textarea.wa-input { height: auto; padding: 7px 10px; line-height: 1.5; resize: v
 .wa-param-bottom { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
 .wa-danger-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px -16px 0; padding: 16px 16px 0; border-top: 1px solid var(--wa-border); }
 
+/* Agent approvals */
+.wa-approved { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; color: var(--wa-text); font-size: 12.5px; }
+.wa-approved svg { color: var(--wa-green); }
+.wa-approve { display: grid; gap: 8px; margin-bottom: 10px; }
+.wa-approvals { list-style: none; margin: 0 0 10px; padding: 0; border: 1px solid var(--wa-border); border-radius: 6px; }
+.wa-approvals li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 10px; font-size: 12.5px; }
+.wa-approvals li + li { border-top: 1px solid var(--wa-border); }
+.wa-approvals small { margin-inline-start: 8px; color: var(--wa-faint); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; }
+
 /* Drawn controls */
 .ui-select { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; height: 32px; padding: 0 8px 0 10px; border: 1px solid var(--wa-border); border-radius: 6px; background: var(--wa-bg); color: var(--wa-text); font-size: 13px; text-align: start; transition: border-color .12s, box-shadow .12s; }
 .ui-select:hover:not(:disabled) { border-color: var(--wa-border-strong); }

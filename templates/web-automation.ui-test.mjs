@@ -33,7 +33,7 @@ function bridge({ sample, withBrowser }) {
   const browserCalls = [];
   window.browserCalls = browserCalls;
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-  let recordQueue = [], recordDone = false, run = null, installed = false;
+  let recordQueue = [], recordDone = false, run = null, installed = false, approvals = [];
   const profiles = [{ id: "pf_post", name: "发帖号", running: false, agents: false }];
   window.myco = {
     features: withBrowser ? ["preferences", "browser"] : ["preferences"], preferences: { theme: "light", language: "en" },
@@ -78,6 +78,13 @@ function bridge({ sample, withBrowser }) {
             output: { post_url: "https://blog.example.com/p/1" }, error: "", error_node: "" };
         },
         control: async (_id, action, choice) => { browserCalls.push(["control", action, choice]); if (action === "resume") run.choice = choice || "ok"; return true; },
+      },
+      approvals: {
+        list: async () => approvals.map(item => ({ ...item })),
+        request: async options => { browserCalls.push(["approve", options.script_id, options.version, options.profile, options.script.name]);
+          const item = { script_id: options.script_id, version: options.version, profile: "发帖号", digest: "a1b2c3d4e5f6a7b8", approved_at: "2026-11-24T10:00:00Z", name: options.script.name };
+          approvals.push(item); return item; },
+        revoke: async (id, version) => { browserCalls.push(["revoke", id, version]); approvals = approvals.filter(item => !(item.script_id === id && item.version === version)); return true; },
       },
       locate: async () => ({ count: 1 }),
       pick: async () => ({ locators: [{ kind: "testid", value: "picked" }] }),
@@ -238,6 +245,16 @@ try {
   assert(runRow.ended_at && runRow.steps.some(item => item.node === "n8"));
   assert.equal(runRow.output.post_url, "https://blog.example.com/p/1");
   assert.deepEqual(errors, []);
+  // The owner approves the current version for agent runs, then withdraws it.
+  await live.getByRole("tab", { name: "Editor" }).click();
+  await live.getByRole("tab", { name: "Settings" }).click();
+  const agentRuns = live.getByRole("region", { name: "Script settings" });
+  await agentRuns.getByRole("button", { name: "Allow agents to run version 1" }).click();
+  await agentRuns.getByText("Version 1 is approved for agents with “发帖号”").waitFor();
+  await agentRuns.getByRole("button", { name: "Withdraw" }).click();
+  await agentRuns.getByRole("button", { name: "Allow agents to run version 1" }).waitFor();
+  const approvalCalls = await live.evaluate(() => window.browserCalls.filter(call => call[0] === "approve" || call[0] === "revoke"));
+  assert.deepEqual(approvalCalls, [["approve", "scr_blog_post", 1, "pf_post", "博客发文章（填好等确认）"], ["revoke", "scr_blog_post", 1]]);
   // Dark theme and a phone width render without horizontal overflow.
   await live.emulateMedia({ colorScheme: "dark" });
   await live.setViewportSize({ width: 390, height: 780 });
@@ -245,7 +262,7 @@ try {
   const overflow = await live.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert(overflow <= 0, "no horizontal scroll on a phone");
   await live.close();
-  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install, profiles, recording, paused run approval and narrow dark layout");
+  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install, agent-run approval, profiles, recording, paused run approval and narrow dark layout");
 } finally {
   await browser.close();
   server.close();

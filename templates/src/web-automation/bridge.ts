@@ -50,6 +50,11 @@ export type RunOptions = {
   scripts?: Record<string, Script>;
 };
 
+/** A script version the computer's owner allowed agents to run. The App
+ *  keeps the full snapshot (and its sub-flows) on this computer; agent runs
+ *  use only approved snapshots, never the shared record's latest content. */
+export type Approval = { script_id: string; version: number; digest: string; profile: string; approved_at: string; name: string };
+
 export interface BrowserBridge {
   /** Never fails because the component is missing: see installed. */
   status(): Promise<BrowserStatus>;
@@ -78,6 +83,15 @@ export interface BrowserBridge {
     /** Long-polls a run's progress after `after`. */
     get(id: string, after: number): Promise<RunUpdate>;
     control(id: string, action: "pause" | "resume" | "step" | "cancel", choice?: string): Promise<true>;
+  };
+  approvals: {
+    list(): Promise<Approval[]>;
+    /** Asks the owner, in the App's own dialog that lists the script's
+     *  addresses, code and sub-flows, to let agents run this exact version
+     *  with this profile. Rejects with "cancelled" when declined. */
+    request(options: { script_id: string; version: number; script: Script; scripts: Record<string, Script>; profile: string }): Promise<Approval>;
+    /** Withdraws one version, or every version of the script. */
+    revoke(script_id: string, version?: number): Promise<true>;
   };
   /** Highlights matches in the profile's page and counts them. */
   locate(options: { profile: string; target: Target }): Promise<{ count: number }>;

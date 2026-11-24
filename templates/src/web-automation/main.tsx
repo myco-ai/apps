@@ -3,9 +3,9 @@ import type { XYPosition } from "@xyflow/react";
 import { Kit, mount, uid, useKit } from "../_lib/appkit";
 import { locale, t as uiText } from "../_lib/i18n";
 import { Store, type MycoRecord } from "../_lib/myco";
-import { browser, errorCode, type BrowserProfile, type BrowserStatus, type RunUpdate } from "./bridge";
+import { browser, errorCode, type Approval, type BrowserProfile, type BrowserStatus, type RunUpdate } from "./bridge";
 import { Canvas } from "./canvas";
-import { NodeInspector, ScriptSettings, type Tools } from "./inspector";
+import { NodeInspector, ScriptSettings, type AgentAccess, type Tools } from "./inspector";
 import { bridgeError, category, stateDot, stateName, typeName } from "./labels";
 import { append, bytes, columnGap, connect, cutOutput, finished, fitRun, layout, newNode, newScript, normalize, recordLimit,
   removeNode, runArguments, validate, type Draft, type NodeType, type Run, type RunStep, type Script } from "./model";
@@ -221,6 +221,7 @@ function App() {
   const [recording, setRecording] = useState<{ id: string; script: string }>();
   const [live, setLive] = useState<{ bridge: string; record: string }>();
   const [installing, setInstalling] = useState(false);
+  const [approvals, setApprovals] = useState<Approval[]>([]);
   const stopped = useRef(false);
   const switcherButton = useRef<HTMLButtonElement>(null);
   const bridge = browser();
@@ -254,6 +255,21 @@ function App() {
   const points = breakpoints[scriptId] || [];
   const ready = Boolean(bridge && status?.installed);
   const canRun = Boolean(ready && !live && !recording);
+  const loadApprovals = useCallback(() => { if (bridge && status?.installed) void bridge.approvals.list().then(setApprovals, () => setApprovals([])); }, [bridge, status?.installed]);
+  useEffect(() => { loadApprovals(); }, [loadApprovals]);
+  const access: AgentAccess | undefined = ready && bridge && record && script ? {
+    version: record.version, profiles,
+    approvals: approvals.filter(item => item.script_id === scriptId),
+    approve: async profile => {
+      const subflows = Object.fromEntries(script.graph.nodes.filter(item => item.type === "subflow" && item.script_id && scripts.get(item.script_id))
+        .map(item => [item.script_id!, normalize(scripts.get(item.script_id!)!.data)]));
+      try { await bridge.approvals.request({ script_id: scriptId, version: record.version, script, scripts: subflows, profile }); loadApprovals(); }
+      catch (error) { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }
+    },
+    revoke: async version => {
+      try { await bridge.approvals.revoke(scriptId, version); loadApprovals(); } catch (error) { kit.flash(bridgeError(errorCode(error))); }
+    },
+  } : undefined;
   const selectedRun = runs.get(runId) || runRows[0];
   const selectedDraft = drafts.get(draftId) || drafts.rows[0];
 
@@ -459,7 +475,7 @@ function App() {
             <div className="wa-left-tabs"><Segmented label={uiText("左侧面板")} value={side} onChange={setSide} options={[
               { value: "blocks", label: uiText("积木") }, { value: "settings", label: issues.length ? uiText("设置 · {0}", issues.length) : uiText("设置") }]}/></div>
             {side === "blocks" ? <Palette editable={editable} add={type => void addNode(type)}/>
-              : <ScriptSettings key={scriptId} script={script} issues={issues} editable={editable} profiles={status ? status.profiles : undefined}
+              : <ScriptSettings key={scriptId} script={script} issues={issues} editable={editable} profiles={status ? status.profiles : undefined} access={access}
                 remove={() => void removeScript()} duplicate={() => void duplicate()}
                 save={next => update(scriptId, current => ({ ...current, name: next.name, description: next.description, start_url: next.start_url,
                   profile: next.profile, on_error: next.on_error, params: next.params }))}/>}

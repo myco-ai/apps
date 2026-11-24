@@ -4027,5 +4027,11 @@
   "怎么处理": "Response",
   "处理上一步弹出的原生对话框（alert、confirm、prompt）。": "Answers the native dialog (alert, confirm, prompt) the previous step opened.",
   "输入框里的文字（只用于 prompt）": "Text to enter (prompt only)",
-  "可以用 ${参数名}，敏感参数也可以。": "You can use ${parameter}, including sensitive ones."
+  "可以用 ${参数名}，敏感参数也可以。": "You can use ${parameter}, including sensitive ones.",
+  "Agent 运行": "Agent runs",
+  "agent 只能运行你在这台电脑上批准过的版本；脚本改动后要重新批准。批准时会列出这个版本要打开的网址和要执行的代码。": "Agents can run only versions you approve on this computer; a changed script needs approval again. Approval lists the addresses this version opens and the code it runs.",
+  "版本 {0} 已允许 agent 用「{1}」运行": "Version {0} is approved for agents with “{1}”",
+  "允许 agent 运行版本 {0}": "Allow agents to run version {0}",
+  "先改好脚本里的问题，才能批准。": "Fix the script's problems and save before approving.",
+  "撤销批准": "Withdraw"
 }

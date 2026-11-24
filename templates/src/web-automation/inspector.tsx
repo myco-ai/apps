@@ -8,6 +8,7 @@ import { category, issueText, locatorName, paramTypeName, tabName, typeName } fr
 import { Icon, StepIcon } from "./icons";
 import { Checkbox, IconButton, Select, Toggle, type Option } from "./ui";
 import { typeHint } from "./palette";
+import type { Approval } from "./bridge";
 
 export type Tools = {
   locate?: (target: Target) => Promise<number | undefined>;
@@ -228,9 +229,36 @@ export function NodeInspector({ node, script, scripts, issues, editable, tools, 
 
 const paramTypes: ParamType[] = ["string", "text", "number", "bool", "secret"];
 
-export function ScriptSettings({ script, issues, editable, profiles, save, remove, duplicate }: {
+export type AgentAccess = {
+  version: number; approvals: Approval[]; profiles: { id: string; name: string }[];
+  approve: (profile: string) => Promise<void>; revoke: (version: number) => Promise<void>;
+};
+
+function AgentRuns({ access, canApprove }: { access: AgentAccess; canApprove: boolean }) {
+  const [profile, setProfile] = useState(access.profiles[0]?.id || "");
+  const [busy, setBusy] = useState(false);
+  const current = access.approvals.find(item => item.version === access.version);
+  return <Section title={uiText("Agent 运行")}>
+    <p className="wa-muted">{uiText("agent 只能运行你在这台电脑上批准过的版本；脚本改动后要重新批准。批准时会列出这个版本要打开的网址和要执行的代码。")}</p>
+    {current ? <p className="wa-approved"><Icon.check size={14}/>{uiText("版本 {0} 已允许 agent 用「{1}」运行", current.version, current.profile)}</p>
+      : canApprove ? <div className="wa-approve">
+        <Select label={uiText("用哪个 profile")} value={profile} onChange={setProfile} placeholder={uiText("还没有 profile")}
+          options={access.profiles.map(item => ({ value: item.id, label: item.name, icon: <Icon.profile size={14}/> }))}/>
+        <button type="button" className="wa-btn" disabled={!profile || busy} onClick={() => { setBusy(true); void access.approve(profile).finally(() => setBusy(false)); }}>
+          {uiText("允许 agent 运行版本 {0}", access.version)}</button>
+      </div> : <p className="wa-muted">{uiText("先改好脚本里的问题，才能批准。")}</p>}
+    {access.approvals.length > 0 && <ul className="wa-approvals">
+      {[...access.approvals].sort((a, b) => b.version - a.version).map(item => <li key={item.version}>
+        <span>{uiText("版本 {0}", item.version)} · {item.profile}<small>{item.digest.slice(0, 12)}</small></span>
+        <button type="button" className="wa-btn is-ghost is-small" onClick={() => void access.revoke(item.version)}>{uiText("撤销批准")}</button>
+      </li>)}
+    </ul>}
+  </Section>;
+}
+
+export function ScriptSettings({ script, issues, editable, profiles, save, remove, duplicate, access }: {
   script: Script; issues: Issue[]; editable: boolean; profiles?: { name: string }[];
-  save: (script: Script) => Promise<boolean>; remove: () => void; duplicate: () => void;
+  save: (script: Script) => Promise<boolean>; remove: () => void; duplicate: () => void; access?: AgentAccess;
 }) {
   const [draft, setDraft] = useState(script);
   const [dirty, setDirty] = useState(false);
@@ -278,6 +306,7 @@ export function ScriptSettings({ script, issues, editable, profiles, save, remov
           </div>
         </div>)}
       </Section>
+      {access && <AgentRuns access={access} canApprove={!dirty && issues.length === 0}/>}
       {size > recordLimit && <p className="wa-error">{uiText("脚本太大了（上限 64 KB），请拆成子流程。")}</p>}
       {editable && <div className="wa-danger-row">
         <button type="button" className="wa-btn is-ghost" onClick={duplicate}><Icon.copy size={14}/>{uiText("复制一份")}</button>
