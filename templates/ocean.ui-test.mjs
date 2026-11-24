@@ -1,3 +1,4 @@
+import { waitForPage } from "./test-poll.mjs";
 // 航海 in a browser: the built app with its sample and an in-memory myco
 // bridge (as shots.mjs), drawn by Chromium's software GPU. Drives the boat
 // with the keyboard, changes the shared weather, reaches an island, runs
@@ -87,16 +88,15 @@ try {
   // shared settings: a rough sea, saved to the page for everyone
   await page.getByRole("button", { name: "海况和天气" }).click();
   await page.locator(".oc-panel .seg button", { hasText: "大浪" }).click();
-  await page.waitForFunction(async () => (await window.myco.data.get("world", "main")).data.sea === "rough", null, { timeout: 5000 });
+  await waitForPage(page, async () => (await window.myco.data.get("world", "main")).data.sea === "rough", null, { timeout: 5000 });
   const kept = await page.evaluate(async () => (await window.myco.data.get("world", "main")).data);
   assert.equal(kept.title, "椰影群岛", "the other settings are kept");
   assert.equal(kept.weather, "cloudy");
   // the day runs on for everyone: a speed and the moment it was set are saved
   const clockVersion = await page.evaluate(async () => (await window.myco.data.get("world", "main")).version);
   await page.locator(".oc-panel .seg button", { hasText: "一天 12 分钟" }).click();
-  // The local Store updates optimistically before the debounced write commits.
-  // Reading its data alone can observe a draft with the previous timestamp.
-  await page.waitForFunction(async version => {
+  // Wait for the debounced write to commit, using an awaited async predicate.
+  await waitForPage(page, async version => {
     const record = await window.myco.data.get("world", "main");
     return record.version > version && record.data.time_speed === 120 && record.data.time_at > 0;
   }, clockVersion, { timeout: 15000 });
@@ -106,10 +106,10 @@ try {
   await page.locator(".oc-panel .seg button", { hasText: "停住" }).click();
   // storm: the record, and the chip says so
   await page.locator(".oc-panel .seg button", { hasText: "雷雨" }).click();
-  await page.waitForFunction(async () => (await window.myco.data.get("world", "main")).data.weather === "storm", null, { timeout: 5000 });
+  await waitForPage(page, async () => (await window.myco.data.get("world", "main")).data.weather === "storm", null, { timeout: 5000 });
   await page.waitForFunction(() => /\d\d:\d\d · 雷雨/.test(document.querySelector(".oc-chip").textContent));
   await page.locator(".oc-panel .inp").fill("新群岛");
-  await page.waitForFunction(async () => (await window.myco.data.get("world", "main")).data.title === "新群岛", null, { timeout: 5000 });
+  await waitForPage(page, async () => (await window.myco.data.get("world", "main")).data.title === "新群岛", null, { timeout: 5000 });
   await page.keyboard.press("Escape");
   assert.equal(await page.locator(".oc-panel").count(), 0);
 

@@ -1,3 +1,4 @@
+import { waitForPage } from "./test-poll.mjs";
 // Calendar-first workflows in both languages/themes, including touch and CAS undo.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -20,8 +21,8 @@ try{
   let row=[...recs.values()].find(r=>r.collection==='events'&&r.data.title==='Calendar test');assert(row);assert.equal(row.data.start,'2026-11-30T07:00:00.000Z');
   if(width===1400){
    await p.locator(`.pc-cell[data-date="2026-11-30"] [data-event="${row.id}"]`).dragTo(p.locator('.pc-cell[data-date="2026-12-01"]'),{targetPosition:{x:2,y:2}});
-   await p.waitForFunction(async(id)=>(await myco.data.list('events')).records.find(r=>r.id===id)?.data.start.startsWith('2026-12-01'),row.id);
-   await p.locator('.pc-history button').nth(0).click();await p.waitForFunction(async(id)=>(await myco.data.list('events')).records.find(r=>r.id===id)?.data.start.startsWith('2026-11-30'),row.id);
+   await waitForPage(p, async(id)=>(await myco.data.list('events')).records.find(r=>r.id===id)?.data.start.startsWith('2026-12-01'),row.id);
+   await p.locator('.pc-history button').nth(0).click();await waitForPage(p, async(id)=>(await myco.data.list('events')).records.find(r=>r.id===id)?.data.start.startsWith('2026-11-30'),row.id);
   }
   await p.getByRole('button',{name:L('查看 2026-11-30','View 2026-11-30'),exact:true}).click();
   await p.getByRole('combobox',{name:L('日历视图','Calendar view')}).selectOption('week');await p.locator('.pc-time-grid').waitFor();assert.equal(await p.locator('.pc-day-lane').count(),7);
@@ -44,7 +45,7 @@ try{
   await p.getByRole('textbox',{name:L('搜索日程','Search events'),exact:true}).fill('Calendar test');await p.locator('.pc-results button').first().click();
   await p.getByRole('button',{name:L('删除','Delete'),exact:true}).click();await p.locator('dialog').waitFor({state:'detached'});assert(!recs.has('events/'+row.id));
   await p.locator('.pc-history button').nth(0).click();await p.locator('.pc-results button').first().waitFor();assert(recs.has('events/'+row.id));
-  await p.locator('.pc-history button').nth(1).click();await p.waitForFunction(async(id)=>!(await myco.data.list('events')).records.some(r=>r.id===id),row.id);
+  await p.locator('.pc-history button').nth(1).click();await waitForPage(p, async(id)=>!(await myco.data.list('events')).records.some(r=>r.id===id),row.id);
   await p.locator('.pc-history button').nth(0).click();await p.locator('.pc-results button').first().waitFor();
   await p.getByRole('textbox',{name:L('搜索日程','Search events'),exact:true}).fill('');
   await p.getByRole('button',{name:L('新建日程','New event'),exact:true}).click();await p.getByLabel(L('日程标题','Event title'),{exact:true}).fill('All-day test');await p.getByLabel(L('全天','All day'),{exact:true}).check();await p.getByLabel(L('开始','Start'),{exact:true}).fill('2026-11-30');await p.getByLabel(L('结束','End'),{exact:true}).fill('2026-12-01');await p.getByLabel(L('重复','Repeat'),{exact:true}).selectOption('weekly');await p.getByLabel(L('重复截止日期（可选）','Repeat until (optional)'),{exact:true}).fill('2026-12-31');await p.getByRole('button',{name:L('保存','Save'),exact:true}).click();await p.locator('dialog').waitFor({state:'detached'});

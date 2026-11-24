@@ -1,3 +1,4 @@
+import { waitForPage } from "./test-poll.mjs";
 // Real MediaRecorder → imported timeline → shared zoom renderer → real MP4.
 // Screen pixels come from a deterministic test canvas, never a personal desktop.
 import assert from 'node:assert/strict';
@@ -140,7 +141,7 @@ try{
  const enter=page.getByRole('spinbutton',{name:lang==='en'?'Zoom-in transition (s)':'放大过渡（秒）'});
  const leave=page.getByRole('spinbutton',{name:lang==='en'?'Zoom-out transition (s)':'还原过渡（秒）'});
  await enter.fill('1.2');await leave.fill('1.1');
- await page.waitForFunction(async()=>{const r=await window.myco.data.list('overlays');return r.records[0].data.fade_in===1.2&&r.records[0].data.fade_out===1.1;});
+ await waitForPage(page, async()=>{const r=await window.myco.data.list('overlays');return r.records[0].data.fade_in===1.2&&r.records[0].data.fade_out===1.1;});
 
  await page.getByRole("button",{name:lang==="en"?"Go to start":"到开头",exact:true}).click();await page.waitForTimeout(500);await page.screenshot({path:path.join(out,`recorder-${lang}-${theme}-edit.png`)});
  await page.evaluate(()=>{window.myco.download=async(name,blob)=>{window.__export={name,size:blob.size,bytes:Array.from(new Uint8Array(await blob.slice(0,32).arrayBuffer()))};return {path:'~/Downloads/'+name};};});
