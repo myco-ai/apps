@@ -1,28 +1,28 @@
 :root {
-  --pv-canvas: #efeee9;
-  --pv-rail: #f8f7f3;
-  --pv-panel: #fffefa;
-  --pv-ink: #242620;
-  --pv-muted: #62655a;
-  --pv-line: #e4e2d9;
-  --pv-brand: #233d37;
-  --pv-on-brand: #fbfdfb;
-  --pv-selected: #e3ece5;
-  --pv-tile: #ecebe4;
-  --pv-shadow: 0 28px 80px #252d2520, 0 4px 12px #252d250b;
+  --pv-canvas: #f1f1f1;
+  --pv-rail: #f7f7f7;
+  --pv-panel: #ffffff;
+  --pv-ink: #202020;
+  --pv-muted: #606060;
+  --pv-line: #e1e1e1;
+  --pv-brand: #242424;
+  --pv-on-brand: #ffffff;
+  --pv-selected: #e6e6e6;
+  --pv-tile: #ededed;
+  --pv-shadow: 0 28px 80px #00000016, 0 4px 12px #00000009;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --pv-canvas: #131715;
-    --pv-rail: #1c211e;
-    --pv-panel: #232925;
-    --pv-ink: #edf0e8;
-    --pv-muted: #adb8ac;
-    --pv-line: #39443c;
-    --pv-brand: #b2d4bd;
-    --pv-on-brand: #192c22;
-    --pv-selected: #2c4337;
-    --pv-tile: #313931;
+    --pv-canvas: #141414;
+    --pv-rail: #1c1c1c;
+    --pv-panel: #222222;
+    --pv-ink: #f1f1f1;
+    --pv-muted: #b6b6b6;
+    --pv-line: #383838;
+    --pv-brand: #ededed;
+    --pv-on-brand: #202020;
+    --pv-selected: #363636;
+    --pv-tile: #2e2e2e;
     --pv-shadow: 0 28px 80px #0006, 0 4px 12px #0002;
   }
 }
@@ -90,31 +90,19 @@ body { background: var(--pv-canvas); color: var(--pv-ink); overflow: auto; }
 .pv-detail h1, .pv-auth h1 { color: inherit; margin: 0; overflow-wrap: anywhere; letter-spacing: -.035em; line-height: 1.15; }
 .pv-record, .pv-edit { max-width: 680px; margin-inline: auto; }
 .pv-record-head {
-  position: relative;
   min-height: 148px;
   padding: clamp(18px, 3vw, 30px);
   justify-content: space-between;
   align-items: flex-start;
-  isolation: isolate;
-  overflow: hidden;
+  border: 1px solid var(--pv-line);
   border-radius: 16px;
-  background: radial-gradient(ellipse at 85% -35%, #4b685c, transparent 75%), #1e312b;
-  color: #f9fbf6;
-}
-.pv-record-head::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  background: repeating-radial-gradient(ellipse at 90% 120%, transparent 0 17px, #daeee315 18px 19px, transparent 20px 28px);
-  pointer-events: none;
+  background: var(--pv-rail);
 }
 .pv-record-identity { align-self: center; gap: clamp(12px, 2vw, 18px); min-width: 0; flex: 1; }
-.pv-record-icon { width: clamp(42px, 5vw, 57px); aspect-ratio: 1; border: 1px solid #e4f3e740; border-radius: 13px; background: #e4f3e719; }
+.pv-record-icon { width: clamp(42px, 5vw, 57px); aspect-ratio: 1; border: 1px solid var(--pv-line); border-radius: 13px; background: var(--pv-tile); }
 .pv-record h1 { font-size: clamp(20px, 3vw, 32px); font-weight: 650; }
-.pv-record-head p { color: #cdddce; margin: 5px 0 0; overflow-wrap: anywhere; }
-.pv-record-head .btn { background: #e3f2e617; border-color: #edf7ee35; color: inherit; flex: none; }
-.pv-record-head .btn:hover { background: #e3f2e632; }
+.pv-record-head p { color: var(--pv-muted); margin: 5px 0 0; overflow-wrap: anywhere; }
+.pv-record-head .btn { flex: none; }
 .pv-record dl { margin: 16px 0 12px; padding: 0 18px; border: 1px solid var(--pv-line); border-radius: 13px; }
 .pv-record dl > div { padding: 14px 0; min-width: 0; }
 .pv-record dl > div + div { border-top: 1px solid var(--pv-line); }
@@ -132,7 +120,7 @@ body { background: var(--pv-canvas); color: var(--pv-ink); overflow: auto; }
 .pv-empty { display: grid; justify-items: center; align-content: center; min-height: 40vh; color: var(--pv-muted); text-align: center; }
 .pv-notice { margin: 0 0 12px; color: var(--pv-muted); }
 .pv-back { display: none; margin-bottom: 14px; }
-.pv-auth { min-height: 100dvh; display: grid; place-items: center; padding: 28px 16px; background: radial-gradient(ellipse at 50% 5%, var(--pv-selected), transparent 60%), var(--pv-canvas); }
+.pv-auth { min-height: 100dvh; display: grid; place-items: center; padding: 28px 16px; }
 .pv-auth-card { display: grid; gap: 16px; width: min(100%, 430px); padding: clamp(24px, 5vw, 38px); background: var(--pv-panel); border: 1px solid var(--pv-line); border-radius: 20px; box-shadow: var(--pv-shadow); }
 .pv-auth-card h1 { font-size: clamp(23px, 4vw, 31px); margin-top: 4px; }
 .pv-auth-card p { margin: 0; }
