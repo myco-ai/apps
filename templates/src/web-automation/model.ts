@@ -435,4 +435,4 @@ export function splitProxy(server: string): { kind: ProxyKind; address: string }
   return match ? { kind: match[1] as ProxyKind, address: match[2] } : { kind: "http", address: "" };
 }
 export const langOk = (lang: string) => !lang || /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(lang);
-export const userAgentOk = (ua: string) => ua.length <= 512 && !/[\u0000-\u001f\u007f]/.test(ua);
+export const userAgentOk = (ua: string) => ua.length <= 512 && /^[\x20-\x7e]*$/.test(ua);

@@ -4051,7 +4051,6 @@
   "「{0}」的浏览器设置": "Browser settings for “{0}”",
   "写成 主机:端口，例如 127.0.0.1:7890": "Use host:port, for example 127.0.0.1:7890",
   "请填写代理地址": "Enter the proxy address",
-  "UA 不能换行，最长 512 个字符": "The UA must be one line of at most 512 characters",
   "写成语言代码，例如 zh-CN、en-US": "Use a language code such as zh-CN or en-US",
   "不支持：{0}": "Not supported: {0}",
   "不用代理": "No proxy",
@@ -4072,5 +4071,6 @@
   "网页看到的首选语言；留空跟随系统": "The preferred language sites see; empty follows the system",
   "启动参数": "Launch arguments",
   "每行一个": "One per line",
-  "只支持窗口大小、缩放、GPU、后台节流、功能开关和不加载图片这几类，其余会被拒绝。": "Only window size, scaling, GPU, background throttling, feature switches and turning off images are allowed; anything else is rejected."
+  "只支持窗口大小、缩放、GPU、后台节流、功能开关和不加载图片这几类，其余会被拒绝。": "Only window size, scaling, GPU, background throttling, feature switches and turning off images are allowed; anything else is rejected.",
+  "UA 只能是一行英文字符，最长 512 个": "The UA must be one line of plain ASCII, at most 512 characters"
 }

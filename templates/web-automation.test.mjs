@@ -124,5 +124,6 @@ assert.equal(m.proxyServer("http", "[::1]:8080"), "http://[::1]:8080");
 for (const bad of ["proxy.example.com", "user:pw@host:80", "host:0", "host:70000", "http://host:80"]) assert.equal(m.proxyServer("http", bad), "", bad);
 assert.deepEqual(m.splitProxy("https://p.example.com:443"), { kind: "https", address: "p.example.com:443" });
 assert(m.langOk("") && m.langOk("zh-CN") && m.langOk("en") && !m.langOk("zh_CN") && !m.langOk("--lang"));
-assert(m.userAgentOk("Mozilla/5.0") && !m.userAgentOk("a\nb"));
+assert(m.userAgentOk("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36") && m.userAgentOk(""));
+for (const bad of ["a\nb", "a\rb", "中文", "x".repeat(513)]) assert(!m.userAgentOk(bad), bad);
 console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets, profile settings and sample");

@@ -186,7 +186,7 @@ function ProfileSettingsDialog({ profile, close, back, save }: {
   const server = kind === "none" ? "" : proxyServer(kind, address);
   const errors = {
     address: kind !== "none" && address.trim() && !server ? uiText("写成 主机:端口，例如 127.0.0.1:7890") : kind !== "none" && !address.trim() ? uiText("请填写代理地址") : "",
-    ua: userAgentOk(ua) ? "" : uiText("UA 不能换行，最长 512 个字符"),
+    ua: userAgentOk(ua) ? "" : uiText("UA 只能是一行英文字符，最长 512 个"),
     lang: langOk(lang) ? "" : uiText("写成语言代码，例如 zh-CN、en-US"),
     args: badArgs.length ? uiText("不支持：{0}", badArgs.join("  ")) : "",
   };
