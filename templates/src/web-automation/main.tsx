@@ -220,6 +220,7 @@ function App() {
   const [startAt, setStartAt] = useState<string>();
   const [recording, setRecording] = useState<{ id: string; script: string }>();
   const [live, setLive] = useState<{ bridge: string; record: string }>();
+  const [installing, setInstalling] = useState(false);
   const stopped = useRef(false);
   const switcherButton = useRef<HTMLButtonElement>(null);
   const bridge = browser();
@@ -251,7 +252,8 @@ function App() {
   const editable = kit.canEdit && !recording;
   const profiles = status?.profiles || [];
   const points = breakpoints[scriptId] || [];
-  const canRun = Boolean(bridge && status && !live && !recording);
+  const ready = Boolean(bridge && status?.installed);
+  const canRun = Boolean(ready && !live && !recording);
   const selectedRun = runs.get(runId) || runRows[0];
   const selectedDraft = drafts.get(draftId) || drafts.rows[0];
 
@@ -286,7 +288,7 @@ function App() {
     runFrom: canRun ? (id: string) => { setStartAt(id); setDialog("run"); } : undefined,
   }), [scriptId, canRun]);
 
-  const tools: Tools = bridge && status ? {
+  const tools: Tools = bridge && ready ? {
     locate: async target => {
       const profile = profiles.find(item => item.name === script?.profile)?.id || profiles[0]?.id;
       if (!profile) { kit.flash(uiText("还没有 profile，请先在「Profile」里新建一个。")); return undefined; }
@@ -391,7 +393,7 @@ function App() {
 
   const saveState = recording ? uiText("正在录制…") : kit.pending ? uiText("正在保存…") : kit.failed ? uiText("没保存上") : !kit.canEdit ? uiText("只能看") : uiText("已保存");
   const filtered = scripts.rows.filter(row => !find.trim() || (row.data.name || "").toLowerCase().includes(find.trim().toLowerCase()));
-  const unavailable = !bridge ? uiText("需要支持浏览器组件的新版 myco App") : undefined;
+  const unavailable = !bridge ? uiText("需要支持浏览器组件的新版 myco App") : status && !status.installed ? uiText("请先安装浏览器组件。") : undefined;
 
   return <div className="wa-app">
     <header className="wa-top">
@@ -423,7 +425,7 @@ function App() {
         { value: "drafts", label: drafts.rows.length ? uiText("草稿 {0}", drafts.rows.length) : uiText("草稿"), icon: <Icon.draft size={14}/> },
       ]}/>
       <div className="wa-top-right">
-        {bridge && status && <button type="button" className="ui-icon-btn" aria-label={uiText("Profile")} title={uiText("Profile")} onClick={() => setDialog("profiles")}><Icon.profile size={17}/></button>}
+        {ready && <button type="button" className="ui-icon-btn" aria-label={uiText("Profile")} title={uiText("Profile")} onClick={() => setDialog("profiles")}><Icon.profile size={17}/></button>}
         {view === "editor" && script && <>
           <button type="button" className="ui-icon-btn" aria-label={uiText("自动排版")} title={uiText("自动排版")} disabled={!editable || !script.graph.nodes.length} onClick={() => void update(scriptId, layout)}><Icon.layout size={17}/></button>
           {recording ? <button type="button" className="wa-btn is-recording" onClick={() => void bridge?.record.stop(recording.id).catch(() => undefined)}><Icon.stop size={11}/>{uiText("停止录制")}</button>
@@ -435,6 +437,15 @@ function App() {
     {status === null && <div className="wa-banner" role="note">
       <Icon.warning size={15}/>
       <span><strong>{uiText("这台电脑还不能录制和运行")}</strong>{uiText("录制、调试和回放需要支持浏览器组件的新版 myco App。现在仍可编辑脚本、查看运行记录；agent 也能通过页面数据读写脚本。")}</span>
+    </div>}
+    {status && !status.installed && <div className="wa-banner is-install" role="note">
+      <Icon.download size={15}/>
+      <span><strong>{uiText("还没装浏览器组件")}</strong>{status.supported ? uiText("录制和运行要用到一个可选组件，装好后用 myco 专用的浏览器 profile，不碰你日常用的 Chrome。")
+        : status.reason || uiText("这台电脑暂时不能运行浏览器组件。")}</span>
+      {status.supported && bridge && <button type="button" className="wa-btn is-small" disabled={installing} onClick={() => {
+        setInstalling(true);
+        void bridge.install().then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }).finally(() => setInstalling(false));
+      }}>{installing ? uiText("正在安装…") : uiText("安装组件")}</button>}
     </div>}
 
     {view === "editor" && (script ? <div className="wa-body">
@@ -511,7 +522,7 @@ function App() {
     {dialog === "run" && script && record && <RunDialog script={script} id={scriptId} version={record.version} profiles={profiles} startAt={startAt} breakpoints={points}
       close={() => setDialog("")} start={input => void startRun(input)}/>}
     {dialog === "record" && script && <RecordDialog script={script} profiles={profiles} close={() => setDialog("")} start={(profile, url) => void startRecording(profile, url)}/>}
-    {dialog === "profiles" && status && <ProfilesDialog status={status} refresh={refresh} close={() => setDialog("")}/>}
+    {dialog === "profiles" && ready && status && <ProfilesDialog status={status} refresh={refresh} close={() => setDialog("")}/>}
     {kit.note && <div className="wa-toast" role="status">{kit.note.text}{kit.note.undo && <button type="button" onClick={kit.note.undo}>{uiText("撤销")}</button>}</div>}
   </div>;
 }

@@ -33,7 +33,7 @@ function bridge({ sample, withBrowser }) {
   const browserCalls = [];
   window.browserCalls = browserCalls;
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-  let recordQueue = [], recordDone = false, run = null;
+  let recordQueue = [], recordDone = false, run = null, installed = false;
   const profiles = [{ id: "pf_post", name: "发帖号", running: false, agents: false }];
   window.myco = {
     features: withBrowser ? ["preferences", "browser"] : ["preferences"], preferences: { theme: "light", language: "en" },
@@ -52,7 +52,8 @@ function bridge({ sample, withBrowser }) {
       on: f => { listeners.push(f); return () => {}; },
     },
     browser: withBrowser ? {
-      status: async () => ({ protocol: 1, version: "0.1.0", browsers: ["chrome"], machine: "Studio Mac", profiles: profiles.map(profile => ({ ...profile })) }),
+      status: async () => ({ protocol: 1, version: installed ? "0.1.0" : "", installed, supported: true, browsers: ["chrome"], machine: "Studio Mac", profiles: installed ? profiles.map(profile => ({ ...profile })) : [] }),
+      install: async () => { browserCalls.push(["install"]); installed = true; return window.myco.browser.status(); },
       profiles: {
         create: async name => { const profile = { id: "pf_" + profiles.length, name, running: false, agents: false }; profiles.push(profile); return profile; },
         open: async () => true,
@@ -182,6 +183,11 @@ try {
   await live.addInitScript(bridge, { sample, withBrowser: true });
   await live.goto(url);
   await live.locator(".wa-switcher").getByText("博客发文章（填好等确认）").waitFor();
+  // The component is offered, not installed: the page asks the App to install it.
+  await live.getByText("Browser component not installed").waitFor();
+  assert(await live.getByRole("button", { name: "Run", exact: true }).isDisabled());
+  await live.getByRole("button", { name: "Install component" }).click();
+  await live.getByRole("button", { name: "Profiles" }).waitFor();
   assert.equal(await live.locator(".wa-banner").count(), 0);
   await live.getByRole("button", { name: "Profiles" }).click();
   const profiles = live.getByRole("dialog", { name: "Profiles" });
@@ -220,6 +226,7 @@ try {
   await live.locator(".wa-run h2").getByText("博客发文章（填好等确认）").waitFor();
   const calls = await live.evaluate(() => window.browserCalls);
   assert.deepEqual(calls.find(call => call[0] === "allow"), ["allow", "pf_post", true]);
+  assert.deepEqual(calls[0], ["install"], "install is the first component call");
   const started = calls.find(call => call[0] === "run")[1];
   assert.equal(started.params.title, "Weekly notes");
   assert.equal(started.profile, "pf_post");
@@ -238,7 +245,7 @@ try {
   const overflow = await live.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert(overflow <= 0, "no horizontal scroll on a phone");
   await live.close();
-  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, profiles, recording, paused run approval and narrow dark layout");
+  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install, profiles, recording, paused run approval and narrow dark layout");
 } finally {
   await browser.close();
   server.close();

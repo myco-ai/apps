@@ -13,7 +13,16 @@ export type BrowserProfile = {
   agents: boolean;
 };
 export type BrowserStatus = {
-  protocol: number; version: string;
+  protocol: number;
+  /** The component's version; "" while it is not installed. */
+  version: string;
+  /** The optional component is on this computer (an App reports the
+   *  "browser" feature before it is installed, like remote desktop). */
+  installed: boolean;
+  /** This computer can run it (platform, browser present…). */
+  supported: boolean;
+  /** Why it is not supported or not ready, for the person. */
+  reason?: string;
   /** Installed browsers it can drive, e.g. ["chrome", "edge"]. */
   browsers: string[];
   machine: string;
@@ -35,11 +44,20 @@ export type RunOptions = {
 };
 
 export interface BrowserBridge {
+  /** Never fails because the component is missing: see installed. */
   status(): Promise<BrowserStatus>;
+  /** Asks the App to install or update the component. The App shows its
+   *  own trusted confirmation; the page only asks. Rejects with
+   *  "cancelled" when the person declines. */
+  install(): Promise<BrowserStatus>;
   profiles: {
     create(name: string): Promise<BrowserProfile>;
     /** Opens the profile's browser window to sign in by hand. */
     open(id: string): Promise<true>;
+    /** A request only: the App confirms with the computer's owner in its
+     *  own UI before agents may use the profile, and resolves with the
+     *  profile as it now is (unchanged, or rejected with "cancelled", when
+     *  declined). Turning it off needs no confirmation. */
     allowAgents(id: string, allowed: boolean): Promise<BrowserProfile>;
   };
   record: {

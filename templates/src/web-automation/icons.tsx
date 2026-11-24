@@ -60,6 +60,7 @@ export const Icon = {
   file: make(<><path d="M6.5 3.5h7l4.5 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1.5-1.5z"/><path d="M13.5 3.5V8H18"/></>),
   history: make(<><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4v4h4"/><path d="M12 8v4.3l3 1.7"/></>),
   draft: make(<><path d="M14.5 4.5 19.5 9.5 9 20H4v-5z"/><path d="m12.5 6.5 5 5"/></>),
+  download: make(<><path d="M12 3.5V15m-4.2-4.2L12 15l4.2-4.2"/><path d="M4 15v2.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V15"/></>),
   more: make(<path d="M6 12h.01M12 12h.01M18 12h.01" strokeWidth={2.6}/>),
   logo: make(<><rect x="2.5" y="4" width="19" height="16" rx="3.5"/><path d="M2.5 8.5h19"/><path d="m11 11.5 2 7 1.2-2.8 2.8-1.2z"/></>),
 } as const;

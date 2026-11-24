@@ -68,6 +68,9 @@
 .wa-banner { display: flex; align-items: flex-start; gap: 8px; padding: 8px 16px; background: var(--wa-amber-soft); color: var(--wa-sub); font-size: 12px; line-height: 1.5; border-bottom: 1px solid var(--wa-border); }
 .wa-banner svg { color: var(--wa-amber); flex: none; margin-top: 1px; }
 .wa-banner strong { color: var(--wa-text); font-weight: 600; margin-inline-end: 8px; }
+.wa-banner > span { flex: 1; }
+.wa-banner.is-install { align-items: center; background: var(--wa-field); }
+.wa-banner.is-install > svg { color: var(--wa-sub); }
 
 /* Body */
 .wa-body { position: relative; flex: 1; min-height: 0; display: flex; }

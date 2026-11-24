@@ -3999,5 +3999,9 @@
   "写在画布上的说明": "A comment on the canvas",
   "搜索积木": "Search blocks",
   "没有匹配的积木。": "No matching blocks.",
-  "拖到画布上，或点一下加在选中步骤后面。": "Drag onto the canvas, or click to add after the selected step."
+  "拖到画布上，或点一下加在选中步骤后面。": "Drag onto the canvas, or click to add after the selected step.",
+  "还没装浏览器组件": "Browser component not installed",
+  "录制和运行要用到一个可选组件，装好后用 myco 专用的浏览器 profile，不碰你日常用的 Chrome。": "Recording and running need an optional component. It uses myco's own browser profiles and leaves your everyday Chrome alone.",
+  "这台电脑暂时不能运行浏览器组件。": "This computer cannot run the browser component yet.",
+  "正在安装…": "Installing…"
 }
