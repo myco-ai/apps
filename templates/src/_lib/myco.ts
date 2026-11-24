@@ -11,7 +11,10 @@ export type PageActionBridge = {
 };
 /** me.can_edit is false when only those who manage the page change it and
  *  this person does not (Apps from v0.22.2; absent: they may). */
-type Ctx = { projectFiles?: boolean; projectMedia?: boolean; preferences?: PagePreferences; page: { id: string; name: string; url?: string }; me: { name: string; can_edit?: boolean; can_manage?: boolean }; render?: { instance: string } };
+// isolation is set by the desktop host after opening an interactive per-page
+// origin. Use IndexedDB or page data as appropriate. Never store app data in
+// cookies: the loopback hostname is shared and cookies do not scope by port.
+type Ctx = { isolation?: boolean; projectFiles?: boolean; projectMedia?: boolean; preferences?: PagePreferences; page: { id: string; name: string; url?: string }; me: { name: string; can_edit?: boolean; can_manage?: boolean }; render?: { instance: string } };
 
 interface Bridge {
   readonly preferences?: PagePreferences;

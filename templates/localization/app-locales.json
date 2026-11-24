@@ -222,11 +222,11 @@
   "myco/password-vault": {
     "en": {
       "name": "Password Vault",
-      "description": "Manage logins, generate passwords, and export encrypted backups in an isolated local browser origin."
+      "description": "Manage encrypted logins, generate passwords, and back up your vault in the myco App."
     },
     "zh": {
       "name": "密码库",
-      "description": "在独立本机浏览器来源管理登录信息、生成密码和导出加密备份。"
+      "description": "在 myco App 内加密管理登录信息、生成密码和备份。"
     }
   },
   "myco/personality": {

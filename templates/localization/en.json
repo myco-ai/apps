@@ -1,6 +1,8 @@
 {
   "新增": "Add",
   "密码库": "Password Vault",
+  "请升级 myco App": "Update the myco App",
+  "新版 myco App 会为密码库提供独立的本机存储。": "An updated myco App gives the vault isolated local storage.",
   "在独立浏览器窗口中使用": "Use Password Vault in a separate browser window",
   "密码库需要独立的本机窗口。先启动本机密码库，再打开下方入口。": "Start the local vault, then open it in its own browser window.",
   "打开本机密码库": "Open local vault",

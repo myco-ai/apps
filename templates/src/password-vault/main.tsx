@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowUpRight, ChevronRight, Copy, Download, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plus, Search, ShieldCheck, Trash2, WandSparkles } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { myco } from "../_lib/myco";
 import { t as uiText } from "../_lib/i18n";
 import { connect, read, save } from "./storage";
 import { derive, generatePassword, newSalt, openVault, parseBackup, seal, type Envelope, type Login } from "./vault";
@@ -16,11 +17,11 @@ function Brand() {
   return <div className="pv-brand"><div className="pv-logo"><ShieldCheck size={23}/></div><strong>{uiText("密码库")}</strong></div>;
 }
 
-function Gate() {
+function Gate({ embedded }: { embedded: boolean }) {
   return <main className="pv-auth"><div className="pv-auth-card"><Brand/>
-    <h1>{uiText("在独立浏览器窗口中使用")}</h1>
-    <p>{uiText("密码库需要独立的本机窗口。先启动本机密码库，再打开下方入口。")}</p>
-    <a className="btn btn-primary" href={localOrigin} target="_blank" rel="noopener noreferrer">{uiText("打开本机密码库")}<ArrowUpRight size={16}/></a>
+    <h1>{embedded ? uiText("请升级 myco App") : uiText("在独立浏览器窗口中使用")}</h1>
+    <p>{embedded ? uiText("新版 myco App 会为密码库提供独立的本机存储。") : uiText("密码库需要独立的本机窗口。先启动本机密码库，再打开下方入口。")}</p>
+    {!embedded && <a className="btn btn-primary" href={localOrigin} target="_blank" rel="noopener noreferrer">{uiText("打开本机密码库")}<ArrowUpRight size={16}/></a>}
   </div></main>;
 }
 
@@ -186,14 +187,13 @@ function Vault({ session, update, lock }: { session: Session; update: (records: 
 }
 
 const standalone = window.parent === window && window.location.origin === localOrigin && window.isSecureContext && !!crypto.subtle;
-function App() {
+function VaultApp() {
   const [store, setStore] = useState<{ db: IDBDatabase; envelope?: Envelope }>();
   const [failure, setFailure] = useState(false);
   const [session, setSession] = useState<Session>();
   const generation = useRef(0);
   const lock = useRef(() => { generation.current++; setSession(undefined); }).current;
   useEffect(() => {
-    if (!standalone) return;
     window.addEventListener("pagehide", lock);
     let db: IDBDatabase | undefined;
     let active = true;
@@ -204,7 +204,6 @@ function App() {
     }).catch(() => { if (active) setFailure(true); });
     return () => { active = false; db?.close(); window.removeEventListener("pagehide", lock); };
   }, [lock]);
-  if (!standalone) return <Gate/>;
   if (!store) return <main className="pv-auth"><p role="status">{failure ? uiText("无法读取或保存密码库。") : uiText("处理中…")}</p></main>;
   const { db } = store;
 
@@ -241,4 +240,19 @@ if (standalone) {
   const hint = new URLSearchParams(window.location.search).get("myco_lang");
   document.documentElement.lang = (hint === "zh" || hint === "en" ? hint === "zh" : /^zh\b/i.test(navigator.language)) ? "zh-CN" : "en";
 }
+function App() {
+  const [isolated, setIsolated] = useState(standalone);
+  const embedded = window.parent !== window;
+  useEffect(() => {
+    if (!embedded || !myco || !window.isSecureContext || !crypto.subtle ||
+      location.protocol !== "http:" || location.hostname !== "127.0.0.1") return;
+    let mounted = true;
+    void myco.ready.then((info) => {
+      if (mounted && info.isolation === true && !info.render) setIsolated(true);
+    }, () => undefined);
+    return () => { mounted = false; };
+  }, [embedded]);
+  return isolated ? <VaultApp/> : <Gate embedded={embedded || !!myco}/>;
+}
+
 createRoot(document.getElementById("root")!).render(<App/>);
