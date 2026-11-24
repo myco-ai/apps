@@ -1,10 +1,11 @@
+import { hostPath } from "./test-paths.mjs";
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 const root=path.resolve(import.meta.dirname,'../dist/official/remote-desktop');
-const source=fs.readFileSync(path.resolve(import.meta.dirname,'../ios/MycoKit/Sources/MycoFeatures/PageBridgeScript.swift'),'utf8');
+const source=fs.readFileSync(hostPath("ios/MycoKit/Sources/MycoFeatures/PageBridgeScript.swift"),'utf8');
 const bridge=source.match(/#"""([\s\S]*?)"""#/)[1];
 const out=path.resolve(import.meta.dirname,'remote-mobile-shots');fs.mkdirSync(out,{recursive:true});
 const server=http.createServer((req,res)=>{

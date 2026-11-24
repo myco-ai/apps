@@ -1,7 +1,7 @@
 {
   "id": "myco/price-compare",
   "name": "购物比价",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "kind": "custom",
   "category": "life",
   "icon": "icon.svg",
