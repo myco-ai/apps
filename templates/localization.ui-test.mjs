@@ -73,13 +73,13 @@ const host = await serve((req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.end(`<!doctype html><html><body style="margin:0"><iframe id="app" style="border:0;width:100vw;height:100vh;color-scheme:${theme}" src="${frameOrigin}/${slug}/index.html?myco_lang=${language}" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals"></iframe><script>
  const preferences={language:${JSON.stringify(language)},theme:${JSON.stringify(theme)}};
- const records=${JSON.stringify(data).replaceAll("<", "\\u003c")};let seq=0;window.__writes=0;
+ const records=${JSON.stringify(data).replaceAll("<", "\\u003c")};let seq=0;window.__writes=0;window.__initialExportReady=false;
  const f=document.getElementById('app');window.__setTheme=theme=>{preferences.theme=theme;f.style.colorScheme=theme;f.contentWindow.postMessage({myco:'preferences',preferences},${JSON.stringify(frameOrigin)})};
  window.addEventListener('message',async e=>{if(e.source!==f.contentWindow||e.origin!==${JSON.stringify(frameOrigin)}||e.data?.myco!=='call')return;const d=e.data,a=d.args||{};let value,error,code;
  switch(d.method){case'ready':value={page:{id:'pg_test',name:'User title 用户标题'},me:{name:'test'},state:null,version:1,preferences};break;
  case'data.list':value={records:Object.values(records).filter(r=>!a.collection||r.collection===a.collection),seq};break;
  case'data.watch':value=true;break;
- case'data.put':{window.__writes++;const id=a.id||'generated'+seq;const r={collection:a.collection,id,data:a.data,version:(records[a.collection+'/'+id]?.version||0)+1};records[a.collection+'/'+id]=r;seq++;value=r;break}
+ case'data.put':{if(a.collection==='exports')window.__initialExportReady=true;window.__writes++;const id=a.id||'generated'+seq;const r={collection:a.collection,id,data:a.data,version:(records[a.collection+'/'+id]?.version||0)+1};records[a.collection+'/'+id]=r;seq++;value=r;break}
  case'data.remove':window.__writes++;delete records[a.collection+'/'+a.id];value=true;break;
  case'remote.call':value=a.action==='devices'?[]:{protocol:1,version:'0.1.0',installed:false,supported:false,running:false};break;
  case'os.list':value={os:'linux',arch:'x64',caps:[]};break;
@@ -157,6 +157,9 @@ try {
               )),
             app + " page overflow",
           );
+          // Whiteboard publishes its initial shared export after a 500 ms debounce.
+          // Wait for it explicitly so it is not attributed to a theme change.
+          if (app === "whiteboard") await page.waitForFunction(() => window.__initialExportReady);
           const writes = await page.evaluate(() => window.__writes);
           await page.evaluate(() => window.__setTheme("light"));
           await page.waitForTimeout(80);

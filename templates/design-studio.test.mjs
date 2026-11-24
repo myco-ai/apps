@@ -300,7 +300,7 @@ try {
       await page.evaluate(() => sessionStorage.clear());
       await page.reload();
       await page.locator(".ds-card").first().waitFor();
-      const shots = path.join(here, "src/design-studio/public/shots");
+      const shots = path.join(here, "design-studio-shots");
       fs.mkdirSync(shots, { recursive: true });
       const png = await page.screenshot();
       const webp = await page.evaluate(async (b64) => {
