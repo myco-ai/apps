@@ -1,3 +1,4 @@
+import { hostPath } from "./test-paths.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -6,11 +7,11 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 const here = path.dirname(fileURLToPath(import.meta.url)),
-  root = path.resolve(here, "../internal/templates/official/remote-desktop"),
+  root = path.resolve(here, "../dist/official/remote-desktop"),
   shots = path.join(here, "remote-desktop-shots");
 fs.mkdirSync(shots, { recursive: true });
 const bridge = fs.readFileSync(
-  path.resolve(here, "../internal/console/pagebridge.js"),
+  hostPath("internal/console/pagebridge.js"),
   "utf8",
 );
 const serve = (fn) =>

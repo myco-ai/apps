@@ -1,3 +1,4 @@
+import { hostPath } from "./test-paths.mjs";
 // Exercise the built template, the real iframe bridge and the desktop file
 // dispatcher. The server below supplies fixture data and project file routes.
 import assert from "node:assert/strict";
@@ -10,15 +11,15 @@ import { fileURLToPath } from "node:url";
 
 const require = createRequire(path.join(execFileSync("npm", ["root", "-g"], { encoding: "utf8" }).trim(), "noop.js"));
 const { chromium } = require("playwright");
-const web = createRequire(new URL("../web/package.json", import.meta.url));
-const { build } = web("esbuild");
-const source = fileURLToPath(new URL("../web/src/", import.meta.url));
+const { build } = await import("esbuild");
+const source = hostPath("web/src/");
 const { outputFiles } = await build({
+  nodePaths: [hostPath("web/node_modules/")],
   entryPoints: [path.join(source, "app/page-project-files.ts")],
   alias: { "@": source }, bundle: true, format: "esm", write: false,
 });
-const bridge = readFileSync(new URL("../internal/console/pagebridge.js", import.meta.url), "utf8");
-const root = new URL("../internal/templates/official/media-kit/", import.meta.url);
+const bridge = readFileSync(hostPath("internal/console/pagebridge.js"), "utf8");
+const root = new URL("../dist/official/media-kit/", import.meta.url);
 const files = new Map();
 const rows = new Map();
 let lastDownload;

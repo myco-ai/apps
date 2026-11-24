@@ -1,3 +1,4 @@
+import { hostPath } from "./test-paths.mjs";
 // Production template bundles + the actual pagebridge.js in sandboxed frames.
 // --hub additionally exercises the actual agent SDK/Hub/private artifact route;
 // the parent renderer transport is simulated, not a native desktop acceptance.
@@ -11,7 +12,7 @@ import {fileURLToPath} from 'node:url';
 import {actionModule} from './action-test-modules.mjs';
 import {build} from 'esbuild';
 import JSZip from 'jszip';
-const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'../internal/templates/official');
+const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'../dist/official');
 let fixture;
 if(process.argv.includes('--hub')){let s='';for await(const p of process.stdin)s+=p;fixture=JSON.parse(s);}
 let chromium;
@@ -23,7 +24,7 @@ catch{console.log('SKIP Playwright is not installed');process.exit(0);}
 let browser;
 try{browser=await chromium.launch({headless:true,args:['--no-sandbox']});}
 catch{console.log('SKIP Chromium is not installed');process.exit(0);}
-const bridge=await fs.readFile(path.resolve(here,'../internal/console/pagebridge.js'),'utf8');
+const bridge=await fs.readFile(hostPath("internal/console/pagebridge.js"),'utf8');
 const sdk=(await build({entryPoints:[path.join(here,'src/_lib/register-actions.ts')],bundle:true,write:false,format:'iife',globalName:'actionSDK',logLevel:'silent'})).outputFiles[0].text;
 const server=http.createServer(async(req,res)=>{
  const url=new URL(req.url,'http://test');

@@ -1,3 +1,4 @@
+import { hostPath } from "./test-paths.mjs";
 import { fileURLToPath } from "node:url";
 // Exercise actual pagebridge.js across origins. The host's explicit theme is
 // opposite the OS theme, so merely following prefers-color-scheme is not enough.
@@ -9,12 +10,12 @@ import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 const root = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
-    "../internal/templates/official",
+    "../dist/official",
   ),
   shots = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "localization-shots");
 fs.mkdirSync(shots, { recursive: true });
 const bridge = fs.readFileSync(
-  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../internal/console/pagebridge.js"),
+  hostPath("internal/console/pagebridge.js"),
   "utf8",
 );
 const serve = (handler) =>

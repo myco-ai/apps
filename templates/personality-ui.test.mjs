@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {startFixture} from './personality-test-fixture.mjs';
-const f=await startFixture(),shots=process.env.PERSONALITY_SHOTS||'/root/code/myco-team/codex-apps-3-tmp/personality';fs.mkdirSync(shots,{recursive:true});
+const f=await startFixture(),shots=process.env.PERSONALITY_SHOTS||'artifacts/personality';fs.mkdirSync(shots,{recursive:true});
 const errors=[];f.reset(true);
 try{
  const context=await f.browser.newContext({viewport:{width:1400,height:900}}),p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(f.base);await p.getByRole('button',{name:'开始探索',exact:true}).waitFor();await p.screenshot({path:path.join(shots,'home-zh-light.png')});

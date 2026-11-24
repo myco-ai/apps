@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
 const here = path.dirname(fileURLToPath(import.meta.url)),
-  official = path.resolve(here, "../internal/templates/official");
+  official = path.resolve(here, "../dist/official");
 const shots = fs.readFileSync(path.join(here, "shots.mjs"), "utf8");
 const bridge = shots.slice(shots.indexOf("const bridge = `") + 16, shots.indexOf("})();`;") + 5);
 const sample = JSON.parse(fs.readFileSync(path.join(official, "ocean/sample.json"), "utf8"));

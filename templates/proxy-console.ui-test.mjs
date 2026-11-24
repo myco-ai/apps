@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(here, "../internal/templates/official/proxy-console");
+const root = path.resolve(here, "../dist/official/proxy-console");
 const out = path.join(here, "proxy-console-shots");
 fs.mkdirSync(out, { recursive: true });
 const server = http.createServer((req, res) => {

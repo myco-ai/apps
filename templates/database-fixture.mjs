@@ -8,7 +8,7 @@ import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 const here=path.dirname(fileURLToPath(import.meta.url));
 export async function startFixture(app = "database") {
-  const root=path.resolve(here,"../internal/templates/official/"+app);
+  const root=path.resolve(here,"../dist/official/"+app);
   const sample=JSON.parse(fs.readFileSync(path.join(here,"src",app,"public/sample.json"),"utf8")),recs=new Map();
   let seq=0,events=[];const writes=[];
   function reset(empty=false){recs.clear();seq=0;events=[];writes.length=0;for(const[c,rows]of Object.entries(empty?{}:sample))for(const{id,...data}of rows)recs.set(c+"/"+id,{collection:c,id,data,version:1});}

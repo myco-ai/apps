@@ -8,7 +8,7 @@ import { join } from "node:path";
 
 const require = createRequire(join(execFileSync("npm", ["root", "-g"], { encoding: "utf8" }).trim(), "noop.js"));
 const { chromium } = require("playwright");
-const root = new URL("../internal/templates/official/logo-studio/", import.meta.url);
+const root = new URL("../dist/official/logo-studio/", import.meta.url);
 const sample = JSON.parse(readFileSync(new URL("sample.json", root)));
 const server = createServer((req, res) => {
   const path = new URL(req.url, "http://test").pathname;

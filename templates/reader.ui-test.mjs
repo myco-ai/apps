@@ -1,3 +1,4 @@
+import { hostPath } from "./test-paths.mjs";
 // Real production bundle + browser storage, typography and PDF worker. No
 // network, desktop OS bridge or mock book content inside the application.
 import assert from "node:assert/strict";
@@ -13,7 +14,7 @@ const require = createRequire(
   ),
 );
 const { chromium } = require("playwright");
-const root = resolve("internal/templates/official/reader");
+const root = resolve("dist/official/reader");
 const bridge = `<script>window.__writes=0;window.__downloads=[];const params=new URLSearchParams(location.search);document.documentElement.dataset.mycoTheme=params.get('theme')||'light';const prefListeners=new Set();window.__setPreferences=(language,theme)=>{window.myco.preferences={language,theme};document.documentElement.dataset.mycoTheme=theme;for(const f of prefListeners)f({language,theme});};window.myco={on:(event,callback)=>{prefListeners.add(callback);return()=>prefListeners.delete(callback);},preferences:{language:params.get('myco_lang')||'zh',theme:params.get('theme')||'light'},features:['preferences'],ready:Promise.resolve({page:{id:params.get('page')||'reader-test'},me:{name:params.get('member')||'reader'}}),data:{put:async()=>{window.__writes++;throw Error('no shared writes')},list:async()=>({records:[],seq:0}),on:()=>()=>{}},download:async(name,file)=>{window.__downloads.push({name,bytes:await file.arrayBuffer()});return{path:name}}};</script>`;
 const requested = [];
 const types = {
@@ -55,7 +56,7 @@ const artifact = resolve(
 );
 mkdirSync(artifact, { recursive: true });
 const errors = [];
-const source = readFileSync("internal/console/pages.go", "utf8");
+const source = readFileSync(hostPath("internal/console/pages.go"), "utf8");
 const csp = source
   .match(/const pageCSP = ([\s\S]*?)\n\n/)[1]
   .match(/"[^"]*"/g)

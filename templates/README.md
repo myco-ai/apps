@@ -1,23 +1,21 @@
-# myco's official templates (sources)
+# Official app sources
 
-Each folder in `src/` is a template page (React, bundled with Vite) plus
-its `public/` files: `myco.json` (the manifest), `agent.md` (how agents fill
-it) and `sample.json`. `npm run build` (or `make templates`) writes them to
-`internal/templates/official/<name>`. All of them are published as the "apps"
-release (apps.zip), which hubs fetch; the binary itself carries only the
-everyday ones (`templates.Builtin`), compressed in
-`internal/templates/builtin.zip`, which `make templates` also writes
-(`go run ./internal/templates/genbuiltin`). Commit the built output and the
-archive; Go builds never run Node.
+Each `src/<app>` contains a React page and `public/` files: manifest, agent guide, sample records, localized metadata, SVG icon and light/dark screenshots. Shared page APIs and native bridge types are in `src/_lib`.
 
-The pages read and write their data with the myco bridge (`myco.data.*`, see
-docs/api.md). They load nothing from the internet. An app that
-needs the computer it runs on (files, commands, the screen) uses `myco.os`
-(docs/app-os.md; types in `_lib/myco.ts`).
+Run commands from the repository root:
 
-Each app shows what it looks like in the App's new-page dialog: pictures in
-its `public/shots/` (`1.webp` and its dark `1.dark.webp`, …). `shots.mjs`
-takes them with the sample data, light and dark (Playwright; ffmpeg for
-视频剪辑's clip; for 修图, a photo: `MYCO_SHOTS_PHOTO`, or one from Unsplash): `node build.mjs && node shots.mjs [app…] && node build.mjs`. They are saved at most 1280 wide (they ship with every hub).
-An app that uses the computer (`myco.os`) is shot on a made-up one,
-`shots-os.js` (a Mac's disk for 空间清理): give its plan `os: true`.
+```sh
+npm --prefix templates ci
+npm --prefix templates run locales   # after editing public/locales.json
+make check
+npm --prefix templates run build
+make pack
+```
+
+Build output is `dist/official/<app>`, never committed. `scripts/pack-apps.sh` creates all apps and the subset in `builtin.json` with deterministic timestamps and checksums. Keep the archive layout compatible with Hub v0.20.7 and later.
+
+The page bridge is provided by the host: apps load their own local assets and use `myco.data` for collaborative records, `myco.net` for supported network requests, or optional `myco.os` capabilities. Consult the main repository's [API](https://github.com/myco-ai/myco/blob/main/docs/api.md), [native capabilities](https://github.com/myco-ai/myco/blob/main/docs/app-os.md) and [UI guide](https://github.com/myco-ai/myco/blob/main/docs/design/app-ui.md). Detect features, preserve fallbacks, and never store secrets in page data.
+
+`node templates/shots.mjs [app ...]` captures sample content into source `public/shots/` (maximum width 1280). Build before and after capturing. FFmpeg is needed for video samples; a photo sample can be supplied with `MYCO_SHOTS_PHOTO`.
+
+See the root README for browser dependencies and the locked host checkout. Individual UI suites can be run from the repository root with `node templates/<app>.ui-test.mjs`.

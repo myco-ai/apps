@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url)),
-  root = path.resolve(here, "../internal/templates/official/whiteboard"),
+  root = path.resolve(here, "../dist/official/whiteboard"),
   out = process.env.WHITEBOARD_SHOTS || "/tmp/whiteboard-shots";
 fs.mkdirSync(out, { recursive: true });
 const fixture = {

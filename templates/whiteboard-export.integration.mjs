@@ -21,7 +21,7 @@ let browser;
 try { browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] }); }
 catch { console.log("SKIP Playwright Chromium is not installed"); process.exit(0); }
 const { sourceFingerprint, sharedExportState } = await import(await actionModule("whiteboard/shared-export"));
-const root = path.resolve(here, "../internal/templates/official/whiteboard");
+const root = path.resolve(here, "../dist/official/whiteboard");
 const api = async (route = "", method = "GET", body) => {
   const r = await fetch(fixture.url + "/v1/pages/" + fixture.page + "/data" + route, {
     method, headers: { Authorization: "Bearer " + fixture.token, "Content-Type": "application/json" },

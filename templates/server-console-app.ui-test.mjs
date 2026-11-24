@@ -14,7 +14,7 @@ const require = createRequire(
     ),
   ),
   { chromium } = require("playwright");
-const root = path.resolve("internal/templates/official/server-console"),
+const root = path.resolve("dist/official/server-console"),
   out = process.env.SERVER_SHOTS || "/tmp/server-console-app";
 fs.mkdirSync(out, { recursive: true });
 const server = http.createServer((req, res) => {

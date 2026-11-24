@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url)),
-  root = path.resolve(here, "../internal/templates/official/cinema");
+  root = path.resolve(here, "../dist/official/cinema");
 const fixture = process.env.CINEMA_FIXTURE || "/tmp/myco-cinema-fixture",
   out = process.env.CINEMA_SHOTS || "/tmp/cinema-shots";
 fs.mkdirSync(fixture, { recursive: true });

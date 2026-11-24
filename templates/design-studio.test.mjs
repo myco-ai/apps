@@ -8,7 +8,7 @@ import ts from "typescript";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 const here = path.dirname(fileURLToPath(import.meta.url)),
-  root = path.resolve(here, "../internal/templates/official/design-studio"),
+  root = path.resolve(here, "../dist/official/design-studio"),
   out = path.join(here, "design-studio-shots");
 fs.mkdirSync(out, { recursive: true });
 const js = ts.transpileModule(

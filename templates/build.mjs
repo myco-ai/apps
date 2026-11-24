@@ -1,7 +1,6 @@
-// Builds each template in src/ into internal/templates/official/<name>
+// Builds each template in src/ into dist/official/<name>
 // (its page, bundled; its public/ files: myco.json, agent.md, sample.json).
-// The hub embeds that folder; go builds never run Node, so the output is
-// committed (as web/ builds into internal/web/dist).
+// Release archives are built from source; generated files are never committed.
 import { build } from "vite";
 import react from "@vitejs/plugin-react";
 import appThemeCSS from "./theme-css.mjs";
@@ -34,7 +33,7 @@ for (const name of readdirSync(path.join(here, "src"))) {
     css: {postcss:{plugins:[appThemeCSS()]}},
     publicDir: path.join(root, "public"),
     build: {
-      outDir: path.join(here, "..", "internal", "templates", "official", name),
+      outDir: path.join(here, "..", "dist", "official", name),
       emptyOutDir: true,
       assetsDir: "assets",
       chunkSizeWarningLimit: 4000,
@@ -55,7 +54,7 @@ for (const name of readdirSync(path.join(here, "src"))) {
   if (name === "reader") {
     // Fixed-layout PDF reading needs upstream CMaps, fonts and image decoders
     // offline too. Keep these as ordinary app assets, not external URLs.
-    const pdf = path.join(here, "..", "internal", "templates", "official", name, "pdf");
+    const pdf = path.join(here, "..", "dist", "official", name, "pdf");
     mkdirSync(pdf, { recursive: true });
     for (const dir of ["cmaps", "standard_fonts", "wasm", "iccs"]) cpSync(path.join(here, "node_modules", "pdfjs-dist", dir), path.join(pdf, dir), { recursive: true });
     cpSync(path.join(here, "node_modules", "pdfjs-dist", "LICENSE"), path.join(pdf, "LICENSE"));

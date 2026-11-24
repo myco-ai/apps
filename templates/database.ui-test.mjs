@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {startFixture} from './database-fixture.mjs';
-const out='/root/code/myco-artifacts/database';const f=await startFixture(),{browser,server,base,recs,writes,reset}=f;
+const out='artifacts';const f=await startFixture(),{browser,server,base,recs,writes,reset}=f;
 try{
  for(const[lang,theme,width]of[['zh','light',1400],['en','dark',1400],['zh','dark',760],['en','light',393]]){
   reset();const context=await browser.newContext({viewport:{width,height:900},colorScheme:theme,isMobile:width===393,hasTouch:width===393}),p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));p.setDefaultTimeout(10000);const L=(z,e)=>lang==='zh'?z:e;

@@ -1,3 +1,4 @@
+import { hostPath } from "./test-paths.mjs";
 // When the change feed has moved on past what a page holds (too much
 // changed while it was away), the App says so with {reset: true}; the
 // actual pagebridge.js passes it on as myco.on("reset"), and the page
@@ -12,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const bridge = await fs.readFile(path.resolve(here, "../internal/console/pagebridge.js"), "utf8");
+const bridge = await fs.readFile(hostPath("internal/console/pagebridge.js"), "utf8");
 // the SDK's Store and listen, as an app bundles them
 const entry = path.join(here, "src/_lib/myco.ts");
 const sdk = (await build({ entryPoints: [entry], bundle: true, write: false, format: "iife", globalName: "sdk", logLevel: "silent" })).outputFiles[0].text;

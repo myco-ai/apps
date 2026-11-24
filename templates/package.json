@@ -1,13 +1,17 @@
 {
-  "name": "myco-templates",
+  "name": "myco-apps",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Sources of myco's official templates (built into internal/templates/official)",
+  "description": "Official myco apps, bridge SDK and browser regression tests",
   "scripts": {
     "build": "tsc --noEmit && node build.mjs",
     "typecheck": "tsc --noEmit",
-    "test:actions": "node actions.test.mjs"
+    "test:actions": "node actions.test.mjs",
+    "test": "node ../scripts/test-apps.mjs unit",
+    "test:ui": "node ../scripts/test-apps.mjs browser",
+    "locales": "node ../scripts/catalog.mjs",
+    "pack": "python3 ../scripts/pack-apps.py"
   },
   "dependencies": {
     "@blocknote/core": "0.57.0",

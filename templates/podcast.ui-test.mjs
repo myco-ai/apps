@@ -13,7 +13,7 @@ const require = createRequire(
   ),
 );
 const { chromium } = require("playwright");
-const root = path.resolve("internal/templates/official/podcast");
+const root = path.resolve("dist/official/podcast");
 const out = process.env.PODCAST_SHOTS || "/tmp/podcast-shots";
 fs.mkdirSync(out, { recursive: true });
 const mp3 = execFileSync("ffmpeg", [

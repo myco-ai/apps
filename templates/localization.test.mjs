@@ -68,7 +68,7 @@ assert.equal(
 delete globalThis.location;
 const fallback = JSON.parse(
   fs.readFileSync(
-    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../web/src/lib/app-locales.json"),
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "localization/app-locales.json"),
     "utf8",
   ),
 );

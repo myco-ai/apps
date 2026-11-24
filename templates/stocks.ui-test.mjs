@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 const here = path.dirname(fileURLToPath(import.meta.url)),
-  root = path.resolve(here, "../internal/templates/official/stocks"),
+  root = path.resolve(here, "../dist/official/stocks"),
   out = path.join(here, "stocks-shots");
 fs.mkdirSync(out, { recursive: true });
 const sample = JSON.parse(

@@ -1,0 +1,12 @@
+{
+  "source_repository": "https://github.com/myco-ai/myco",
+  "source_commit": "55e77621be7ab40700a834b901ff4c32dc5471b6",
+  "filtered_commit": "c1b1ddd3fb27d9c11dd5a608d00f0f3e28ab3e18",
+  "preserved_commits": 156,
+  "paths": [
+    "templates/",
+    "scripts/pack-apps.sh",
+    ".github/workflows/apps.yml"
+  ],
+  "phase": 1
+}

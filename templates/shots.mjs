@@ -18,7 +18,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const official = path.join(here, "..", "internal", "templates", "official");
+const official = path.join(here, "..", "dist", "official");
 
 async function playwright() {
   for (const spec of ["playwright", "playwright-core"]) {

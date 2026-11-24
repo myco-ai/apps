@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { startFixture } from "./price-compare-fixture.mjs";
-const out=process.env.PRICE_COMPARE_SHOTS||"/root/code/myco-artifacts/price-compare/screens";fs.mkdirSync(out,{recursive:true});
+const out=process.env.PRICE_COMPARE_SHOTS||"artifacts";fs.mkdirSync(out,{recursive:true});
 const f=await startFixture(),{browser,server,reset,recs,writes,write,base}=f;
 try {
   for(const[lang,theme,width]of[["zh","light",1400],["en","dark",1400],["zh","dark",760],["en","light",393]]){

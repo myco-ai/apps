@@ -24,7 +24,7 @@ function testCartridge() {
   return { name: "test.nes", mimeType: "application/octet-stream", buffer: rom };
 }
 
-const root = new URL("../internal/templates/official/arcade/", import.meta.url);
+const root = new URL("../dist/official/arcade/", import.meta.url);
 const server = createServer((req, res) => {
   const path = new URL(req.url, "http://test").pathname;
   try {

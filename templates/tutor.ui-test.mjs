@@ -9,7 +9,7 @@ import { join } from "node:path";
 
 const require = createRequire(join(execFileSync("npm", ["root", "-g"], { encoding: "utf8" }).trim(), "noop.js"));
 const { chromium } = require("playwright");
-const root = new URL("../internal/templates/official/tutor/", import.meta.url);
+const root = new URL("../dist/official/tutor/", import.meta.url);
 const files = new Map([["/", ["text/html", readFileSync(new URL("index.html", root))]]]);
 for (const asset of readdirSync(new URL("assets/", root))) {
   const path = "assets/" + asset;

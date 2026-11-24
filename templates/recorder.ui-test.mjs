@@ -7,7 +7,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 import ts from 'typescript';
-const here=path.dirname(fileURLToPath(import.meta.url)), root=path.resolve(here,'../internal/templates/official');
+const here=path.dirname(fileURLToPath(import.meta.url)), root=path.resolve(here,'../dist/official');
 const shots=fs.readFileSync(path.join(here,'shots.mjs'),'utf8');
 const bridge=shots.slice(shots.indexOf('const bridge = `')+16,shots.indexOf('})();`;')+5);
 const zoomJS=ts.transpile(fs.readFileSync(path.join(here,'src/video/zoom.ts'),'utf8'),{target:99,module:99});

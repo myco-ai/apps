@@ -6,7 +6,7 @@ import http from 'node:http';
 import {createRequire} from 'node:module';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'../internal/templates/official/disk');
+const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'../dist/official/disk');
 const fake=fs.readFileSync(path.join(here,'shots-os.js'),'utf8').replaceAll('os: "darwin"','os: window.__TEST_OS__').replace('largest.sort((a, b) => b.size - a.size);','largest.sort((a, b) => b.size - a.size); largest.unshift({path: ROOT+"/sparse.bin",size:16777216,disk:0,modified:0});');
 const bridge=`window.myco={features:['os'],os:window.__FAKE_OS__,ready:Promise.resolve({page:{id:'pg_disk'},me:{name:'tester'}}),data:{list:async()=>({records:[],seq:0}),on:()=>()=>{} }};`;
 const server=http.createServer((req,res)=>{const u=new URL(req.url,'http://test');if(u.pathname==='/fixture.js'){res.setHeader('Content-Type','text/javascript');res.end(fake+bridge);return;}const f=path.resolve(root,'.'+(u.pathname==='/'?'/index.html':u.pathname));if(!f.startsWith(root+path.sep)||!fs.existsSync(f)){res.writeHead(404);res.end();return;}res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'})[path.extname(f)]||'application/octet-stream');res.setHeader('Content-Security-Policy',"default-src 'self';script-src 'self';style-src 'self' 'unsafe-inline';img-src 'self' data: blob:;connect-src 'self';object-src 'none'");const b=fs.readFileSync(f);res.end(f.endsWith('.html')?String(b).replace('<head>','<head><script src="/fixture.js"></script>'):b);});

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {startFixture} from './palette-fixture.mjs';
-const out='/root/code/myco-artifacts/palette';fs.mkdirSync(out,{recursive:true});
+const out='artifacts';fs.mkdirSync(out,{recursive:true});
 const f=await startFixture(),{browser,server,reset,recs,writes,write,base}=f;
 try{
 for(const [lang,theme,width] of [['zh','light',1400],['en','dark',1400],['zh','dark',760],['en','light',393]]){

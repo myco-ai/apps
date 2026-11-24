@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,"../internal/templates/official/scheduling");
+const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,"../dist/official/scheduling");
 export async function startFixture() {
   const sample=JSON.parse(fs.readFileSync(path.join(here,"src/scheduling/public/sample.json"),"utf8")),recs=new Map();
   let seq=0,events=[],race=false,pending=[];

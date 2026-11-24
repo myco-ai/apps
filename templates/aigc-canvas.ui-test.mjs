@@ -7,7 +7,7 @@ import { join } from "node:path";
 
 const require = createRequire(join(execFileSync("npm", ["root", "-g"], { encoding: "utf8" }).trim(), "noop.js"));
 const { chromium } = require("playwright");
-const root = new URL("../internal/templates/official/aigc-canvas/", import.meta.url);
+const root = new URL("../dist/official/aigc-canvas/", import.meta.url);
 const server = createServer((req, res) => {
   const path = new URL(req.url, "http://test").pathname;
   try {
