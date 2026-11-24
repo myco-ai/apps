@@ -100,11 +100,13 @@ try {
   const g = execFileSync("npm", ["root", "-g"], { encoding: "utf8" }).trim();
   ({ chromium } = createRequire(path.join(g, "noop.js"))("playwright"));
 }
-const browser = await chromium.launch(
-  process.env.UI_SMOKE_EXECUTABLE
-    ? { executablePath: process.env.UI_SMOKE_EXECUTABLE }
-    : {},
-);
+// These are trusted local fixtures. Match the real Ocean graphics suite:
+// implicit SwiftShader fallback in Chromium 143 can stall the renderer, while
+// newer Chromium disables that fallback and would only test the failure panel.
+const browser = await chromium.launch({
+  args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
+  ...(process.env.UI_SMOKE_EXECUTABLE ? { executablePath: process.env.UI_SMOKE_EXECUTABLE } : {}),
+});
 console.log("Localization browser", browser.version(), "parallelism", os.availableParallelism());
 const bounded = async (work) => {
   let timer;
@@ -141,6 +143,7 @@ try {
         });
         for (const app of all) {
           console.log("BEGIN", app, width, language, theme);
+          const started = Date.now();
           const page = await context.newPage(), errors = [], consoleMessages = [], failures = [];
           page.on("console", message => { if (message.type() === "error" || message.type() === "warning") { consoleMessages.push(message.text().slice(0, 2000)); if (consoleMessages.length > 20) consoleMessages.shift(); } });
           page.on("requestfailed", request => failures.push({ url: request.url(), error: request.failure()?.errorText }));
@@ -162,6 +165,18 @@ try {
           const frame = page.frameLocator("#app");
           try {
             await frame.locator("#root").locator(":scope > *").first().waitFor({ timeout: 15000 });
+            // A locale pass must exercise the rendered sea, not its no-WebGL
+            // fallback. The dashboard is populated by the real frame callback.
+            if (app === "ocean") {
+              await frame.locator(".oc-dash").waitFor({ timeout: 15000 });
+              const graphics = await frame.locator(".oc").evaluate(() => {
+                const renderer = window.__ocean.renderer, gl = renderer.getContext();
+                const debug = gl.getExtension("WEBGL_debug_renderer_info");
+                return { calls: renderer.info.render.calls, backend: gl.getParameter(debug?.UNMASKED_RENDERER_WEBGL || gl.RENDERER) };
+              });
+              assert(graphics.calls > 0, "Ocean must render real graphics, not the unsupported fallback");
+              console.log("Ocean graphics ready", Date.now() - started, "ms", JSON.stringify(graphics));
+            }
           } catch (error) {
             await bootFailure(page, frame, { app, width, language, theme }, errors, consoleMessages, failures);
             throw new Error(`${app} ${width} ${language} ${theme}: first screen failed`, { cause: error });
