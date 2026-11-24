@@ -57,7 +57,7 @@ export type Run = {
 export type Draft = Script & { by: string; created_at: string };
 
 export const recordLimit = 64 * 1024;
-export const nodeWidth = 236, nodeHeight = 92, columnGap = 280, rowGap = 128;
+export const nodeWidth = 232, nodeHeight = 64, columnGap = 300, rowGap = 104;
 
 export const targetTypes = new Set<NodeType>(["click", "type", "select", "hover", "drag", "upload", "extract"]);
 export const optionalTargetTypes = new Set<NodeType>(["press", "scroll", "wait", "assert", "branch", "screenshot"]);
@@ -201,8 +201,9 @@ function cyclic(nodes: ScriptNode[], edges: Edge[]) {
   return nodes.some(node => visit(node.id));
 }
 
-/** Layered layout: each node goes one row below its deepest parent; the
- *  branches of a fork go side by side. Notes keep their places. */
+/** Layered layout, left to right: each node goes one column after its
+ *  deepest parent; the second port of a fork goes one row lower. Notes
+ *  keep their places. */
 export function layout(script: Script): Script {
   const { nodes, edges } = script.graph;
   if (cyclic(nodes, edges)) return script;
@@ -239,7 +240,7 @@ export function layout(script: Script): Script {
     graph: {
       edges,
       nodes: nodes.map(node => node.type === "note" ? node : {
-        ...node, pos: [column.get(node.id)! * columnGap, depth.get(node.id)! * rowGap] as [number, number],
+        ...node, pos: [depth.get(node.id)! * columnGap, column.get(node.id)! * rowGap] as [number, number],
       }),
     },
   };
@@ -269,7 +270,7 @@ export function order(script: Script): ScriptNode[] {
   return result;
 }
 
-/** Appends recorded steps below the last step of a linear script. */
+/** Appends recorded steps after the last step of a linear script. */
 export function append(script: Script, steps: ScriptNode[]): Script {
   const ids = new Set(script.graph.nodes.map(node => node.id));
   const fresh = steps.filter(step => nodeTypes.includes(step.type) && step.id && !ids.has(step.id) && ids.add(step.id));
@@ -277,8 +278,8 @@ export function append(script: Script, steps: ScriptNode[]): Script {
   const sequence = order(script);
   const outgoing = new Set(script.graph.edges.map(edge => edge[0]));
   const tail = [...sequence].reverse().find(node => !outgoing.has(node.id) && !portLabels[node.type]);
-  const base = tail ? tail.pos : [0, -rowGap] as [number, number];
-  const nodes = fresh.map((step, index) => ({ ...step, pos: [base[0], base[1] + rowGap * (index + 1)] as [number, number] }));
+  const base = tail ? tail.pos : [-columnGap, 0] as [number, number];
+  const nodes = fresh.map((step, index) => ({ ...step, pos: [base[0] + columnGap * (index + 1), base[1]] as [number, number] }));
   const edges: Edge[] = [];
   let previous = tail?.id;
   for (const node of nodes) { if (previous) edges.push([previous, node.id]); previous = node.id; }

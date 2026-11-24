@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Circle, CirclePause, CirclePlay, Copy, FilePlus2, LayoutGrid, MonitorSmartphone, Play, Square, StepForward, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { XYPosition } from "@xyflow/react";
-import { Kit, mount, Toast, uid, useKit } from "../_lib/appkit";
+import { Kit, mount, uid, useKit } from "../_lib/appkit";
 import { locale, t as uiText } from "../_lib/i18n";
 import { Store, type MycoRecord } from "../_lib/myco";
 import { browser, errorCode, type BrowserProfile, type BrowserStatus, type RunUpdate } from "./bridge";
 import { Canvas } from "./canvas";
 import { NodeInspector, ScriptSettings, type Tools } from "./inspector";
-import { bridgeError, stateDot, stateName, typeName } from "./labels";
-import { append, bytes, connect, cutOutput, finished, fitRun, layout, newNode, newScript, normalize, recordLimit,
+import { bridgeError, category, stateDot, stateName, typeName } from "./labels";
+import { append, bytes, columnGap, connect, cutOutput, finished, fitRun, layout, newNode, newScript, normalize, recordLimit,
   removeNode, runArguments, validate, type Draft, type NodeType, type Run, type RunStep, type Script } from "./model";
+import { Palette } from "./palette";
+import { Icon, StepIcon } from "./icons";
+import { Popover, Segmented, Select, Switch, Toggle } from "./ui";
 import "../_lib/sheet.css";
 import "./automation.css";
 
@@ -17,7 +19,7 @@ const scripts = new Store<Script>("scripts");
 const runs = new Store<Run>("runs");
 const drafts = new Store<Draft>("drafts");
 const kit = new Kit([scripts, runs, drafts], { quiet: true });
-type View = "scripts" | "runs" | "drafts";
+type View = "editor" | "runs" | "drafts";
 
 const when = (iso: string) => {
   const time = Date.parse(iso);
@@ -29,6 +31,7 @@ const duration = (run: Run) => {
   const seconds = Math.max(0, Math.round((end - start) / 1000));
   return seconds < 60 ? uiText("{0} 秒", seconds) : uiText("{0} 分 {1} 秒", Math.floor(seconds / 60), seconds % 60);
 };
+const ms = (value?: number) => value === undefined ? "" : value >= 1000 ? `${(value / 1000).toFixed(1)} s` : `${value} ms`;
 const newest = (rows: MycoRecord<Run>[]) => [...rows].sort((a, b) => Date.parse(b.data.started_at) - Date.parse(a.data.started_at));
 
 /** Writes a script after checking its size; `change` reads the newest copy. */
@@ -44,159 +47,181 @@ function Dot({ state }: { state: Run["state"] }) {
   return <span className={`wa-dot ${stateDot(state)}`} aria-hidden="true"/>;
 }
 
-function Banner({ status }: { status?: BrowserStatus | null }) {
-  if (status) return null;
-  return <div className="wa-banner" role="note">
-    <strong>{status === null ? uiText("这台电脑还不能录制和运行") : uiText("正在连接浏览器组件…")}</strong>
-    {status === null && <span>{uiText("录制、调试和回放需要支持浏览器组件的新版 myco App。现在仍可编辑脚本、查看运行记录；agent 也能通过页面数据读写脚本。")}</span>}
-  </div>;
+function State({ state }: { state: Run["state"] }) {
+  return <span className={`wa-state ${stateDot(state)}`}><Dot state={state}/>{stateName(state)}</span>;
 }
+
+function Dialog({ title, children, close, footer, wide }: { title: string; children: ReactNode; close: () => void; footer: ReactNode; wide?: boolean }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { dialog.current?.showModal(); }, []);
+  return <dialog ref={dialog} className={`wa-dialog${wide ? " is-wide" : ""}`} aria-label={title} onClose={close}
+    onClick={event => { if (event.target === dialog.current) dialog.current?.close(); }}>
+    <header><h2>{title}</h2><button type="button" className="ui-icon-btn" aria-label={uiText("关闭")} onClick={() => dialog.current?.close()}><Icon.close size={15}/></button></header>
+    <div className="wa-dialog-body">{children}</div>
+    <footer>{footer}</footer>
+  </dialog>;
+}
+const closeDialog = (event: React.MouseEvent) => (event.currentTarget.closest("dialog") as HTMLDialogElement | null)?.close();
 
 function RunDialog({ script, id, version, profiles, startAt, breakpoints, close, start }: {
   script: Script; id: string; version: number; profiles: BrowserProfile[]; startAt?: string; breakpoints: string[];
   close: () => void; start: (input: { values: Record<string, string>; secrets: Record<string, string>; profile: string; headless: boolean; startAt?: string }) => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
   const [input, setInput] = useState<Record<string, string>>({});
   const [profile, setProfile] = useState(profiles.find(item => item.name === script.profile)?.id || profiles[0]?.id || "");
   const [headless, setHeadless] = useState(false);
   const [missing, setMissing] = useState<string[]>([]);
-  useEffect(() => { dialog.current?.showModal(); }, []);
   const issues = validate(script, scripts.rows.map(row => row.id), id);
   const from = startAt ? script.graph.nodes.find(node => node.id === startAt) : undefined;
-  return <dialog ref={dialog} className="wa-dialog" aria-labelledby="wa-run-title" onClose={close}>
-    <h2 id="wa-run-title">{uiText("运行「{0}」", script.name || uiText("未命名脚本"))}</h2>
-    <p className="wa-hint">{uiText("版本 {0}", version)}{from ? " · " + uiText("从「{0}」开始", from.title || typeName(from.type)) : ""}{breakpoints.length ? " · " + uiText("{0} 个断点", breakpoints.length) : ""}</p>
+  return <Dialog title={uiText("运行「{0}」", script.name || uiText("未命名脚本"))} close={close} footer={<>
+    <button type="button" className="wa-btn" onClick={closeDialog}>{uiText("取消")}</button>
+    <button type="button" className="wa-btn is-primary" disabled={issues.length > 0 || !profile} onClick={event => {
+      const result = runArguments(script.params, input);
+      setMissing(result.missing);
+      if (result.missing.length) return;
+      start({ values: result.values, secrets: result.secrets, profile, headless, startAt });
+      closeDialog(event);
+    }}><Icon.play size={13}/>{uiText("开始运行")}</button>
+  </>}>
+    <div className="wa-chips">
+      <span className="wa-chip">{uiText("版本 {0}", version)}</span>
+      {from && <span className="wa-chip">{uiText("从「{0}」开始", from.title || typeName(from.type))}</span>}
+      {breakpoints.length > 0 && <span className="wa-chip">{uiText("{0} 个断点", breakpoints.length)}</span>}
+    </div>
     {issues.length > 0 && <p className="wa-error">{uiText("脚本还有 {0} 处需要修改，先改好再运行。", issues.length)}</p>}
-    <label className="wa-field"><span>{uiText("用哪个 profile")}</span>
-      <select className="sel" value={profile} onChange={event => setProfile(event.target.value)}>
-        {profiles.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-      </select></label>
-    {!profiles.length && <p className="wa-hint">{uiText("还没有 profile，请先在「Profile」里新建一个。")}</p>}
-    {script.params.map(param => <label className="wa-field" key={param.name}>
-      <span>{param.name}{param.required ? " *" : ""}{param.type === "secret" ? " · " + uiText("不保存") : ""}</span>
-      {param.type === "text" ? <textarea className="inp" rows={3} value={input[param.name] ?? param.default ?? ""} onChange={event => setInput({ ...input, [param.name]: event.target.value })}/>
-        : param.type === "bool" ? <select className="sel" value={input[param.name] ?? param.default ?? "false"} onChange={event => setInput({ ...input, [param.name]: event.target.value })}>
-          <option value="true">{uiText("是")}</option><option value="false">{uiText("否")}</option></select>
-        : <input className="inp" type={param.type === "secret" ? "password" : param.type === "number" ? "number" : "text"} autoComplete="off"
+    <div className="ui-field"><span className="ui-label">{uiText("用哪个 profile")}</span>
+      <Select label={uiText("用哪个 profile")} value={profile} onChange={setProfile} placeholder={uiText("还没有 profile")}
+        options={profiles.map(item => ({ value: item.id, label: item.name, icon: <Icon.profile size={14}/> }))}/>
+      {!profiles.length && <small>{uiText("还没有 profile，请先在「Profile」里新建一个。")}</small>}
+    </div>
+    {script.params.map(param => <div className="ui-field" key={param.name}>
+      <label htmlFor={`wa-param-${param.name}`}>{param.name}{param.required ? " *" : ""}{param.type === "secret" ? <span className="wa-chip is-small">{uiText("不保存")}</span> : null}</label>
+      {param.type === "text" ? <textarea id={`wa-param-${param.name}`} className="wa-input" rows={3} value={input[param.name] ?? param.default ?? ""} onChange={event => setInput({ ...input, [param.name]: event.target.value })}/>
+        : param.type === "bool" ? <Select label={param.name} value={(input[param.name] ?? param.default ?? "false") as "true" | "false"} onChange={value => setInput({ ...input, [param.name]: value })}
+          options={[{ value: "true", label: uiText("是") }, { value: "false", label: uiText("否") }]}/>
+        : <input id={`wa-param-${param.name}`} className="wa-input" type={param.type === "secret" ? "password" : param.type === "number" ? "number" : "text"} autoComplete="off"
           value={input[param.name] ?? (param.type === "secret" ? "" : param.default ?? "")} onChange={event => setInput({ ...input, [param.name]: event.target.value })}/>}
       {missing.includes(param.name) && <small className="wa-error">{uiText("请填写有效的值。")}</small>}
-    </label>)}
-    <label className="wa-check"><input type="checkbox" checked={headless} onChange={event => setHeadless(event.target.checked)}/>{uiText("不显示浏览器窗口（无头）")}</label>
-    <div className="wa-actions wa-end">
-      <button type="button" className="btn" onClick={() => dialog.current?.close()}>{uiText("取消")}</button>
-      <button type="button" className="btn btn-primary" disabled={issues.length > 0 || !profile} onClick={() => {
-        const result = runArguments(script.params, input);
-        setMissing(result.missing);
-        if (result.missing.length) return;
-        start({ values: result.values, secrets: result.secrets, profile, headless, startAt });
-        dialog.current?.close();
-      }}><Play size={14}/>{uiText("开始运行")}</button>
-    </div>
-  </dialog>;
+    </div>)}
+    <Toggle label={uiText("不显示浏览器窗口")} hint={uiText("无头运行，适合不需要看着的任务")} checked={headless} onChange={setHeadless}/>
+  </Dialog>;
 }
 
 function RecordDialog({ script, profiles, close, start }: {
   script: Script; profiles: BrowserProfile[]; close: () => void; start: (profile: string, url: string) => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
   const [profile, setProfile] = useState(profiles.find(item => item.name === script.profile)?.id || profiles[0]?.id || "");
   const [url, setURL] = useState(script.start_url);
-  useEffect(() => { dialog.current?.showModal(); }, []);
   const valid = /^https?:\/\//i.test(url.trim());
-  return <dialog ref={dialog} className="wa-dialog" aria-labelledby="wa-record-title" onClose={close}>
-    <h2 id="wa-record-title">{uiText("录制")}</h2>
-    <p className="wa-hint">{uiText("会打开 myco 专用的浏览器窗口，不碰你日常用的 Chrome。你在里面的操作会一步步出现在画布上；密码框里的内容不会记下来。")}</p>
-    <label className="wa-field"><span>{uiText("用哪个 profile")}</span>
-      <select className="sel" value={profile} onChange={event => setProfile(event.target.value)}>
-        {profiles.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-      </select></label>
-    <label className="wa-field"><span>{uiText("打开网址")}</span><input className="inp" value={url} placeholder="https://" onChange={event => setURL(event.target.value)}/></label>
-    <div className="wa-actions wa-end">
-      <button type="button" className="btn" onClick={() => dialog.current?.close()}>{uiText("取消")}</button>
-      <button type="button" className="btn btn-primary" disabled={!profile || !valid} onClick={() => { start(profile, url.trim()); dialog.current?.close(); }}>
-        <Circle size={13}/>{uiText("开始录制")}</button>
-    </div>
-  </dialog>;
+  return <Dialog title={uiText("录制")} close={close} footer={<>
+    <button type="button" className="wa-btn" onClick={closeDialog}>{uiText("取消")}</button>
+    <button type="button" className="wa-btn is-primary" disabled={!profile || !valid} onClick={event => { start(profile, url.trim()); closeDialog(event); }}>
+      <Icon.record size={13}/>{uiText("开始录制")}</button>
+  </>}>
+    <p className="wa-muted">{uiText("会打开 myco 专用的浏览器窗口，不碰你日常用的 Chrome。你在里面的操作会一步步出现在画布上；密码框里的内容不会记下来。")}</p>
+    <div className="ui-field"><span className="ui-label">{uiText("用哪个 profile")}</span>
+      <Select label={uiText("用哪个 profile")} value={profile} onChange={setProfile} placeholder={uiText("还没有 profile")}
+        options={profiles.map(item => ({ value: item.id, label: item.name, icon: <Icon.profile size={14}/> }))}/></div>
+    <div className="ui-field"><label htmlFor="wa-record-url">{uiText("打开网址")}</label>
+      <input id="wa-record-url" className="wa-input" value={url} placeholder="https://" onChange={event => setURL(event.target.value)}/></div>
+  </Dialog>;
 }
 
 function ProfilesDialog({ status, refresh, close }: { status: BrowserStatus; refresh: () => void; close: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState("");
   const bridge = browser()!;
-  useEffect(() => { dialog.current?.showModal(); }, []);
   const act = (task: Promise<unknown>) => void task.then(refresh, error => kit.flash(bridgeError(errorCode(error))));
-  return <dialog ref={dialog} className="wa-dialog" aria-labelledby="wa-profiles-title" onClose={close}>
-    <h2 id="wa-profiles-title">{uiText("Profile")}</h2>
-    <p className="wa-hint">{uiText("每个 profile 是一组单独的浏览器登录状态，只存在 {0} 上。打开「允许 agent 使用」后，agent 才能申请用它跑脚本。", status.machine)}</p>
-    <ul className="wa-profile-list">
+  return <Dialog title={uiText("Profile")} close={close} wide footer={<button type="button" className="wa-btn is-primary" onClick={closeDialog}>{uiText("完成")}</button>}>
+    <p className="wa-muted">{uiText("每个 profile 是一组单独的浏览器登录状态，只存在 {0} 上。打开「允许 agent 使用」后，agent 才能申请用它跑脚本。", status.machine)}</p>
+    <ul className="wa-profiles">
       {status.profiles.map(profile => <li key={profile.id}>
-        <span><Dot state={profile.running ? "running" : "succeeded"}/>{profile.name}</span>
-        <label className="wa-check"><input type="checkbox" checked={profile.agents} onChange={event => act(bridge.profiles.allowAgents(profile.id, event.target.checked))}/>{uiText("允许 agent 使用")}</label>
-        <button type="button" className="btn" onClick={() => act(bridge.profiles.open(profile.id))}>{uiText("打开浏览器登录")}</button>
+        <span className="wa-avatar"><Icon.profile size={16}/></span>
+        <span className="wa-profile-name"><strong>{profile.name}</strong><small>{profile.running ? uiText("浏览器开着") : uiText("未打开")}</small></span>
+        <button type="button" className="wa-btn is-ghost is-small" onClick={() => act(bridge.profiles.open(profile.id))}>{uiText("打开浏览器登录")}</button>
+        <span className="wa-profile-agents">{uiText("允许 agent 使用")}<Switch label={uiText("允许 agent 使用")} checked={profile.agents} onChange={value => act(bridge.profiles.allowAgents(profile.id, value))}/></span>
       </li>)}
+      {!status.profiles.length && <li className="wa-muted">{uiText("还没有 profile。")}</li>}
     </ul>
-    <form className="wa-actions" onSubmit={event => { event.preventDefault(); if (name.trim()) { act(bridge.profiles.create(name.trim())); setName(""); } }}>
-      <input className="inp" aria-label={uiText("新 profile 的名字")} placeholder={uiText("例如：发帖号")} value={name} maxLength={40} onChange={event => setName(event.target.value)}/>
-      <button className="btn" disabled={!name.trim()}>{uiText("新建")}</button>
+    <form className="wa-row" onSubmit={event => { event.preventDefault(); if (name.trim()) { act(bridge.profiles.create(name.trim())); setName(""); } }}>
+      <input className="wa-input" aria-label={uiText("新 profile 的名字")} placeholder={uiText("例如：发帖号")} value={name} maxLength={40} onChange={event => setName(event.target.value)}/>
+      <button className="wa-btn" disabled={!name.trim()}><Icon.plus size={14}/>{uiText("新建")}</button>
     </form>
-    <div className="wa-actions wa-end"><button type="button" className="btn btn-primary" onClick={() => dialog.current?.close()}>{uiText("完成")}</button></div>
-  </dialog>;
+  </Dialog>;
 }
 
 function RunDetail({ run, script, live, control }: {
   run: MycoRecord<Run>; script?: Script; live: boolean; control: (action: "pause" | "resume" | "step" | "cancel", choice?: string) => void;
 }) {
-  const names = new Map((script?.graph.nodes || []).map(node => [node.id, node.title || typeName(node.type)]));
+  const nodes = new Map((script?.graph.nodes || []).map(node => [node.id, node]));
   const data = run.data;
   const output = Object.entries(data.output || {});
   return <section className="wa-run" aria-label={uiText("运行详情")}>
     <header className="wa-run-head">
-      <div><h2><Dot state={data.state}/>{data.script_name || uiText("未命名脚本")}</h2>
-        <p className="wa-hint">{[stateName(data.state), when(data.started_at), duration(data), data.by_kind === "agent" ? uiText("agent {0} 触发", data.by) : uiText("{0} 触发", data.by),
-          data.machine, data.profile, uiText("版本 {0}", data.script_version)].filter(Boolean).join(" · ")}</p></div>
-      {live && <div className="wa-actions">
-        {data.state === "running" && <button type="button" className="btn" onClick={() => control("pause")}><CirclePause size={14}/>{uiText("暂停")}</button>}
-        {data.state === "paused" && !data.question && <><button type="button" className="btn" onClick={() => control("resume")}><CirclePlay size={14}/>{uiText("继续")}</button>
-          <button type="button" className="btn" onClick={() => control("step")}><StepForward size={14}/>{uiText("单步")}</button></>}
-        {!finished(data.state) && <button type="button" className="btn" onClick={() => control("cancel")}><Square size={13}/>{uiText("停止")}</button>}
+      <div>
+        <h2>{data.script_name || uiText("未命名脚本")}</h2>
+        <div className="wa-chips">
+          <State state={data.state}/>
+          <span className="wa-chip">{when(data.started_at)}</span>
+          {duration(data) && <span className="wa-chip">{duration(data)}</span>}
+          <span className="wa-chip">{data.by_kind === "agent" ? uiText("agent {0} 触发", data.by) : uiText("{0} 触发", data.by)}</span>
+          {data.machine && <span className="wa-chip">{data.machine}</span>}
+          {data.profile && <span className="wa-chip"><Icon.profile size={12}/>{data.profile}</span>}
+          <span className="wa-chip">{uiText("版本 {0}", data.script_version)}</span>
+        </div>
+      </div>
+      {live && <div className="wa-row">
+        {data.state === "running" && <button type="button" className="wa-btn" onClick={() => control("pause")}><Icon.pause size={13}/>{uiText("暂停")}</button>}
+        {data.state === "paused" && !data.question && <><button type="button" className="wa-btn" onClick={() => control("resume")}><Icon.play size={12}/>{uiText("继续")}</button>
+          <button type="button" className="wa-btn" onClick={() => control("step")}><Icon.step size={13}/>{uiText("单步")}</button></>}
+        {!finished(data.state) && <button type="button" className="wa-btn is-danger" onClick={() => control("cancel")}><Icon.stop size={12}/>{uiText("停止")}</button>}
       </div>}
     </header>
     {data.state === "paused" && data.question && <div className="wa-question" role="alert">
-      <p>{data.question}</p>
-      {live ? <div className="wa-actions">
-        <button type="button" className="btn btn-primary" onClick={() => control("resume", "ok")}>{uiText("同意，继续")}</button>
-        <button type="button" className="btn" onClick={() => control("resume", "cancel")}>{uiText("拒绝")}</button>
-      </div> : <p className="wa-hint">{uiText("等触发运行的人或 agent 回答。")}</p>}
+      <span className="wa-tile" data-cat="flow"><Icon.confirm size={17}/></span>
+      <div><strong>{data.question}</strong>
+        {live ? <div className="wa-row">
+          <button type="button" className="wa-btn is-primary" onClick={() => control("resume", "ok")}>{uiText("同意，继续")}</button>
+          <button type="button" className="wa-btn" onClick={() => control("resume", "cancel")}>{uiText("拒绝")}</button>
+        </div> : <p className="wa-muted">{uiText("等触发运行的人或 agent 回答。")}</p>}</div>
     </div>}
-    {data.error && <p className="wa-error">{names.get(data.error_node) ? `${names.get(data.error_node)} · ` : ""}{data.error}</p>}
-    <ol className="wa-steps">
-      {data.steps.map((step, index) => <li key={index} data-state={step.state}>
-        <span className={`wa-dot ${step.state === "failed" ? "failed" : step.state === "running" ? "working" : "idle"}`} aria-hidden="true"/>
-        <span>{names.get(step.node) || step.node}</span>
-        <small>{step.state === "skipped" ? uiText("跳过") : step.state === "failed" ? step.error || uiText("失败") : step.ms !== undefined ? (step.ms >= 1000 ? `${(step.ms / 1000).toFixed(1)} s` : `${step.ms} ms`) : ""}</small>
-      </li>)}
+    {data.error && <div className="wa-error-box"><Icon.warning size={15}/><span>{nodes.get(data.error_node) ? `${nodes.get(data.error_node)!.title || typeName(nodes.get(data.error_node)!.type)} · ` : ""}{data.error}</span></div>}
+    <ol className="wa-timeline">
+      {data.steps.map((step, index) => { const node = nodes.get(step.node); return <li key={index} data-state={step.state}>
+        <span className="wa-tile" data-cat={node ? category(node.type) : "note"}>{node ? <StepIcon type={node.type} size={15}/> : <Icon.file size={15}/>}</span>
+        <span className="wa-timeline-text"><strong>{node ? node.title || typeName(node.type) : step.node}</strong>
+          {step.state === "failed" ? <small className="wa-error">{step.error || uiText("失败")}</small> : node && <small>{typeName(node.type)}</small>}</span>
+        <span className={`wa-step-state is-${step.state}`}>{step.state === "skipped" ? uiText("跳过") : step.state === "running" ? uiText("运行中") : step.state === "failed" ? uiText("失败") : ms(step.ms)}</span>
+      </li>; })}
     </ol>
     {output.length > 0 && <section className="wa-output"><h3>{uiText("提取的数据")}</h3>
       <dl>{output.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{typeof value === "string" ? value : JSON.stringify(value)}</dd></div>)}</dl></section>}
-    {!data.steps.length && !data.error && <p className="wa-hint">{uiText("还没有步骤记录。")}</p>}
+    {!data.steps.length && !data.error && <p className="wa-muted">{uiText("还没有步骤记录。")}</p>}
   </section>;
+}
+
+function Empty({ icon, title, text, action }: { icon: ReactNode; title: string; text: string; action?: ReactNode }) {
+  return <div className="wa-empty"><span className="wa-empty-icon">{icon}</span><h2>{title}</h2><p>{text}</p>{action}</div>;
 }
 
 function App() {
   useKit(kit);
-  const [view, setView] = useState<View>("scripts");
+  const [view, setView] = useState<View>("editor");
+  const [side, setSide] = useState<"blocks" | "settings">("blocks");
   const [scriptId, setScriptId] = useState(() => scripts.rows[0]?.id || "");
   const [nodeId, setNodeId] = useState("");
+  const [browsing, setBrowsing] = useState(false);
   const [runId, setRunId] = useState("");
   const [draftId, setDraftId] = useState("");
   const [status, setStatus] = useState<BrowserStatus | null | undefined>(browser() ? undefined : null);
   const [breakpoints, setBreakpoints] = useState<Record<string, string[]>>({});
   const [dialog, setDialog] = useState<"run" | "record" | "profiles" | "">("");
+  const [switcher, setSwitcher] = useState(false);
+  const [find, setFind] = useState("");
   const [startAt, setStartAt] = useState<string>();
   const [recording, setRecording] = useState<{ id: string; script: string }>();
   const [live, setLive] = useState<{ bridge: string; record: string }>();
   const stopped = useRef(false);
+  const switcherButton = useRef<HTMLButtonElement>(null);
   const bridge = browser();
 
   const refresh = useCallback(() => {
@@ -205,6 +230,7 @@ function App() {
   }, [bridge]);
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { stopped.current = true; }, []);
+  useEffect(() => { if (scriptId && !scripts.get(scriptId)) setScriptId(scripts.rows[0]?.id || ""); });
 
   const record = scripts.get(scriptId);
   const script = useMemo(() => record ? normalize(record.data) : undefined, [record?.data]);
@@ -212,8 +238,8 @@ function App() {
   const issues = useMemo(() => script ? validate(script, ids, scriptId) : [], [script, ids.join(), scriptId]);
   const issueNodes = useMemo(() => new Set(issues.flatMap(issue => issue.node ? [issue.node] : [])), [issues]);
   const node = script?.graph.nodes.find(item => item.id === nodeId);
-  const scriptRuns = newest(runs.rows);
-  const lastRun = (id: string) => scriptRuns.find(run => run.data.script_id === id);
+  const runRows = newest(runs.rows);
+  const lastRun = (id: string) => runRows.find(run => run.data.script_id === id);
   const liveRun = live ? runs.get(live.record) : null;
   const marks = useMemo(() => {
     const result: Record<string, RunStep["state"] | "current" | ""> = {};
@@ -225,27 +251,40 @@ function App() {
   const editable = kit.canEdit && !recording;
   const profiles = status?.profiles || [];
   const points = breakpoints[scriptId] || [];
+  const canRun = Boolean(bridge && status && !live && !recording);
+  const selectedRun = runs.get(runId) || runRows[0];
+  const selectedDraft = drafts.get(draftId) || drafts.rows[0];
 
-  useEffect(() => {
-    if (scriptId && !scripts.get(scriptId)) setScriptId(scripts.rows[0]?.id || "");
-  });
+  function open(id: string) { setScriptId(id); setNodeId(""); setView("editor"); setSwitcher(false); setSide("blocks"); }
 
   async function create() {
     const id = uid("scr_");
     const name = uiText("新脚本 {0}", scripts.rows.length + 1);
-    const saved = await kit.track(scripts.put(newScript(name), id));
-    if (saved) { setView("scripts"); setScriptId(id); setNodeId(""); }
+    if (await kit.track(scripts.put(newScript(name), id))) { open(id); setSide("settings"); }
   }
 
-  async function addNode(type: NodeType, point: XYPosition, from?: string, port?: string) {
+  async function addNode(type: NodeType, point?: XYPosition) {
     if (!script) return;
     const id = uid("n_");
+    const anchor = point ? undefined : script.graph.nodes.find(item => item.id === nodeId && item.type !== "note")
+      || [...script.graph.nodes].reverse().find(item => item.type !== "note" && !script.graph.edges.some(edge => edge[0] === item.id));
+    const pos: [number, number] = point ? [Math.round(point.x), Math.round(point.y)]
+      : anchor ? [anchor.pos[0] + columnGap, anchor.pos[1]] : [0, 0];
     const done = await update(scriptId, current => {
-      const added = { ...current, graph: { ...current.graph, nodes: [...current.graph.nodes, newNode(type, id, [Math.round(point.x), Math.round(point.y)])] } };
-      return from ? connect(added, from, id, port) : added;
+      const added = { ...current, graph: { ...current.graph, nodes: [...current.graph.nodes, newNode(type, id, pos)] } };
+      return anchor && type !== "note" ? connect(added, anchor.id, id) : added;
     });
-    if (done) setNodeId(id);
+    if (done) { setNodeId(id); setBrowsing(false); }
   }
+
+  const actions = useMemo(() => ({
+    remove: (id: string) => { setNodeId(current => current === id ? "" : current); void update(scriptId, current => removeNode(current, id)); },
+    toggleBreakpoint: (id: string) => setBreakpoints(all => {
+      const list = all[scriptId] || [];
+      return { ...all, [scriptId]: list.includes(id) ? list.filter(item => item !== id) : [...list, id] };
+    }),
+    runFrom: canRun ? (id: string) => { setStartAt(id); setDialog("run"); } : undefined,
+  }), [scriptId, canRun]);
 
   const tools: Tools = bridge && status ? {
     locate: async target => {
@@ -300,20 +339,20 @@ function App() {
       setLive({ bridge: started.id, record: recordId });
       let after = 0, last = 0;
       while (!stopped.current) {
-        const update: RunUpdate = await bridge.runs.get(started.id, after);
-        after = update.next;
+        const change: RunUpdate = await bridge.runs.get(started.id, after);
+        after = change.next;
         const merged = [...run.steps];
-        for (const step of update.steps) {
+        for (const step of change.steps) {
           const index = merged.findIndex(item => item.node === step.node && item.state === "running");
           if (index >= 0) merged[index] = step; else merged.push(step);
         }
-        const next: Run = { ...run, state: update.state, node: update.node, error: update.error || "", error_node: update.error_node || "",
-          question: update.question, steps: merged, output: cutOutput(update.output || {}, secretValues),
-          ended_at: finished(update.state) ? new Date().toISOString() : "" };
+        const next: Run = { ...run, state: change.state, node: change.node, error: change.error || "", error_node: change.error_node || "",
+          question: change.question, steps: merged, output: cutOutput(change.output || {}, secretValues),
+          ended_at: finished(change.state) ? new Date().toISOString() : "" };
         const important = next.state !== run.state || finished(next.state) || Date.now() - last > 1500;
         run = next;
         if (important) { last = Date.now(); await write(next); }
-        if (finished(update.state)) break;
+        if (finished(change.state)) break;
       }
     } catch (error) {
       await write({ ...run, state: "failed", error: bridgeError(errorCode(error)), ended_at: new Date().toISOString() });
@@ -331,13 +370,13 @@ function App() {
     const copy = { ...record.data }, id = record.id;
     setNodeId("");
     await kit.track(scripts.remove(id));
-    kit.flash(uiText("已删除「{0}」", copy.name || uiText("未命名脚本")), () => { void kit.track(scripts.put(copy, id)).then(() => setScriptId(id)); });
+    kit.flash(uiText("已删除「{0}」", copy.name || uiText("未命名脚本")), () => { void kit.track(scripts.put(copy, id)).then(() => open(id)); });
   }
 
   async function duplicate() {
     if (!script) return;
     const id = uid("scr_");
-    if (await kit.track(scripts.put({ ...script, name: uiText("{0} 副本", script.name) }, id))) setScriptId(id);
+    if (await kit.track(scripts.put({ ...script, name: uiText("{0} 副本", script.name) }, id))) open(id);
   }
 
   async function adopt(draft: MycoRecord<Draft>) {
@@ -346,105 +385,134 @@ function App() {
     const next = layout({ ...normalize(rest), source: "agent" });
     if (!await kit.track(scripts.put(next, id))) return;
     await kit.track(drafts.remove(draft.id));
-    setView("scripts"); setScriptId(id); setDraftId("");
+    setDraftId("");
+    open(id);
   }
 
-  const canRun = Boolean(bridge && status && !live && !recording);
-  const selectedRun = runs.get(runId) || scriptRuns[0];
-  const selectedDraft = drafts.get(draftId) || drafts.rows[0];
+  const saveState = recording ? uiText("正在录制…") : kit.pending ? uiText("正在保存…") : kit.failed ? uiText("没保存上") : !kit.canEdit ? uiText("只能看") : uiText("已保存");
+  const filtered = scripts.rows.filter(row => !find.trim() || (row.data.name || "").toLowerCase().includes(find.trim().toLowerCase()));
+  const unavailable = !bridge ? uiText("需要支持浏览器组件的新版 myco App") : undefined;
 
   return <div className="wa-app">
-    <header className="wa-header">
-      <div><h1>{uiText("网页自动化")}</h1>
-        <small role="status">{recording ? uiText("正在录制…在浏览器里操作，步骤会出现在画布上。") : kit.pending ? uiText("正在保存…") : kit.failed ? uiText("没保存上") : !kit.canEdit ? uiText("只能看") : uiText("已保存")}</small></div>
-      <div className="wa-actions">
-        {kit.canEdit && <button type="button" className="btn" onClick={() => void create()}><FilePlus2 size={15}/>{uiText("新建脚本")}</button>}
-        {view === "scripts" && script && <>
-          {recording ? <button type="button" className="btn wa-recording" onClick={() => void bridge?.record.stop(recording.id).catch(() => undefined)}><Square size={13}/>{uiText("停止录制")}</button>
-            : <button type="button" className="btn" disabled={!canRun || !kit.canEdit} onClick={() => setDialog("record")}
-              title={!bridge ? uiText("需要支持浏览器组件的新版 myco App") : undefined}><Circle size={13}/>{uiText("录制")}</button>}
-          <button type="button" className="btn" disabled={!editable || !script.graph.nodes.length} onClick={() => void update(scriptId, layout)}><LayoutGrid size={15}/>{uiText("自动排版")}</button>
-          <button type="button" className="btn btn-primary" disabled={!canRun} onClick={() => { setStartAt(undefined); setDialog("run"); }}
-            title={!bridge ? uiText("需要支持浏览器组件的新版 myco App") : undefined}><Play size={14}/>{uiText("运行")}</button>
+    <header className="wa-top">
+      <div className="wa-top-left">
+        <span className="wa-logo"><Icon.logo size={17}/></span>
+        <button ref={switcherButton} type="button" className="wa-switcher" aria-haspopup="dialog" aria-expanded={switcher} onClick={() => setSwitcher(!switcher)}>
+          <span className="wa-switcher-text"><strong>{script ? script.name || uiText("未命名脚本") : uiText("网页自动化")}</strong>
+            <small className={recording ? "is-recording" : kit.failed ? "is-error" : ""}>{saveState}</small></span>
+          <Icon.chevronDown size={14}/>
+        </button>
+        <Popover open={switcher} anchor={switcherButton} close={() => setSwitcher(false)} width={320} label={uiText("脚本")}>
+          <label className="wa-search"><Icon.search size={15}/><input autoFocus value={find} onChange={event => setFind(event.target.value)} placeholder={uiText("搜索脚本")} aria-label={uiText("搜索脚本")}/></label>
+          <ul className="wa-script-list" aria-label={uiText("脚本")}>
+            {filtered.map(row => { const last = lastRun(row.id); return <li key={row.id}>
+              <button type="button" aria-current={row.id === scriptId} onClick={() => open(row.id)}>
+                <span className="wa-tile" data-cat="page"><Icon.file size={15}/></span>
+                <span className="wa-script-text"><strong>{row.data.name || uiText("未命名脚本")}</strong>
+                  <small>{last ? <><Dot state={last.data.state}/>{stateName(last.data.state)} · {when(last.data.started_at)}</> : uiText("还没运行过")}{row.data.profile ? ` · ${row.data.profile}` : ""}</small></span>
+                {row.id === scriptId && <Icon.check size={14}/>}
+              </button></li>; })}
+            {!filtered.length && <li className="wa-muted wa-pad">{scripts.rows.length ? uiText("没有匹配的脚本。") : uiText("还没有脚本。")}</li>}
+          </ul>
+          {kit.canEdit && <button type="button" className="wa-menu-action" onClick={() => void create()}><Icon.plus size={15}/>{uiText("新建脚本")}</button>}
+        </Popover>
+      </div>
+      <Segmented label={uiText("视图")} value={view} onChange={setView} options={[
+        { value: "editor", label: uiText("编辑器"), icon: <Icon.blocks size={14}/> },
+        { value: "runs", label: uiText("运行记录"), icon: <Icon.history size={14}/> },
+        { value: "drafts", label: drafts.rows.length ? uiText("草稿 {0}", drafts.rows.length) : uiText("草稿"), icon: <Icon.draft size={14}/> },
+      ]}/>
+      <div className="wa-top-right">
+        {bridge && status && <button type="button" className="ui-icon-btn" aria-label={uiText("Profile")} title={uiText("Profile")} onClick={() => setDialog("profiles")}><Icon.profile size={17}/></button>}
+        {view === "editor" && script && <>
+          <button type="button" className="ui-icon-btn" aria-label={uiText("自动排版")} title={uiText("自动排版")} disabled={!editable || !script.graph.nodes.length} onClick={() => void update(scriptId, layout)}><Icon.layout size={17}/></button>
+          {recording ? <button type="button" className="wa-btn is-recording" onClick={() => void bridge?.record.stop(recording.id).catch(() => undefined)}><Icon.stop size={11}/>{uiText("停止录制")}</button>
+            : <button type="button" className="wa-btn" disabled={!canRun || !kit.canEdit} title={unavailable} onClick={() => setDialog("record")}><Icon.record size={14} className="wa-rec-icon"/>{uiText("录制")}</button>}
+          <button type="button" className="wa-btn is-primary" disabled={!canRun} title={unavailable} onClick={() => { setStartAt(undefined); setDialog("run"); }}><Icon.play size={12}/>{uiText("运行")}</button>
         </>}
-        {bridge && status && <button type="button" className="btn" onClick={() => setDialog("profiles")}><Users size={15}/>{uiText("Profile")}</button>}
       </div>
     </header>
-    <Banner status={status}/>
-    <div className="wa-body">
-      <nav className="wa-side" aria-label={uiText("脚本和运行记录")}>
-        <div className="wa-tabs" role="tablist">
-          {(["scripts", "runs", "drafts"] as View[]).map(item => <button type="button" role="tab" key={item} aria-selected={view === item} onClick={() => setView(item)}>
-            {item === "scripts" ? uiText("脚本") : item === "runs" ? uiText("运行记录") : uiText("草稿")}
-            {item === "drafts" && drafts.rows.length > 0 && <span className="wa-count">{drafts.rows.length}</span>}
-          </button>)}
-        </div>
-        {view === "scripts" && <ul className="wa-list">
-          {scripts.rows.map(row => { const last = lastRun(row.id); return <li key={row.id}>
-            <button type="button" aria-current={row.id === scriptId} onClick={() => { setScriptId(row.id); setNodeId(""); }}>
-              <strong>{row.data.name || uiText("未命名脚本")}</strong>
-              <small>{last ? <><Dot state={last.data.state}/>{stateName(last.data.state)} · {when(last.data.started_at)}{last.data.machine ? ` · ${last.data.machine}` : ""}</> : uiText("还没运行过")}
-                {row.data.profile ? ` · ${row.data.profile}` : ""}</small>
-            </button></li>; })}
-          {!scripts.rows.length && <li className="wa-hint wa-pad">{uiText("还没有脚本。")}</li>}
-        </ul>}
-        {view === "runs" && <ul className="wa-list">
-          {scriptRuns.map(row => <li key={row.id}><button type="button" aria-current={row.id === selectedRun?.id} onClick={() => setRunId(row.id)}>
-            <strong><Dot state={row.data.state}/>{row.data.script_name || uiText("未命名脚本")}</strong>
-            <small>{stateName(row.data.state)} · {when(row.data.started_at)} · {row.data.by_kind === "agent" ? uiText("agent {0}", row.data.by) : row.data.by}</small>
+    {status === null && <div className="wa-banner" role="note">
+      <Icon.warning size={15}/>
+      <span><strong>{uiText("这台电脑还不能录制和运行")}</strong>{uiText("录制、调试和回放需要支持浏览器组件的新版 myco App。现在仍可编辑脚本、查看运行记录；agent 也能通过页面数据读写脚本。")}</span>
+    </div>}
+
+    {view === "editor" && (script ? <div className="wa-body">
+      <aside className="wa-left">
+        {node && !browsing ? <NodeInspector key={scriptId + node.id} node={node} script={script} issues={issues.filter(issue => issue.node === node.id)} editable={editable} tools={tools}
+          scripts={scripts.rows.filter(row => row.id !== scriptId).map(row => ({ id: row.id, name: row.data.name }))}
+          back={() => { setBrowsing(true); setSide("blocks"); }}
+          save={next => update(scriptId, current => ({ ...current, graph: { ...current.graph, nodes: current.graph.nodes.map(item => item.id === next.id ? { ...next, pos: item.pos } : item) } }))}/>
+          : <>
+            <div className="wa-left-tabs"><Segmented label={uiText("左侧面板")} value={side} onChange={setSide} options={[
+              { value: "blocks", label: uiText("积木") }, { value: "settings", label: issues.length ? uiText("设置 · {0}", issues.length) : uiText("设置") }]}/></div>
+            {side === "blocks" ? <Palette editable={editable} add={type => void addNode(type)}/>
+              : <ScriptSettings key={scriptId} script={script} issues={issues} editable={editable} profiles={status ? status.profiles : undefined}
+                remove={() => void removeScript()} duplicate={() => void duplicate()}
+                save={next => update(scriptId, current => ({ ...current, name: next.name, description: next.description, start_url: next.start_url,
+                  profile: next.profile, on_error: next.on_error, params: next.params }))}/>}
+          </>}
+      </aside>
+      <Canvas script={script} selected={nodeId} issues={issueNodes} marks={marks} breakpoints={points} editable={editable} actions={actions}
+        select={id => { setNodeId(id); setBrowsing(false); }} add={(type, point) => void addNode(type, point)}
+        move={(id, point) => void update(scriptId, current => ({ ...current, graph: { ...current.graph,
+          nodes: current.graph.nodes.map(item => item.id === id ? { ...item, pos: [Math.round(point.x), Math.round(point.y)] as [number, number] } : item) } }))}
+        connect={(from, to, port) => void update(scriptId, current => connect(current, from, to, port))}
+        disconnect={(from, to) => void update(scriptId, current => ({ ...current, graph: { ...current.graph, edges: current.graph.edges.filter(edge => !(edge[0] === from && edge[1] === to)) } }))}
+        empty={<Empty icon={<Icon.blocks size={22}/>} title={uiText("还没有步骤")}
+          text={editable ? uiText("从左边把积木拖到这里，或点「录制」在浏览器里操作一遍。") : uiText("这个脚本还没有步骤。")}/>}/>
+      {issues.length > 0 && (!node || browsing) && side === "blocks" && <button type="button" className="wa-issue-pill" onClick={() => setSide("settings")}>
+        <Icon.warning size={14}/>{uiText("{0} 处需要修改", issues.length)}</button>}
+    </div> : <div className="wa-body is-center"><Empty icon={<Icon.logo size={24}/>} title={uiText("录下网页操作，交给人或 agent 重复运行")}
+      text={uiText("新建一个脚本，录制一遍或手动加步骤。")}
+      action={kit.canEdit ? <button type="button" className="wa-btn is-primary" onClick={() => void create()}><Icon.plus size={14}/>{uiText("新建脚本")}</button> : undefined}/></div>)}
+
+    {view === "runs" && <div className="wa-body">
+      <aside className="wa-left wa-list-panel">
+        <h2 className="wa-list-title">{uiText("运行记录")}</h2>
+        <ul className="wa-cards" aria-label={uiText("运行记录")}>
+          {runRows.map(row => <li key={row.id}><button type="button" aria-current={row.id === selectedRun?.id} onClick={() => setRunId(row.id)}>
+            <span className="wa-card-top"><strong>{row.data.script_name || uiText("未命名脚本")}</strong><State state={row.data.state}/></span>
+            <small>{when(row.data.started_at)} · {row.data.by_kind === "agent" ? uiText("agent {0}", row.data.by) : row.data.by}{row.data.machine ? ` · ${row.data.machine}` : ""}</small>
           </button></li>)}
-          {!scriptRuns.length && <li className="wa-hint wa-pad">{uiText("还没有运行记录。")}</li>}
-        </ul>}
-        {view === "drafts" && <ul className="wa-list">
+        </ul>
+        {!runRows.length && <p className="wa-muted wa-pad">{uiText("还没有运行记录。")}</p>}
+      </aside>
+      {selectedRun ? <RunDetail run={selectedRun} script={scripts.get(selectedRun.data.script_id) ? normalize(scripts.get(selectedRun.data.script_id)!.data) : undefined}
+        live={live?.record === selectedRun.id} control={control}/>
+        : <div className="wa-body is-center"><Empty icon={<Icon.history size={22}/>} title={uiText("还没有运行记录。")} text={uiText("人或 agent 运行脚本后，每一步都记在这里。")}/></div>}
+    </div>}
+
+    {view === "drafts" && <div className="wa-body">
+      <aside className="wa-left wa-list-panel">
+        <h2 className="wa-list-title">{uiText("草稿")}</h2>
+        <ul className="wa-cards" aria-label={uiText("草稿")}>
           {drafts.rows.map(row => <li key={row.id}><button type="button" aria-current={row.id === selectedDraft?.id} onClick={() => setDraftId(row.id)}>
-            <strong>{row.data.name || uiText("未命名草稿")}</strong>
+            <span className="wa-card-top"><strong>{row.data.name || uiText("未命名草稿")}</strong></span>
             <small>{uiText("{0} 记下的", row.data.by || "agent")} · {when(row.data.created_at)}</small>
           </button></li>)}
-          {!drafts.rows.length && <li className="wa-hint wa-pad">{uiText("agent 在浏览器里直接操作时，会把步骤记成草稿放在这里。")}</li>}
-        </ul>}
-      </nav>
-      {view === "scripts" && (script ? <>
-        <Canvas script={script} selected={nodeId} issues={issueNodes} marks={marks} breakpoints={points} editable={editable}
-          select={setNodeId} add={(type, point, from, port) => void addNode(type, point, from, port)}
-          move={(id, point) => void update(scriptId, current => ({ ...current, graph: { ...current.graph,
-            nodes: current.graph.nodes.map(item => item.id === id ? { ...item, pos: [Math.round(point.x), Math.round(point.y)] as [number, number] } : item) } }))}
-          connect={(from, to, port) => void update(scriptId, current => connect(current, from, to, port))}
-          disconnect={(from, to) => void update(scriptId, current => ({ ...current, graph: { ...current.graph, edges: current.graph.edges.filter(edge => !(edge[0] === from && edge[1] === to)) } }))}/>
-        {node ? <NodeInspector key={scriptId + node.id} node={node} script={script} issues={issues.filter(issue => issue.node === node.id)} editable={editable} tools={tools}
-          scripts={scripts.rows.filter(row => row.id !== scriptId).map(row => ({ id: row.id, name: row.data.name }))}
-          breakpoint={points.includes(node.id)} canRun={canRun}
-          toggleBreakpoint={() => setBreakpoints({ ...breakpoints, [scriptId]: points.includes(node.id) ? points.filter(item => item !== node.id) : [...points, node.id] })}
-          runFrom={() => { setStartAt(node.id); setDialog("run"); }}
-          save={next => update(scriptId, current => ({ ...current, graph: { ...current.graph, nodes: current.graph.nodes.map(item => item.id === next.id ? { ...next, pos: item.pos } : item) } }))}
-          remove={() => { const id = node.id; setNodeId(""); void update(scriptId, current => removeNode(current, id)); }}/>
-          : <ScriptSettings key={scriptId} script={script} issues={issues} editable={editable} profiles={status?.profiles} remove={() => void removeScript()} duplicate={() => void duplicate()}
-            save={next => update(scriptId, current => ({ ...current, name: next.name, description: next.description, start_url: next.start_url,
-              profile: next.profile, on_error: next.on_error, params: next.params }))}/>}
-      </> : <div className="wa-placeholder"><MonitorSmartphone size={28}/><h2>{uiText("录下网页操作，交给人或 agent 重复运行")}</h2>
-        <p>{uiText("新建一个脚本，录制一遍或手动加步骤。")}</p>
-        {kit.canEdit && <button type="button" className="btn btn-primary" onClick={() => void create()}><FilePlus2 size={15}/>{uiText("新建脚本")}</button>}</div>)}
-      {view === "runs" && (selectedRun ? <RunDetail run={selectedRun} script={scripts.get(selectedRun.data.script_id) ? normalize(scripts.get(selectedRun.data.script_id)!.data) : undefined}
-        live={live?.record === selectedRun.id} control={control}/>
-        : <div className="wa-placeholder"><p>{uiText("还没有运行记录。")}</p></div>)}
-      {view === "drafts" && (selectedDraft ? <>
-        <Canvas script={normalize(selectedDraft.data)} selected="" issues={new Set()} marks={{}} breakpoints={[]} editable={false}
-          select={() => undefined} add={() => undefined} move={() => undefined} connect={() => undefined} disconnect={() => undefined}/>
-        <aside className="wa-inspector" aria-label={uiText("草稿")}>
-          <div className="wa-inspector-head"><h2>{selectedDraft.data.name || uiText("未命名草稿")}</h2></div>
-          <p className="wa-hint">{uiText("{0} 在 {1} 直接操作浏览器时记下的 {2} 个步骤。存成脚本后可以修改和重复运行。", selectedDraft.data.by || "agent",
-            when(selectedDraft.data.created_at), normalize(selectedDraft.data).graph.nodes.length)}</p>
-          {kit.canEdit && <div className="wa-actions">
-            <button type="button" className="btn btn-primary" onClick={() => void adopt(selectedDraft)}><Copy size={14}/>{uiText("存成脚本")}</button>
-            <button type="button" className="btn" onClick={() => void kit.track(drafts.remove(selectedDraft.id))}>{uiText("删除草稿")}</button>
-          </div>}
-        </aside>
-      </> : <div className="wa-placeholder"><p>{uiText("没有草稿。")}</p></div>)}
-    </div>
+        </ul>
+        {!drafts.rows.length && <p className="wa-muted wa-pad">{uiText("agent 在浏览器里直接操作时，会把步骤记成草稿放在这里。")}</p>}
+      </aside>
+      {selectedDraft ? <div className="wa-draft">
+        <div className="wa-draft-bar">
+          <span><strong>{selectedDraft.data.name || uiText("未命名草稿")}</strong>
+            <small>{uiText("{0} 在 {1} 直接操作浏览器时记下的 {2} 个步骤。存成脚本后可以修改和重复运行。", selectedDraft.data.by || "agent",
+              when(selectedDraft.data.created_at), normalize(selectedDraft.data).graph.nodes.length)}</small></span>
+          {kit.canEdit && <span className="wa-row">
+            <button type="button" className="wa-btn" onClick={() => void kit.track(drafts.remove(selectedDraft.id))}>{uiText("删除草稿")}</button>
+            <button type="button" className="wa-btn is-primary" onClick={() => void adopt(selectedDraft)}><Icon.copy size={14}/>{uiText("存成脚本")}</button>
+          </span>}
+        </div>
+        <Canvas script={normalize(selectedDraft.data)} selected="" issues={new Set()} marks={{}} breakpoints={[]} editable={false} select={() => undefined}/>
+      </div> : <div className="wa-body is-center"><Empty icon={<Icon.draft size={22}/>} title={uiText("没有草稿。")} text={uiText("agent 在浏览器里直接操作时，会把步骤记成草稿放在这里。")}/></div>}
+    </div>}
+
     {dialog === "run" && script && record && <RunDialog script={script} id={scriptId} version={record.version} profiles={profiles} startAt={startAt} breakpoints={points}
       close={() => setDialog("")} start={input => void startRun(input)}/>}
     {dialog === "record" && script && <RecordDialog script={script} profiles={profiles} close={() => setDialog("")} start={(profile, url) => void startRecording(profile, url)}/>}
     {dialog === "profiles" && status && <ProfilesDialog status={status} refresh={refresh} close={() => setDialog("")}/>}
-    <Toast kit={kit}/>
+    {kit.note && <div className="wa-toast" role="status">{kit.note.text}{kit.note.undo && <button type="button" onClick={kit.note.undo}>{uiText("撤销")}</button>}</div>}
   </div>;
 }
 

@@ -73,14 +73,14 @@ const forked = m.connect(m.connect(withGraph([nav("a"), branch, click("b"), clic
 assert.deepEqual(forked.graph.edges, [["a", "f"], ["f", "b", "true"], ["f", "c", "false"]], "fork ports fill in order");
 const appended = m.append(withGraph([{ ...nav("a"), pos: [40, 10] }], []), [click("x"), click("y"), click("x")]);
 assert.deepEqual(appended.graph.edges, [["a", "x"], ["x", "y"]]);
-assert.deepEqual(appended.graph.nodes.map(node => node.pos), [[40, 10], [40, 10 + m.rowGap], [40, 10 + 2 * m.rowGap]]);
+assert.deepEqual(appended.graph.nodes.map(node => node.pos), [[40, 10], [40 + m.columnGap, 10], [40 + 2 * m.columnGap, 10]]);
 assert.deepEqual(m.append(m.newScript("e"), [nav("a")]).graph.nodes[0].pos, [0, 0]);
 assert.equal(m.append(appended, [click("x")]), appended, "known steps are not added twice");
 
-// Layout: rows by depth, the second port of a fork one column right; order follows first ports.
+// Layout: columns by depth, the second port of a fork one row lower; order follows first ports.
 const laid = m.layout(forked);
 const at = id => laid.graph.nodes.find(node => node.id === id).pos;
-assert.deepEqual([at("a"), at("f"), at("b"), at("c")], [[0, 0], [0, m.rowGap], [0, 2 * m.rowGap], [m.columnGap, 2 * m.rowGap]]);
+assert.deepEqual([at("a"), at("f"), at("b"), at("c")], [[0, 0], [m.columnGap, 0], [2 * m.columnGap, 0], [2 * m.columnGap, m.rowGap]]);
 assert.deepEqual(m.order(forked).map(node => node.id), ["a", "f", "b", "c"]);
 
 // Run arguments and stored output.

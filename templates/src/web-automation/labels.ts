@@ -1,14 +1,13 @@
-import { UserCheck, Camera, CheckCircle2, Clock3, Code2, Download, FileUp, GitBranch, Globe2, Hand, Keyboard,
-  ListChecks, MousePointer2, MousePointerClick, MoveVertical, PanelsTopLeft, Repeat2, SquarePen, TextCursorInput, Workflow, type LucideIcon } from "lucide-react";
 import { t as uiText } from "../_lib/i18n";
 import type { Issue, LocatorKind, NodeType, ParamType, RunState } from "./model";
 
-export const icons: Record<NodeType, LucideIcon> = {
-  navigate: Globe2, click: MousePointerClick, type: TextCursorInput, select: ListChecks, press: Keyboard,
-  hover: MousePointer2, drag: Hand, scroll: MoveVertical, upload: FileUp, wait: Clock3, assert: CheckCircle2,
-  extract: Download, js: Code2, screenshot: Camera, tab: PanelsTopLeft, branch: GitBranch, loop: Repeat2,
-  subflow: Workflow, confirm: UserCheck, note: SquarePen,
-};
+export type Category = "page" | "data" | "flow" | "note";
+export const groups: { key: Category; name: () => string; types: NodeType[] }[] = [
+  { key: "page", name: () => uiText("页面操作"), types: ["navigate", "click", "type", "select", "press", "hover", "drag", "scroll", "upload", "tab"] },
+  { key: "data", name: () => uiText("等待与数据"), types: ["wait", "assert", "extract", "js", "screenshot"] },
+  { key: "flow", name: () => uiText("流程"), types: ["branch", "loop", "subflow", "confirm", "note"] },
+];
+export const category = (type: NodeType): Category => type === "note" ? "note" : groups.find(group => group.types.includes(type))!.key;
 
 export function typeName(type: NodeType) {
   switch (type) {
@@ -34,12 +33,6 @@ export function typeName(type: NodeType) {
     case "note": return uiText("便签");
   }
 }
-
-export const groups: { name: () => string; types: NodeType[] }[] = [
-  { name: () => uiText("页面操作"), types: ["navigate", "click", "type", "select", "press", "hover", "drag", "scroll", "upload", "tab"] },
-  { name: () => uiText("等待与数据"), types: ["wait", "assert", "extract", "js", "screenshot"] },
-  { name: () => uiText("流程"), types: ["branch", "loop", "subflow", "confirm", "note"] },
-];
 
 export function portName(label: string) {
   switch (label) {
