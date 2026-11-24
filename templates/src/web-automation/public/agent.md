@@ -75,7 +75,9 @@ with `--if-version`, keeping the other fields and node positions. Keep it under
 below the last one (`pos` y + 128) or ask the person to press 自动排版
 (Auto layout). The page shows what still needs fixing; the same checks:
 a step without a locator, a missing start or several starts, a cycle,
-`${name}` that is neither a parameter nor an earlier `into`/`as`, a secret used
+`${name}` that is neither a parameter nor an earlier `into`/`as`, any `${…}` inside
+`code` (code is always fixed text: splicing a parameter or extracted page text
+into JS would run whatever it says), a secret used
 outside `type`/`select`/`dialog`, a literal value in a sensitive step.
 
 ## runs

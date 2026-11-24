@@ -185,11 +185,11 @@ export function NodeInspector({ node, script, scripts, issues, editable, tools, 
           <Choice label={uiText("提取")} value={draft.what || "text"} onChange={what => change({ what })}
             options={[{ value: "text", label: uiText("文本") }, { value: "attribute", label: uiText("属性") }, { value: "html", label: "HTML" }, { value: "table", label: uiText("表格") }, { value: "js", label: "JS" }]}/>
           {draft.what === "attribute" && text("attr", uiText("属性名"), { placeholder: "href", mono: true })}
-          {draft.what === "js" && text("code", uiText("JS（参数 el 是找到的元素）"), { long: true, mono: true })}
+          {draft.what === "js" && text("code", uiText("JS（参数 el 是找到的元素）"), { long: true, mono: true, hint: uiText("固定代码，不能用 ${…}。") })}
           {text("into", uiText("保存到变量"), { placeholder: "post_url", mono: true, hint: uiText("后面的步骤用 ${变量名} 读取，运行结果里也会带上。") })}
         </>}
         {draft.type === "js" && <>
-          {text("code", uiText("JS 代码"), { long: true, mono: true, placeholder: "return document.title" })}
+          {text("code", uiText("JS 代码"), { long: true, mono: true, placeholder: "return document.title", hint: uiText("固定代码，不能用 ${…}。") })}
           {text("into", uiText("返回值保存到变量（可不填）"), { mono: true })}
         </>}
         {draft.type === "screenshot" && toggle("full", uiText("整页截图"))}

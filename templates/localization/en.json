@@ -4037,5 +4037,7 @@
   "这台电脑的浏览器组件还不支持脚本里的分支、循环或子流程。": "The browser component on this computer does not support the script's branches, loops or sub-flows yet.",
   "请填写所有敏感参数。": "Enter every sensitive parameter.",
   "这个 profile 的浏览器正在被别的程序使用。": "Another program is using this profile's browser.",
-  "浏览器组件没有装好，请稍后重试。": "The browser component did not install. Try again later."
+  "浏览器组件没有装好，请稍后重试。": "The browser component did not install. Try again later.",
+  "代码里不能用 ${…}：参数或网页内容拼进代码，就能执行任意代码。请写成固定代码。": "Code cannot use ${…}: a parameter or page text spliced into code could run anything. Write fixed code.",
+  "固定代码，不能用 ${…}。": "Fixed code; ${…} is not allowed."
 }

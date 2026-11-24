@@ -189,10 +189,13 @@ export function validate(script: Script, scriptIds: string[] = [], selfId = ""):
     }
     if (node.on_error?.startsWith("goto:") && !byId.has(node.on_error.slice(5))) issue("goto", node.on_error.slice(5));
     if (node.on_error?.startsWith("retry:") && !(Number(node.on_error.slice(6)) >= 1 && Number(node.on_error.slice(6)) <= 5)) issue("retry");
-    const texts = [node.url, node.value, node.key, node.message, node.list, node.code, ...Object.values(node.args || {})];
+    // Code is never a template: a parameter or an extracted value from a page
+    // spliced into JS would let whoever supplies it run any code.
+    if (references(node.code).length) issue("code_var");
+    const texts = [node.url, node.value, node.key, node.message, node.list, ...Object.values(node.args || {})];
     for (const name of texts.flatMap(text => references(text))) if (!variables.has(name)) issue("unknown_var", name);
     if (node.sensitive && node.value && !onlyReference(node.value)) issue("sensitive_literal");
-    for (const field of [node.url, node.message, node.code, node.list, node.key]) {
+    for (const field of [node.url, node.message, node.list, node.key]) {
       for (const name of references(field)) if (secrets.has(name)) issue("secret_use", name);
     }
   }

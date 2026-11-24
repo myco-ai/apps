@@ -79,6 +79,11 @@ assert.deepEqual(recorded.params, [{ name: "password", type: "secret", required:
 assert.deepEqual(codes(recorded), []);
 assert.equal(m.withSecretParams(recorded), recorded, "nothing to add leaves the script as it is");
 
+// Code is never a template: no parameter or extracted value is spliced into JS.
+assert.deepEqual(codes(withGraph([{ ...m.newNode("js", "j", [0, 0]), code: "return '${title}'" }], [], [{ name: "title", type: "string" }])), ["code_var"]);
+assert.deepEqual(codes(withGraph([extract, { ...m.newNode("assert", "x", [0, 0]), check: "expr", code: "location.href === '${link}'" }], [["e", "x"]])), ["code_var"]);
+assert.deepEqual(codes(withGraph([{ ...m.newNode("js", "j", [0, 0]), code: "return document.title" }], [])), []);
+
 // Editing: connect replaces a port and refuses cycles; remove keeps a chain joined; append adds below the tail.
 let script = withGraph([nav("a"), click("b"), click("c")], [["a", "b"], ["b", "c"]]);
 assert.deepEqual(m.connect(script, "c", "a").graph.edges, script.graph.edges, "no cycles");
@@ -110,4 +115,4 @@ const run = { script_id: "s", script_version: 1, script_name: "s", state: "runni
 const fitted = m.fitRun(run);
 assert(m.bytes(fitted) < m.recordLimit && fitted.error.length === 1000 && fitted.steps.at(-1).node === "n1999", "runs keep their newest steps under 64 KB");
 assert(m.finished("offline") && !m.finished("paused"));
-console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, fork ports, editing, layout, run arguments, output masking, record budgets and sample");
+console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets and sample");
