@@ -108,20 +108,30 @@ try {
       await screen.getByLabel(locale === "zh" ? "主密码" : "Master password", { exact: true }).fill(master);
       await screen.getByRole("button", { name: locale === "zh" ? "恢复备份" : "Restore backup" }).click();
       await screen.getByRole("button", { name: /Studio mail/ }).click();
-      if (locale === "zh") {
-        await screen.getByRole("button", { name: "编辑", exact: true }).click();
-        await screen.getByLabel("标题").fill("工作室邮箱");
-        await screen.getByLabel("备注").fill("用于接收工作室的项目通知。");
-        await screen.getByRole("button", { name: "保存", exact: true }).click();
-        await screen.getByRole("heading", { name: "工作室邮箱" }).waitFor();
-      }
       assert.equal(await screen.evaluate(() => document.documentElement.scrollWidth), width);
       if (shots) {
-        await screen.screenshot({ path: join(shots, `vault-${locale}-${theme}.png`) });
-        if (locale === "zh" && theme === "dark") {
-          await screen.setViewportSize({ width: 1200, height: 760 });
-          await screen.screenshot({ path: join(shots, "vault-catalog-dark.png") });
+        await screen.setViewportSize({ width: 1200, height: 760 });
+        const zh = locale === "zh";
+        const records = zh
+          ? [["设计工作台", "canvas.example.invalid"], ["知识库", "notes.example.invalid"], ["代码仓库", "code.example.invalid"]]
+          : [["Design workspace", "canvas.example.invalid"], ["Knowledge base", "notes.example.invalid"], ["Code repository", "code.example.invalid"]];
+        for (const [title, site] of records) {
+          await screen.getByRole("button", { name: zh ? "新增" : "Add", exact: true }).click();
+          await screen.getByLabel(zh ? "标题" : "Title").fill(title);
+          await screen.getByLabel(zh ? "网站" : "Website").fill(site);
+          await screen.getByLabel(zh ? "密码" : "Password", { exact: true }).fill(secret);
+          await screen.getByRole("button", { name: zh ? "保存" : "Save", exact: true }).click();
+          await screen.getByRole("heading", { name: title }).waitFor();
         }
+        await screen.getByRole("button", { name: /Studio mail/ }).click();
+        await screen.getByRole("button", { name: zh ? "编辑" : "Edit", exact: true }).click();
+        const title = zh ? "工作室邮箱" : "Studio mail";
+        await screen.getByLabel(zh ? "标题" : "Title").fill(title);
+        await screen.getByLabel(zh ? "网站" : "Website").fill("mail.example.invalid");
+        await screen.getByLabel(zh ? "备注" : "Note").fill(zh ? "用于接收工作室的项目通知与协作邀请。" : "Project notifications and invitations for the studio.");
+        await screen.getByRole("button", { name: zh ? "保存" : "Save", exact: true }).click();
+        await screen.getByRole("heading", { name: title }).waitFor();
+        await screen.screenshot({ path: join(shots, `vault-${locale}-${theme}.png`) });
       }
       await view.close();
     }
@@ -132,6 +142,7 @@ try {
       await route.fulfill({ response });
     });
     await untrusted.goto("http://127.0.0.1:47632/?myco_lang=en");
+    assert.equal(await untrusted.getByRole("link", { name: "Open Password Vault online" }).getAttribute("href"), "https://vault.myco.ing");
     await untrusted.getByRole("link", { name: "Open local vault" }).waitFor();
     assert.equal(await untrusted.locator("input").count(), 0);
     assert.ok(headers["content-security-policy"].includes("frame-ancestors 'none'"));

@@ -1,4 +1,4 @@
-import { ArrowLeft, Copy, Eye, EyeOff, KeyRound, LockKeyhole, Plus, Search, ShieldCheck, Trash2, WandSparkles } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ChevronRight, Copy, Download, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plus, Search, ShieldCheck, Trash2, WandSparkles } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { t as uiText } from "../_lib/i18n";
@@ -8,6 +8,8 @@ import "../_lib/sheet.css";
 import "./vault.css";
 
 type Session = { key: CryptoKey; records: Login[]; envelope: Envelope };
+const localOrigin = "http://127.0.0.1:47631";
+const hostedOrigin = "https://vault.myco.ing";
 const idleLimit = 5 * 60 * 1000;
 const blank = (): Login => ({ id: crypto.randomUUID(), title: "", site: "", login: "", password: "", notes: "" });
 
@@ -18,8 +20,9 @@ function Brand() {
 function Gate() {
   return <main className="pv-auth"><div className="pv-auth-card"><Brand/>
     <h1>{uiText("在独立浏览器窗口中使用")}</h1>
-    <p>{uiText("启动本机密码库后，在浏览器中打开下方地址。")}</p>
-    <a className="btn btn-primary" href="http://127.0.0.1:47631/" target="_blank" rel="noopener noreferrer">{uiText("打开本机密码库")}</a>
+    <p>{uiText("加密数据保存在打开密码库的浏览器中。")}</p>
+    <a className="btn btn-primary" href={hostedOrigin} target="_blank" rel="noopener noreferrer">{uiText("打开网页版密码库")}<ArrowUpRight size={16}/></a>
+    <a className="btn pv-local-link" href={localOrigin} target="_blank" rel="noopener noreferrer">{uiText("打开本机密码库")}<ArrowUpRight size={16}/></a>
   </div></main>;
 }
 
@@ -129,16 +132,16 @@ function Vault({ session, update, lock }: { session: Session; update: (records: 
 
   return <main className="pv-shell" data-detail={!!(item || draft)}>
     <header className="pv-header"><Brand/><div className="pv-actions">
-      <button className="btn" type="button" onClick={() => backupFile(session.envelope)}>{uiText("导出加密备份")}</button>
+      <button className="btn pv-backup" type="button" onClick={() => backupFile(session.envelope)}><Download size={16}/>{uiText("导出加密备份")}</button>
       <button className="btn" type="button" onClick={lock}><LockKeyhole size={15}/>{uiText("锁定")}</button>
     </div></header>
     <aside className="pv-sidebar">
       <div className="pv-search"><Search size={16}/><input className="inp" aria-label={uiText("搜索登录信息")} placeholder={uiText("搜索登录信息")} value={query} onChange={event => setQuery(event.target.value)}/></div>
-      <div className="pv-list-head"><h2>{uiText("登录信息")}</h2><button className="btn btn-primary" type="button" disabled={!!draft || pending || session.records.length >= 1000} onClick={() => edit(blank())}><Plus size={16}/>{uiText("新增")}</button></div>
+      <div className="pv-list-head"><h2>{uiText("登录信息")} <span>{session.records.length}</span></h2><button className="btn btn-primary" type="button" disabled={!!draft || pending || session.records.length >= 1000} onClick={() => edit(blank())}><Plus size={16}/>{uiText("新增")}</button></div>
       <div className="pv-list">
         {visible.map(record => <button className="pv-row" type="button" key={record.id} aria-pressed={selected === record.id && !draft} disabled={!!draft || pending} onClick={() => select(record.id)}>
-          <span className="pv-row-icon"><KeyRound size={18}/></span>
-          <span><strong>{record.title}</strong><small>{record.login || record.site}</small></span>
+          <span className="pv-row-icon"><KeyRound size={16}/></span>
+          <span className="pv-row-text"><strong>{record.title}</strong><small>{record.login || record.site}</small></span><ChevronRight className="pv-chevron" size={15}/>
         </button>)}
         {!visible.length && <p>{query ? uiText("没有匹配的登录信息。") : uiText("暂无登录信息")}</p>}
       </div>
@@ -162,10 +165,15 @@ function Vault({ session, update, lock }: { session: Session; update: (records: 
           </div>
         </fieldset>
       </form> : item ? <div className="pv-record">
-        <div className="pv-record-head"><div><KeyRound size={25}/><h1>{item.title}</h1></div><button className="btn" type="button" disabled={pending} onClick={() => edit(item)}>{uiText("编辑")}</button></div>
+        <div className="pv-record-head">
+          <div className="pv-record-identity">
+            <div className="pv-record-icon"><KeyRound size={25}/></div>
+            <div><h1>{item.title}</h1>{item.site && <p>{item.site}</p>}</div>
+          </div>
+          <button className="btn" type="button" disabled={pending} onClick={() => edit(item)}><Pencil size={15}/>{uiText("编辑")}</button>
+        </div>
         <dl>
-          {item.site && <div><dt>{uiText("网站")}</dt><dd>{item.site}</dd></div>}
-          {item.login && <div><dt>{uiText("用户名")}</dt><dd>{item.login}<button className="btn" aria-label={uiText("复制用户名")} type="button" onClick={() => void copy(item.login)}><Copy size={15}/></button></dd></div>}
+          {item.login && <div><dt>{uiText("用户名")}</dt><dd><span>{item.login}</span><button className="btn" aria-label={uiText("复制用户名")} type="button" onClick={() => void copy(item.login)}><Copy size={15}/></button></dd></div>}
           <div><dt>{uiText("密码")}</dt><dd><span className="pv-secret">{revealed ? item.password : "••••••••••••"}</span>
             <button className="btn" aria-label={revealed ? uiText("隐藏密码") : uiText("显示密码")} type="button" onClick={() => setRevealed(!revealed)}>{revealed ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
             <button className="btn" aria-label={uiText("复制密码")} type="button" onClick={() => void copy(item.password)}><Copy size={15}/></button></dd></div>
@@ -179,7 +187,7 @@ function Vault({ session, update, lock }: { session: Session; update: (records: 
   </main>;
 }
 
-const standalone = window.parent === window && window.location.origin === "http://127.0.0.1:47631" && window.isSecureContext && !!crypto.subtle;
+const standalone = window.parent === window && [localOrigin, hostedOrigin].includes(window.location.origin) && window.isSecureContext && !!crypto.subtle;
 function App() {
   const [store, setStore] = useState<{ db: IDBDatabase; envelope?: Envelope }>();
   const [failure, setFailure] = useState(false);
