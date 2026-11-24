@@ -40,16 +40,23 @@ Node types and their fields:
 | `hover` / `upload` | `target` (`upload`: `value` is a file path on the running computer) |
 | `drag` | `target`, `to` |
 | `scroll` | `dy` (pixels), optional `target` |
-| `wait` | `wait`: `element` (with `target`), `network`, or `time` (with `ms`, at most 600000) |
+| `wait` | `wait`: `element` (with `target`), `network`, `time` (with `ms`, at most 600000), `url` (with `value`: text the address must contain), or `download` (optional `into`: a variable for the downloaded file's local name) |
 | `assert` / `branch` | `check`: `visible`, `hidden`, `text` (with `target`, `value`), `url` (`value`), `expr` (`code`) |
 | `extract` | `target`, `what` (`text`/`attribute`/`html`/`table`/`js`), `attr`, `code`, `into` (variable) |
 | `js` | `code`, optional `into` |
 | `screenshot` | optional `target`, `full` |
-| `tab` | `tab`: an index, `new` or `opener` |
+| `tab` | `tab`: `popup` (the tab the previous step opened), `new` (an empty tab), `opener` (back), or an index from `0` |
+| `dialog` | `dialog`: `accept` or `dismiss` the native alert/confirm/prompt the previous step opened; `value`: a prompt's text (may be a secret parameter) |
 | `loop` | `list` (e.g. `${rows}`), `as` (item variable) |
 | `subflow` | `script_id` (another script), `args` ({param: value}) |
 | `confirm` | `message`: the run pauses here and asks |
 | `note` | `note` |
+
+What a step causes is recorded as its own step, never replayed twice: a
+click that navigates is followed by `wait` `url`, one that opens a window by
+`tab` `popup`, one that downloads by `wait` `download`, and one that opens a
+native dialog by `dialog`. Do not add a `navigate` after a click that already
+navigates.
 
 Any step may have `on_error` and `timeout_ms`. Steps wait for their element to
 be present, visible and actionable (and for the network to settle) by
@@ -69,7 +76,7 @@ below the last one (`pos` y + 128) or ask the person to press 自动排版
 (Auto layout). The page shows what still needs fixing; the same checks:
 a step without a locator, a missing start or several starts, a cycle,
 `${name}` that is neither a parameter nor an earlier `into`/`as`, a secret used
-outside `type`/`select`, a literal value in a sensitive step.
+outside `type`/`select`/`dialog`, a literal value in a sensitive step.
 
 ## runs
 

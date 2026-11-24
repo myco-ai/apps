@@ -6,7 +6,7 @@ import { Background, BackgroundVariant, Controls, Handle, MarkerType, NodeToolba
   type Edge as FlowEdge, type Node, type NodeProps, type XYPosition } from "@xyflow/react";
 import { t as uiText } from "../_lib/i18n";
 import { describeTarget, nodeHeight, nodeTypes as allTypes, nodeWidth, portLabels, type NodeType, type RunStep, type Script, type ScriptNode } from "./model";
-import { category, portName, typeName } from "./labels";
+import { category, portName, tabName, typeName } from "./labels";
 import { Icon, StepIcon } from "./icons";
 import "@xyflow/react/dist/style.css";
 
@@ -21,7 +21,10 @@ export function summary(node: ScriptNode) {
     case "navigate": return node.url || "";
     case "type": case "select": return [describeTarget(node.target), node.sensitive ? "•••" : node.value].filter(Boolean).join(" ← ");
     case "press": return node.key || "";
-    case "wait": return node.wait === "time" ? `${node.ms || 0} ms` : node.wait === "network" ? uiText("网络空闲") : describeTarget(node.target);
+    case "wait": return node.wait === "time" ? `${node.ms || 0} ms` : node.wait === "network" ? uiText("网络空闲") : node.wait === "url" ? uiText("网址包含 {0}", node.value || "")
+      : node.wait === "download" ? uiText("下载完成") : describeTarget(node.target);
+    case "tab": return tabName(node.tab || "");
+    case "dialog": return node.dialog === "dismiss" ? uiText("取消") : node.value ? `${uiText("接受")} ← ${node.value}` : uiText("接受");
     case "extract": case "js": return node.into ? `→ \${${node.into}}` : describeTarget(node.target);
     case "loop": return node.list || "";
     case "confirm": return node.message || "";

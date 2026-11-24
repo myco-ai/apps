@@ -19,6 +19,7 @@ export function typeHint(type: NodeType) {
     case "scroll": return uiText("滚动页面或元素");
     case "upload": return uiText("给文件框选一个文件");
     case "tab": return uiText("切到另一个标签页");
+    case "dialog": return uiText("接受或取消网页弹出的对话框");
     case "wait": return uiText("等元素出现、网络空闲或一段时间");
     case "assert": return uiText("检查不通过就按出错处理");
     case "extract": return uiText("把文字、属性或表格存进变量");

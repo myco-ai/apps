@@ -3,7 +3,7 @@ import type { Issue, LocatorKind, NodeType, ParamType, RunState } from "./model"
 
 export type Category = "page" | "data" | "flow" | "note";
 export const groups: { key: Category; name: () => string; types: NodeType[] }[] = [
-  { key: "page", name: () => uiText("页面操作"), types: ["navigate", "click", "type", "select", "press", "hover", "drag", "scroll", "upload", "tab"] },
+  { key: "page", name: () => uiText("页面操作"), types: ["navigate", "click", "type", "select", "press", "hover", "drag", "scroll", "upload", "tab", "dialog"] },
   { key: "data", name: () => uiText("等待与数据"), types: ["wait", "assert", "extract", "js", "screenshot"] },
   { key: "flow", name: () => uiText("流程"), types: ["branch", "loop", "subflow", "confirm", "note"] },
 ];
@@ -26,6 +26,7 @@ export function typeName(type: NodeType) {
     case "js": return uiText("执行 JS");
     case "screenshot": return uiText("页面截图");
     case "tab": return uiText("切换标签页");
+    case "dialog": return uiText("处理弹窗");
     case "branch": return uiText("分支");
     case "loop": return uiText("循环");
     case "subflow": return uiText("子流程");
@@ -103,6 +104,9 @@ export function issueText(issue: Issue) {
     case "value": return uiText("请填写要输入或选择的值。");
     case "key": return uiText("请填写按键，例如 Enter 或 Control+A。");
     case "ms": return uiText("等待时长要在 1 毫秒到 10 分钟之间。");
+    case "wait_url": return uiText("请填写网址里要包含的文字。");
+    case "tab": return uiText("请选择要切到哪个标签页。");
+    case "dialog": return uiText("请选择接受还是取消弹窗。");
     case "into": return issue.detail ? uiText("变量名「{0}」不可用。", issue.detail) : uiText("请填写保存到哪个变量。");
     case "code": return uiText("请填写 JS 代码。");
     case "list": return uiText("请填写要遍历的列表。");
@@ -131,5 +135,14 @@ export function bridgeError(code: string) {
     case "timeout": return uiText("浏览器组件没有及时回应。");
     case "permission_denied": return uiText("没有得到使用浏览器的许可。");
     default: return uiText("浏览器组件没有完成这个操作。");
+  }
+}
+
+export function tabName(tab: string) {
+  switch (tab) {
+    case "popup": return uiText("上一步打开的标签页");
+    case "new": return uiText("新标签页");
+    case "opener": return uiText("回到原来的标签页");
+    default: return /^\d+$/.test(tab) ? uiText("第 {0} 个标签页", Number(tab) + 1) : tab;
   }
 }

@@ -3,7 +3,7 @@
 
 export const nodeTypes = [
   "navigate", "click", "type", "select", "press", "hover", "drag", "scroll", "upload",
-  "wait", "assert", "extract", "js", "screenshot", "tab",
+  "wait", "assert", "extract", "js", "screenshot", "tab", "dialog",
   "branch", "loop", "subflow", "confirm", "note",
 ] as const;
 export type NodeType = typeof nodeTypes[number];
@@ -21,9 +21,17 @@ export type ScriptNode = {
   title?: string; target?: Target; to?: Target;
   url?: string; value?: string; key?: string; code?: string; message?: string; note?: string;
   button?: "left" | "right" | "middle"; count?: number; clear?: boolean; sensitive?: boolean;
-  wait?: "element" | "network" | "time"; ms?: number; dy?: number;
+  /** element: target appears; network: requests settle; time: ms; url: the
+   *  address contains value (a navigation the previous step caused);
+   *  download: the previous step's download finishes (into: its local name). */
+  wait?: "element" | "network" | "time" | "url" | "download"; ms?: number; dy?: number;
+  /** tab: an index from 0, "new" (open an empty tab), "popup" (the tab the
+   *  previous step opened; never opened again) or "opener" (back). */
   check?: "visible" | "hidden" | "text" | "url" | "expr"; what?: "text" | "attribute" | "html" | "table" | "js";
   attr?: string; into?: string; list?: string; as?: string; tab?: string; full?: boolean;
+  /** dialog: how to answer the native alert/confirm/prompt the previous
+   *  step opened; value is a prompt's text (may be a secret parameter). */
+  dialog?: "accept" | "dismiss";
   script_id?: string; args?: Record<string, string>;
   on_error?: OnError; timeout_ms?: number;
 };
@@ -85,6 +93,8 @@ export function newNode(type: NodeType, id: string, pos: [number, number]): Scri
   if (type === "extract") { node.what = "text"; node.into = ""; }
   if (type === "scroll") node.dy = 600;
   if (type === "loop") node.as = "item";
+  if (type === "tab") node.tab = "popup";
+  if (type === "dialog") node.dialog = "accept";
   return node;
 }
 
@@ -163,6 +173,10 @@ export function validate(script: Script, scriptIds: string[] = [], selfId = ""):
     if ((node.type === "type" || node.type === "select") && node.value === undefined) issue("value");
     if (node.type === "press" && !node.key?.trim()) issue("key");
     if (node.type === "wait" && node.wait === "time" && !(Number(node.ms) > 0 && Number(node.ms) <= 600000)) issue("ms");
+    if (node.type === "wait" && node.wait === "url" && !node.value?.trim()) issue("wait_url");
+    if (node.type === "wait" && node.wait === "download" && node.into && !validName(node.into)) issue("into", node.into);
+    if (node.type === "tab" && !/^(\d{1,2}|new|popup|opener)$/.test((node.tab || "").trim())) issue("tab");
+    if (node.type === "dialog" && node.dialog !== "accept" && node.dialog !== "dismiss") issue("dialog");
     if ((node.type === "extract" || node.type === "js") && node.into && !validName(node.into)) issue("into", node.into);
     if (node.type === "extract" && !node.into) issue("into", "");
     if ((node.type === "js" || (node.type === "extract" && node.what === "js")) && !node.code?.trim()) issue("code");

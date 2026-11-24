@@ -28,6 +28,13 @@ export type BrowserStatus = {
   machine: string;
   profiles: BrowserProfile[];
 };
+/** Recorded steps, in order. What a step causes is its own following step,
+ *  observed from CDP and never replayed twice: a navigation becomes
+ *  wait "url" (value: a stable part of the new address), a new window or tab
+ *  tab "popup", a download wait "download", a native dialog a "dialog" step
+ *  (accept/dismiss; a prompt's typed text only as a secret parameter
+ *  reference). A tab the person opens by hand is tab "new" then navigate.
+ *  No hidden fields: everything replay needs is visible and editable. */
 export type RecordEvents = { steps: ScriptNode[]; next: number; done: boolean; url?: string };
 export type RunUpdate = Pick<Run, "state" | "node" | "error" | "error_node" | "question"> & {
   steps: RunStep[]; next: number; output: Record<string, unknown>;

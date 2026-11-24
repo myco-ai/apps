@@ -4,7 +4,7 @@ import { useEffect, useId, useState, type ReactNode } from "react";
 import { t as uiText } from "../_lib/i18n";
 import { bytes, locatorKinds, recordLimit, type Issue, type Locator, type OnError, type Param, type ParamType,
   type Script, type ScriptNode, type Target } from "./model";
-import { category, issueText, locatorName, paramTypeName, typeName } from "./labels";
+import { category, issueText, locatorName, paramTypeName, tabName, typeName } from "./labels";
 import { Icon, StepIcon } from "./icons";
 import { Checkbox, IconButton, Select, Toggle, type Option } from "./ui";
 import { typeHint } from "./palette";
@@ -168,8 +168,11 @@ export function NodeInspector({ node, script, scripts, issues, editable, tools, 
         {draft.type === "upload" && text("value", uiText("文件"), { placeholder: "${file}", hint: uiText("运行这台电脑上的文件路径，通常填参数。") })}
         {draft.type === "wait" && <>
           <Choice label={uiText("等什么")} value={draft.wait || "element"} onChange={wait => change({ wait })}
-            options={[{ value: "element", label: uiText("元素出现") }, { value: "network", label: uiText("网络空闲") }, { value: "time", label: uiText("固定时长") }]}/>
+            options={[{ value: "element", label: uiText("元素出现") }, { value: "network", label: uiText("网络空闲") }, { value: "url", label: uiText("网址变成") },
+              { value: "download", label: uiText("下载完成") }, { value: "time", label: uiText("固定时长") }]}/>
           {draft.wait === "time" && number("ms", uiText("毫秒"))}
+          {draft.wait === "url" && text("value", uiText("网址里包含"), { placeholder: "/mp_blog/manage", mono: true, hint: uiText("用在点击后会跳转的步骤后面：只等跳转完成，不会再打开一次。") })}
+          {draft.wait === "download" && text("into", uiText("文件名保存到变量（可不填）"), { mono: true, hint: uiText("等上一步触发的下载完成；文件留在运行的那台电脑上。") })}
         </>}
         {(draft.type === "assert" || draft.type === "branch") && <>
           <Choice label={draft.type === "branch" ? uiText("条件") : uiText("检查")} value={draft.check || "visible"} onChange={check => change({ check })} options={checks}
@@ -189,7 +192,15 @@ export function NodeInspector({ node, script, scripts, issues, editable, tools, 
           {text("into", uiText("返回值保存到变量（可不填）"), { mono: true })}
         </>}
         {draft.type === "screenshot" && toggle("full", uiText("整页截图"))}
-        {draft.type === "tab" && text("tab", uiText("切到哪个标签页"), { placeholder: uiText("序号、new 或 opener"), mono: true })}
+        {draft.type === "tab" && <Choice label={uiText("切到哪个标签页")} value={draft.tab || "popup"} onChange={tab => change({ tab })}
+          hint={draft.tab === "popup" || !draft.tab ? uiText("上一步点开的新窗口或新标签页；回放时不会重复打开。") : undefined}
+          options={["popup", "new", "opener", "0", "1", "2", "3"].map(tab => ({ value: tab, label: tabName(tab) }))}/>}
+        {draft.type === "dialog" && <>
+          <Choice label={uiText("怎么处理")} value={draft.dialog || "accept"} onChange={dialog => change({ dialog })}
+            options={[{ value: "accept", label: uiText("接受") }, { value: "dismiss", label: uiText("取消") }]}
+            hint={uiText("处理上一步弹出的原生对话框（alert、confirm、prompt）。")}/>
+          {draft.dialog !== "dismiss" && text("value", uiText("输入框里的文字（只用于 prompt）"), { hint: uiText("可以用 ${参数名}，敏感参数也可以。") })}
+        </>}
         {draft.type === "loop" && <>
           {text("list", uiText("遍历的列表"), { placeholder: "${rows}", mono: true })}
           {text("as", uiText("每一项叫"), { placeholder: "item", mono: true, hint: uiText("「每一项」那条线走到头后回到循环；全部走完后走「结束后」。") })}

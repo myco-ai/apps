@@ -63,6 +63,15 @@ assert.deepEqual(codes(withGraph([{ ...nav("a"), on_error: "goto:zz" }, { ...cli
 const huge = withGraph(Array.from({ length: 400 }, (_, index) => ({ ...click("c" + index), note: "x".repeat(150) })), Array.from({ length: 399 }, (_, index) => ["c" + index, "c" + (index + 1)]));
 assert(codes(huge).includes("too_large"));
 
+// Recorded side effects are explicit steps with their own checks.
+assert.deepEqual(codes(withGraph([click("a"), { ...m.newNode("wait", "w", [0, 0]), wait: "url", value: "" }], [["a", "w"]])), ["wait_url"]);
+assert.deepEqual(codes(withGraph([click("a"), { ...m.newNode("wait", "w", [0, 0]), wait: "url", value: "/done" }, { ...m.newNode("wait", "d", [0, 0]), wait: "download", into: "file" }, nav("b", "https://x/${file}")],
+  [["a", "w"], ["w", "d"], ["d", "b"]])), []);
+assert.equal(m.newNode("tab", "t", [0, 0]).tab, "popup");
+assert.deepEqual(codes(withGraph([click("a"), { ...m.newNode("tab", "t", [0, 0]), tab: "sideways" }], [["a", "t"]])), ["tab"]);
+assert.deepEqual(codes(withGraph([click("a"), { ...m.newNode("dialog", "g", [0, 0]), value: "${pw}" }], [["a", "g"]], secret)), [], "a prompt may take a secret");
+assert.deepEqual(codes(withGraph([click("a"), { ...m.newNode("dialog", "g", [0, 0]), dialog: "maybe" }], [["a", "g"]])), ["dialog"]);
+
 // Editing: connect replaces a port and refuses cycles; remove keeps a chain joined; append adds below the tail.
 let script = withGraph([nav("a"), click("b"), click("c")], [["a", "b"], ["b", "c"]]);
 assert.deepEqual(m.connect(script, "c", "a").graph.edges, script.graph.edges, "no cycles");
@@ -94,4 +103,4 @@ const run = { script_id: "s", script_version: 1, script_name: "s", state: "runni
 const fitted = m.fitRun(run);
 assert(m.bytes(fitted) < m.recordLimit && fitted.error.length === 1000 && fitted.steps.at(-1).node === "n1999", "runs keep their newest steps under 64 KB");
 assert(m.finished("offline") && !m.finished("paused"));
-console.log("PASS web automation: normalising, validation codes, secrets, fork ports, editing, layout, run arguments, output masking, record budgets and sample");
+console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, fork ports, editing, layout, run arguments, output masking, record budgets and sample");

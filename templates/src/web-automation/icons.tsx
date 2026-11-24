@@ -1,6 +1,6 @@
 // Icons: one line family (lucide) at a thin, even stroke, in gray only.
 import { AppWindow, ArrowDown, ArrowDownUp, ArrowLeft, ArrowUp, Blocks, Braces, Camera, Check, ChevronDown, ChevronRight, Circle, CircleDot, Copy,
-  Crosshair, Download, Ellipsis, FileOutput, FilePlus, FileText, GitBranch, Globe, History, Hourglass, Keyboard, LayoutGrid, ListChecks,
+  Crosshair, Download, MessageSquareMore, Ellipsis, FileOutput, FilePlus, FileText, GitBranch, Globe, History, Hourglass, Keyboard, LayoutGrid, ListChecks,
   MousePointer2, MousePointerClick, Move, OctagonPause, Pause, PenLine, Play, Plus, Repeat, ScanSearch, Search, ShieldCheck, SlidersHorizontal,
   Square, SquareMousePointer, StepForward, StickyNote, TextCursorInput, Trash2, TriangleAlert, Upload, User, UserCheck, Workflow, X,
   type LucideIcon, type LucideProps } from "lucide-react";
@@ -14,7 +14,7 @@ export const Icon = {
   navigate: make(Globe), click: make(MousePointerClick), type: make(TextCursorInput), select: make(ListChecks), press: make(Keyboard),
   hover: make(SquareMousePointer), drag: make(Move), scroll: make(ArrowDownUp), upload: make(Upload), tab: make(AppWindow),
   wait: make(Hourglass), assert: make(ShieldCheck), extract: make(FileOutput), js: make(Braces), screenshot: make(Camera),
-  branch: make(GitBranch), loop: make(Repeat), subflow: make(Workflow), confirm: make(UserCheck), note: make(StickyNote),
+  dialog: make(MessageSquareMore), branch: make(GitBranch), loop: make(Repeat), subflow: make(Workflow), confirm: make(UserCheck), note: make(StickyNote),
   play: make(Play, true), record: make(CircleDot), stop: make(Square, true), pause: make(Pause), step: make(StepForward),
   layout: make(LayoutGrid), profile: make(User), search: make(Search), chevronDown: make(ChevronDown), chevronRight: make(ChevronRight),
   back: make(ArrowLeft), trash: make(Trash2), breakpoint: make(OctagonPause), plus: make(Plus), close: make(X), up: make(ArrowUp), down: make(ArrowDown),
