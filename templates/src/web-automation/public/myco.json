@@ -1,7 +1,7 @@
 {
   "id": "myco/web-automation",
   "name": "网页自动化",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "kind": "custom",
   "category": "tools",
   "icon": "icon.svg",
@@ -55,6 +55,9 @@
     }
   },
   "requires": {
-    "hub": "0.20.7"
-  }
+    "hub": "0.22.7"
+  },
+  "os": [
+    "browser"
+  ]
 }
