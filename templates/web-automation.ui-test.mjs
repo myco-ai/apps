@@ -357,6 +357,19 @@ try {
   await panel.waitForTimeout(3000);
   assert.equal(await panel.evaluate(() => [...window.rows.values()].filter(row => row.collection === "scripts").length), scriptsBefore + 1, "a finished panel recording is not taken twice");
   await panel.close();
+  // A failing status() on an App that has the bridge says why and can retry.
+  const failing = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  failing.on("pageerror", error => errors.push(error.message));
+  await failing.addInitScript(bridge, { sample, withBrowser: true, outdated: true });
+  await failing.addInitScript(() => { const real = window.myco.browser.status; let fail = true;
+    window.myco.browser.status = async () => { if (fail) { fail = false; throw { code: "browser_failed" }; } return real(); }; });
+  await failing.goto(url);
+  await failing.getByText("The browser component did not respond").waitFor();
+  await failing.getByText("browser_failed").waitFor();
+  assert.equal(await failing.getByText("need a newer myco App", { exact: false }).count(), 0, "a bridge failure is not reported as an old App");
+  await failing.getByRole("button", { name: "Retry" }).click();
+  await failing.getByText("Browser component update available").waitFor();
+  await failing.close();
   // An older compatible component is installed: the page offers the App's release.
   const stale = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   stale.on("pageerror", error => errors.push(error.message));

@@ -4078,5 +4078,6 @@
   "浏览器录制 {0}": "Browser recording {0}",
   "浏览器里开始了录制，步骤会记到新脚本「{0}」": "Recording started in the browser; steps go to the new script “{0}”",
   "这个 profile 的旧浏览器进程还在，请关闭后重试，或重启电脑。": "This profile's previous browser is still running. Close it and retry, or restart your computer.",
-  "这个 profile 的旧浏览器还没清理完，请关闭它后再试。": "This profile's previous browser has not been cleaned up yet. Close it and try again."
+  "这个 profile 的旧浏览器还没清理完，请关闭它后再试。": "This profile's previous browser has not been cleaned up yet. Close it and try again.",
+  "浏览器组件没有响应": "The browser component did not respond"
 }

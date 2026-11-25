@@ -322,6 +322,8 @@ function App() {
   const [runId, setRunId] = useState("");
   const [draftId, setDraftId] = useState("");
   const [status, setStatus] = useState<BrowserStatus | null | undefined>(browser() ? undefined : null);
+  // Why status() failed on an App that has the bridge; "" when it did not.
+  const [statusError, setStatusError] = useState<{ code: string; reason: string }>();
   const [breakpoints, setBreakpoints] = useState<Record<string, string[]>>({});
   const [dialog, setDialog] = useState<"run" | "record" | "profiles" | "">("");
   const [switcher, setSwitcher] = useState(false);
@@ -337,7 +339,8 @@ function App() {
 
   const refresh = useCallback(() => {
     if (!bridge) return;
-    void bridge.status().then(setStatus, () => setStatus(null));
+    void bridge.status().then(next => { setStatusError(undefined); setStatus(next); },
+      error => { setStatusError({ code: errorCode(error), reason: errorReason(error) }); setStatus(null); });
   }, [bridge]);
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { stopped.current = true; }, []);
@@ -599,10 +602,14 @@ function App() {
         {view !== "editor" && ready && <button type="button" className="wa-tool" onClick={() => setDialog("profiles")}><Icon.profile/>{uiText("Profile")}</button>}
       </div>
     </header>
-    {status === null && <div className="wa-banner" role="note">
+    {status === null && (bridge && statusError ? <div className="wa-banner" role="note">
+      <Icon.warning size={15}/>
+      <span><strong>{uiText("浏览器组件没有响应")}</strong>{bridgeError(statusError.code, statusError.reason)} <code className="wa-code">{statusError.code}{statusError.reason ? " / " + statusError.reason : ""}</code></span>
+      <button type="button" className="wa-btn is-small" onClick={refresh}>{uiText("重试")}</button>
+    </div> : <div className="wa-banner" role="note">
       <Icon.warning size={15}/>
       <span><strong>{uiText("这台电脑还不能录制和运行")}</strong>{uiText("录制、调试和回放需要支持浏览器组件的新版 myco App。现在仍可编辑脚本、查看运行记录；agent 也能通过页面数据读写脚本。")}</span>
-    </div>}
+    </div>)}
     {status && !status.installed && <div className="wa-banner is-install" role="note">
       <Icon.download size={15}/>
       <span><strong>{uiText("还没装浏览器组件")}</strong>{status.supported ? uiText("录制和运行要用到一个可选组件，装好后用 myco 专用的浏览器 profile，不碰你日常用的 Chrome。")

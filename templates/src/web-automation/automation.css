@@ -359,3 +359,4 @@ textarea.wa-input { height: auto; padding: 7px 10px; line-height: 1.5; resize: v
 .wa-settings-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
 .wa-settings-pair .ui-field { align-content: start; }
 @media (max-width: 520px) { .wa-settings-pair { grid-template-columns: 1fr; } }
+.wa-banner code.wa-code { margin-inline-start: 6px; padding: 1px 6px; border-radius: 4px; background: var(--wa-field); color: var(--wa-sub); font: 11.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
