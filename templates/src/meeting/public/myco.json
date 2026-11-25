@@ -1,7 +1,7 @@
 {
   "id": "myco/meeting",
   "name": "会议记录",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "kind": "custom",
   "category": "office",
   "icon": "icon.svg",
@@ -49,6 +49,7 @@
     "srt"
   ],
   "requires": {
-    "hub": "0.20.7"
-  }
+    "hub": "0.22.1"
+  },
+  "os": ["files", "files.delete", "microphone", "speech", "system"]
 }

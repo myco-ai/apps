@@ -1,7 +1,7 @@
 {
   "id": "myco/whiteboard",
   "name": "白板",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "kind": "board",
   "category": "creative",
   "icon": "icon.svg",
@@ -58,6 +58,7 @@
     "png"
   ],
   "requires": {
-    "hub": "0.20.7"
-  }
+    "hub": "0.22.1"
+  },
+  "os": ["clipboard"]
 }

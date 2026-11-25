@@ -1,7 +1,7 @@
 {
   "id": "myco/database",
   "name": "数据库工作台",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "kind": "custom",
   "category": "dev",
   "icon": "icon.svg",
@@ -20,6 +20,7 @@
     "download"
   ],
   "requires": {
-    "hub": "0.20.7"
-  }
+    "hub": "0.22.1"
+  },
+  "os": ["database", "files"]
 }

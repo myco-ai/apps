@@ -13,7 +13,7 @@ make pack
 
 Sources stay in `templates/src/<app>`. Each app has `public/myco.json`, an agent guide, sample records, localized metadata, an SVG icon and screenshots. Bundles are generated into `dist/official`; release packages go to `dist/apps`. Generated files are not committed. See [agent instructions](AGENTS.md), [app development](templates/README.md), and the [migration and compatibility notes](docs/migration.md).
 
-The SDK lives in `templates/src/_lib`. Apps discover native capabilities with `myco.features`; a source SDK update never implies that an installed desktop or mobile host supports a new feature.
+The SDK lives in `templates/src/_lib`. Apps discover native capabilities with `myco.features`; a source SDK update never implies that an installed desktop or mobile host supports a new feature. See [declared computer capabilities](docs/app-permissions.md) for manifest groups, shared helpers and network destinations.
 
 ## Browser and host tests
 

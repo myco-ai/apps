@@ -1,7 +1,7 @@
 {
   "id": "myco/disk",
   "name": "空间清理",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "kind": "custom",
   "category": "tools",
   "icon": "icon.svg",
@@ -19,6 +19,7 @@
     }
   },
   "requires": {
-    "hub": "0.20.7"
-  }
+    "hub": "0.22.1"
+  },
+  "os": ["files", "files.delete", "system"]
 }

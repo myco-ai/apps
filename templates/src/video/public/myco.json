@@ -1,7 +1,7 @@
 {
   "id": "myco/video",
   "name": "视频剪辑",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "kind": "custom",
   "category": "creative",
   "icon": "icon.svg",
@@ -74,6 +74,7 @@
     "mp4"
   ],
   "requires": {
-    "hub": "0.20.7"
-  }
+    "hub": "0.22.1"
+  },
+  "os": ["files", "screen", "system"]
 }

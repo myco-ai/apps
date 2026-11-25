@@ -1,7 +1,7 @@
 {
   "id": "myco/stocks",
   "name": "行情工作台",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "kind": "custom",
   "category": "tools",
   "icon": "icon.svg",
@@ -26,6 +26,7 @@
     "png"
   ],
   "requires": {
-    "hub": "0.20.7"
-  }
+    "hub": "0.22.1"
+  },
+  "os": ["network"]
 }
