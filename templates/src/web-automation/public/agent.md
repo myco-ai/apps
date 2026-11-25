@@ -111,12 +111,54 @@ person (`myco message ask`) and continue with `browser.run.resume`
 App and Hub; if `myco action list` shows none for that computer, it cannot run
 browsers yet. Say so instead of guessing.
 
-## drafts
+## Operating a browser yourself (live control) and drafts
 
-When you operate a page directly (`browser.page.*`, permission
-`browser.control`), the browser component records your steps as a draft in
-the same shape as a script, plus `by` and `created_at`. You may also write a
-draft yourself; a person reviews it and saves it as a script.
+With a newer App and browser component (the component reports `agent_control`;
+`myco action list` then shows `browser.page.*`), you can drive a visible browser
+on the owner's computer and turn what you did into a draft script.
+
+1. Ask for live control. Without `--browser-profile`, the App uses a clean,
+   dedicated agent profile; name a site list when you can:
+
+       myco action grant request --machine <computer> --permission browser.control \
+         --host www.v2ex.com --reason "record how to open a new topic" --ttl 15m --task $MYCO_MESSAGE_ID --wait 5m
+
+   The owner sees a card, may narrow the sites, and can stop you at any time
+   from the browser's panel. A grant lasts at most 30 minutes.
+2. `browser.page.open` `{"profile": …, "url": "https://…"}` returns a `session`
+   and a first snapshot. Use the profile id from `myco action targets` (for the
+   dedicated agent profile, from the grant).
+3. `browser.page.snapshot` `{"session": …}` lists the page's accessibility nodes;
+   interactive ones carry a `ref` (`e12`). Refs are valid until the page
+   changes; on `stale_ref`, take a new snapshot. Sensitive fields show as
+   `redacted` and cannot be typed into (`sensitive_field`).
+4. `browser.page.act` `{"session": …, "op": …}` with `op` one of `navigate`
+   (`url`), `click`/`dblclick`/`hover` (`ref`), `type` (`ref`, `value`,
+   `clear?`), `select` (`ref`, `value`), `press` (`key`, `ref?`), `scroll`
+   (`dy`, `ref?`), `back`, `forward`, `reload`, `switch_tab`/`close_tab`
+   (`tab`), `wait` (`wait:"element"` with `ref`, `wait:"url"` with `value`, or
+   `wait:"network"`), `dialog` (`choice: "accept"|"dismiss"`). There is no way
+   to run JavaScript, upload files or read cookies. `${` is refused in typed
+   text, URLs and keys: type an example value and turn it into `${param}` in
+   the draft. `outcome_unknown` means the action may have happened: take a
+   snapshot before trying again, never repeat a submit blindly.
+5. `browser.page.extract` `{"session", "ref", "what": "text"|"html"|"attribute", "attr"?}`
+   and `browser.page.screenshot` `{"session", "ref"? | "clip"? | "full"?}`
+   (images are private to you and the owner, kept 7 days). Both are recorded
+   as steps (outputs named data1, data2…).
+6. `browser.page.close` `{"session"}` returns `steps` in the script node
+   format. Only your own close returns them; if the owner stops you, the grant
+   ends or the session idles for 5 minutes, the steps are discarded. A session
+   records at most 200 steps (`recording_limit`).
+7. Write the draft: lay the steps out left to right (`pos` = [i*256, 0]),
+   connect them in order, replace values that should vary with `${param}` and
+   declare those `params`, then put it in `drafts` with `source: "agent"`,
+   `by` (your name), `created_at`, `start_url` and `profile`:
+
+       myco page data put --page <page> --collection drafts --id draft_<id> --if-version 0 --json '{…}'
+
+   Tell the person it is there; they review it on the canvas and adopt it as a
+   script. Never write it straight into `scripts`.
 
 ## Safety
 
