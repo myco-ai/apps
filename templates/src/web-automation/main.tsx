@@ -429,22 +429,60 @@ function App() {
 
   async function startRecording(profile: string, url: string) {
     if (!bridge || !script) return;
-    const target = scriptId;
     try {
       const session = await bridge.record.start({ profile, url });
-      setRecording({ id: session.id, script: target });
-      if (!script.graph.nodes.length) await update(target, current => ({ ...current, start_url: current.start_url || url,
-        profile: current.profile || profiles.find(item => item.id === profile)?.name || "", source: "record" }));
+      await followRecording(session.id, scriptId, profile, url);
+    } catch (error) { kit.flash(bridgeError(errorCode(error))); }
+  }
+
+  // Steps stream into the target script until the recording ends, wherever
+  // it was started (the page's Record button or the browser's panel).
+  async function followRecording(id: string, target: string, profile: string, url: string) {
+    if (!bridge) return;
+    setRecording({ id, script: target });
+    try {
+      const current = scripts.get(target);
+      if (current && !normalize(current.data).graph.nodes.length) await update(target, data => ({ ...data, start_url: data.start_url || url,
+        profile: data.profile || profiles.find(item => item.id === profile)?.name || "", source: "record" }));
       let after = 0;
       while (!stopped.current) {
-        const events = await bridge.record.events(session.id, after);
+        const events = await bridge.record.events(id, after);
         after = events.next;
-        if (events.steps.length) await update(target, current => withSecretParams(append(current, events.steps.map(step => ({ ...step, id: step.id || uid("n_") })))));
+        const removed = (events.removed || []).filter(Boolean);
+        if (events.steps.length || removed.length) await update(target, data => {
+          let next = events.steps.length ? withSecretParams(append(data, events.steps.map(step => ({ ...step, id: step.id || uid("n_") })))) : data;
+          for (const gone of removed) if (next.graph.nodes.some(node => node.id === gone)) next = removeNode(next, gone);
+          return next;
+        });
         if (events.done) break;
       }
     } catch (error) { kit.flash(bridgeError(errorCode(error))); }
     setRecording(undefined);
   }
+
+  // A recording started from the browser's panel lands in a new script.
+  const taken = useRef(new Set<string>());
+  useEffect(() => {
+    const list = bridge?.record.active?.bind(bridge.record);
+    if (!list || !ready || recording || live || !kit.canEdit) return;
+    let alive = true;
+    const look = async () => {
+      const active = await list().catch(() => []);
+      const next = active.find(item => item.origin === "browser" && !taken.current.has(item.id));
+      if (!alive || !next) return;
+      taken.current.add(next.id);
+      const id = uid("scr_");
+      const name = uiText("浏览器录制 {0}", when(next.started_at || new Date().toISOString()));
+      if (!await kit.track(scripts.put(newScript(name), id))) return;
+      open(id);
+      kit.flash(uiText("浏览器里开始了录制，步骤会记到新脚本「{0}」", name));
+      void followRecording(next.id, id, next.profile, next.url);
+    };
+    void look();
+    const timer = window.setInterval(() => void look(), 2500);
+    return () => { alive = false; window.clearInterval(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bridge, ready, Boolean(recording), Boolean(live), kit.canEdit]);
 
   async function startRun(input: { values: Record<string, string>; secrets: Record<string, string>; profile: string; headless: boolean; startAt?: string }) {
     if (!bridge || !script || !record) return;

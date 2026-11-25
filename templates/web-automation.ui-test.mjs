@@ -75,8 +75,13 @@ function bridge({ sample, withBrowser, outdated = false }) {
           recordQueue = [{ id: "r1", type: "click", target: { locators: [{ kind: "role", role: "button", name: "Sign in" }] } },
             { id: "r2", type: "type", sensitive: true, value: "${password}", target: { locators: [{ kind: "label", value: "Password" }] } }];
           return { id: "rec1" }; },
-        events: async (_id, after) => { await wait(150); if (recordQueue.length) { const steps = recordQueue; recordQueue = []; return { steps, next: after + steps.length, done: false }; } return { steps: [], next: after, done: recordDone }; },
+        events: async (id, after) => { await wait(150);
+          if (id === "rec_panel") { const p = window.panel; const steps = p.steps.splice(0), removed = p.removed.splice(0);
+            if (p.done && !steps.length && !removed.length) p.active = [];
+            return { steps, removed, next: after + steps.length, done: p.done && !steps.length && !removed.length }; } if (recordQueue.length) { const steps = recordQueue; recordQueue = []; return { steps, next: after + steps.length, done: false }; } return { steps: [], next: after, done: recordDone }; },
         stop: async () => { recordDone = true; return true; },
+        // Recordings started from the browser's own panel (window.panel drives them).
+        active: async () => (window.panel?.active || []).map(item => ({ ...item })),
       },
       runs: {
         start: async options => { browserCalls.push(["run", JSON.parse(JSON.stringify(options))]); run = { phase: 0, choice: "" }; return { id: "brun1" }; },
@@ -328,6 +333,30 @@ try {
   await early.getByRole("region", { name: "Script settings" }).getByLabel("Script name").waitFor();
   assert.equal(await early.getByText("Agent runs").count(), 0);
   await early.close();
+  // A recording started from the browser's panel lands in a new script; deletions in the panel follow.
+  const panel = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  panel.on("pageerror", error => errors.push(error.message));
+  await panel.addInitScript(bridge, { sample, withBrowser: true, outdated: true });
+  await panel.goto(url);
+  await panel.getByText("Browser component update available").waitFor();
+  const scriptsBefore = await panel.evaluate(() => [...window.rows.values()].filter(row => row.collection === "scripts").length);
+  await panel.evaluate(() => { window.panel = { active: [{ id: "rec_panel", profile: "pf_post", url: "https://forum.example.com/", started_at: "2026-11-25T09:00:00+08:00", origin: "browser" }],
+    steps: [{ id: "b1", type: "click", target: { locators: [{ kind: "role", role: "link", name: "New topic" }] } },
+      { id: "b2", type: "type", value: "hello", target: { locators: [{ kind: "label", value: "Title" }] } }], removed: [], done: false }; });
+  await panel.locator(".wa-node").filter({ hasText: "New topic" }).waitFor();
+  await panel.getByRole("button", { name: "Stop recording" }).waitFor();
+  const panelScript = () => panel.evaluate(() => [...window.rows.values()].find(row => row.collection === "scripts" && row.data.start_url === "https://forum.example.com/")?.data);
+  assert.equal(await panel.evaluate(() => [...window.rows.values()].filter(row => row.collection === "scripts").length), scriptsBefore + 1, "a new script for the panel recording");
+  assert.equal((await panelScript()).profile, "发帖号");
+  await panel.evaluate(() => { window.panel.removed.push("b1"); window.panel.steps.push({ id: "b3", type: "click", target: { locators: [{ kind: "role", role: "button", name: "Publish" }] } }); });
+  await panel.locator(".wa-node").filter({ hasText: "New topic" }).waitFor({ state: "detached" });
+  await panel.locator(".wa-node").filter({ hasText: "Publish" }).waitFor();
+  assert.deepEqual((await panelScript()).graph.edges, [["b2", "b3"]], "deleted steps leave a connected chain");
+  await panel.evaluate(() => { window.panel.done = true; });
+  await panel.getByRole("button", { name: "Record", exact: true }).waitFor();
+  await panel.waitForTimeout(3000);
+  assert.equal(await panel.evaluate(() => [...window.rows.values()].filter(row => row.collection === "scripts").length), scriptsBefore + 1, "a finished panel recording is not taken twice");
+  await panel.close();
   // An older compatible component is installed: the page offers the App's release.
   const stale = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   stale.on("pageerror", error => errors.push(error.message));
@@ -342,7 +371,7 @@ try {
   await stale.getByRole("dialog", { name: "Profiles" }).getByText("发帖号").waitFor();
   await stale.close();
   assert.deepEqual(errors, []);
-  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, profile proxy/UA/argument settings, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");
+  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, profile proxy/UA/argument settings, recordings from the browser panel with deletions, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");
 } finally {
   await browser.close();
   server.close();

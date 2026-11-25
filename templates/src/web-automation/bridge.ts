@@ -41,7 +41,12 @@ export type BrowserStatus = {
  *  (accept/dismiss; a prompt's typed text only as a secret parameter
  *  reference). A tab the person opens by hand is tab "new" then navigate.
  *  No hidden fields: everything replay needs is visible and editable. */
-export type RecordEvents = { steps: ScriptNode[]; next: number; done: boolean; url?: string };
+/** removed: ids of steps sent earlier that the person deleted in the
+ *  browser's recording panel (components before 0.3.0 never send it). */
+export type RecordEvents = { steps: ScriptNode[]; next: number; done: boolean; url?: string; removed?: string[] };
+/** A recording in progress for this page's scope; "browser" ones were
+ *  started from the recording panel and wait for a page to take them. */
+export type ActiveRecording = { id: string; profile: string; url: string; started_at: string; origin: "browser" | "page" };
 export type RunUpdate = Pick<Run, "state" | "node" | "error" | "error_node" | "question"> & {
   steps: RunStep[]; next: number; output: Record<string, unknown>;
 };
@@ -88,6 +93,9 @@ export interface BrowserBridge {
     /** Long-polls recorded steps after `after`; done once stopped. */
     events(id: string, after: number): Promise<RecordEvents>;
     stop(id: string): Promise<true>;
+    /** Optional (older Apps lack it): recordings in progress, including
+     *  those started from the browser's own recording panel. */
+    active?(): Promise<ActiveRecording[]>;
   };
   runs: {
     start(options: RunOptions): Promise<{ id: string }>;
