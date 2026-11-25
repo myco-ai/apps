@@ -3,7 +3,7 @@ import type { XYPosition } from "@xyflow/react";
 import { Kit, mount, uid, useKit } from "../_lib/appkit";
 import { locale, t as uiText } from "../_lib/i18n";
 import { Store, type MycoRecord } from "../_lib/myco";
-import { browser, errorCode, type Approval, type BrowserProfile, type BrowserStatus, type RunUpdate } from "./bridge";
+import { browser, errorCode, errorReason, type Approval, type BrowserProfile, type BrowserStatus, type RunUpdate } from "./bridge";
 import { Canvas } from "./canvas";
 import { NodeInspector, ScriptSettings, type AgentAccess, type Tools } from "./inspector";
 import { bridgeError, category, stateDot, stateName, typeName } from "./labels";
@@ -140,12 +140,12 @@ function ProfilesDialog({ status, refresh, close }: { status: BrowserStatus; ref
   const [name, setName] = useState("");
   const [editing, setEditing] = useState("");
   const bridge = browser()!;
-  const act = (task: Promise<unknown>) => void task.then(refresh, error => kit.flash(bridgeError(errorCode(error))));
+  const act = (task: Promise<unknown>) => void task.then(refresh, error => kit.flash(bridgeError(errorCode(error), errorReason(error))));
   const configure = bridge.profiles.configure?.bind(bridge.profiles);
   const current = status.profiles.find(profile => profile.id === editing);
   if (current && configure) return <ProfileSettingsDialog profile={current} close={close} back={() => setEditing("")}
     save={settings => configure(current.id, settings).then(() => { refresh(); setEditing(""); kit.flash(current.running ? uiText("已保存，关掉这个浏览器后再打开生效") : uiText("已保存")); },
-      error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); })}/>;
+      error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error), errorReason(error))); })}/>;
   return <Dialog title={uiText("Profile")} close={close} wide footer={<button type="button" className="wa-btn is-primary" onClick={closeDialog}>{uiText("完成")}</button>}>
     <p className="wa-muted">{uiText("每个 profile 是一组单独的浏览器登录状态，只存在 {0} 上。打开「允许 agent 使用」后，agent 才能申请用它跑脚本。", status.machine)}</p>
     <ul className="wa-profiles">
@@ -374,10 +374,10 @@ function App() {
       const subflows = Object.fromEntries(script.graph.nodes.filter(item => item.type === "subflow" && item.script_id && scripts.get(item.script_id))
         .map(item => [item.script_id!, normalize(scripts.get(item.script_id!)!.data)]));
       try { await bridge.approvals.request({ script_id: scriptId, version: record.version, script, scripts: subflows, profile }); loadApprovals(); }
-      catch (error) { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }
+      catch (error) { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error), errorReason(error))); }
     },
     revoke: async version => {
-      try { await bridge.approvals.revoke(scriptId, version); loadApprovals(); } catch (error) { kit.flash(bridgeError(errorCode(error))); }
+      try { await bridge.approvals.revoke(scriptId, version); loadApprovals(); } catch (error) { kit.flash(bridgeError(errorCode(error), errorReason(error))); }
     },
   } : undefined;
   const selectedRun = runs.get(runId) || runRows[0];
@@ -418,12 +418,12 @@ function App() {
     locate: async target => {
       const profile = profiles.find(item => item.name === script?.profile)?.id || profiles[0]?.id;
       if (!profile) { kit.flash(uiText("还没有 profile，请先在「Profile」里新建一个。")); return undefined; }
-      try { return (await bridge.locate({ profile, target })).count; } catch (error) { kit.flash(bridgeError(errorCode(error))); return undefined; }
+      try { return (await bridge.locate({ profile, target })).count; } catch (error) { kit.flash(bridgeError(errorCode(error), errorReason(error))); return undefined; }
     },
     pick: async () => {
       const profile = profiles.find(item => item.name === script?.profile)?.id || profiles[0]?.id;
       if (!profile) { kit.flash(uiText("还没有 profile，请先在「Profile」里新建一个。")); return undefined; }
-      try { return await bridge.pick({ profile }); } catch (error) { kit.flash(bridgeError(errorCode(error))); return undefined; }
+      try { return await bridge.pick({ profile }); } catch (error) { kit.flash(bridgeError(errorCode(error), errorReason(error))); return undefined; }
     },
   } : {};
 
@@ -432,7 +432,7 @@ function App() {
     try {
       const session = await bridge.record.start({ profile, url });
       await followRecording(session.id, scriptId, profile, url);
-    } catch (error) { kit.flash(bridgeError(errorCode(error))); }
+    } catch (error) { kit.flash(bridgeError(errorCode(error), errorReason(error))); }
   }
 
   // Steps stream into the target script until the recording ends, wherever
@@ -456,7 +456,7 @@ function App() {
         });
         if (events.done) break;
       }
-    } catch (error) { kit.flash(bridgeError(errorCode(error))); }
+    } catch (error) { kit.flash(bridgeError(errorCode(error), errorReason(error))); }
     setRecording(undefined);
   }
 
@@ -521,14 +521,14 @@ function App() {
         if (finished(change.state)) break;
       }
     } catch (error) {
-      await write({ ...run, state: "failed", error: bridgeError(errorCode(error)), ended_at: new Date().toISOString() });
+      await write({ ...run, state: "failed", error: bridgeError(errorCode(error), errorReason(error)), ended_at: new Date().toISOString() });
     }
     setLive(undefined);
   }
 
   function control(action: "pause" | "resume" | "step" | "cancel", choice?: string) {
     if (!bridge || !live) return;
-    void bridge.runs.control(live.bridge, action, choice).catch(error => kit.flash(bridgeError(errorCode(error))));
+    void bridge.runs.control(live.bridge, action, choice).catch(error => kit.flash(bridgeError(errorCode(error), errorReason(error))));
   }
 
   async function removeScript() {
@@ -609,7 +609,7 @@ function App() {
         : status.reason || uiText("这台电脑暂时不能运行浏览器组件。")}</span>
       {status.supported && bridge && <button type="button" className="wa-btn is-small" disabled={installing} onClick={() => {
         setInstalling(true);
-        void bridge.install().then(() => bridge.status()).then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }).finally(() => setInstalling(false));
+        void bridge.install().then(() => bridge.status()).then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error), errorReason(error))); }).finally(() => setInstalling(false));
       }}>{installing ? uiText("正在安装…") : uiText("安装组件")}</button>}
     </div>}
 
@@ -618,7 +618,7 @@ function App() {
       <span><strong>{uiText("浏览器组件有新版本")}</strong>{uiText("新版本修复了网站验证和兼容问题，更新后录制和回放更稳定。")}</span>
       <button type="button" className="wa-btn is-small" disabled={installing} onClick={() => {
         setInstalling(true);
-        void bridge.install().then(() => bridge.status()).then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }).finally(() => setInstalling(false));
+        void bridge.install().then(() => bridge.status()).then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error), errorReason(error))); }).finally(() => setInstalling(false));
       }}>{installing ? uiText("正在更新…") : uiText("更新组件")}</button>
     </div>}
 

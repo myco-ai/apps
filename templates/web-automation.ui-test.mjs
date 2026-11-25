@@ -369,6 +369,14 @@ try {
   assert.deepEqual(await stale.evaluate(() => window.browserCalls), [["install"]]);
   await stale.getByRole("button", { name: "Profiles" }).click();
   await stale.getByRole("dialog", { name: "Profiles" }).getByText("发帖号").waitFor();
+  // A profile whose old browser could not be verified explains what to do.
+  await stale.getByRole("dialog", { name: "Profiles" }).getByRole("button", { name: "Done" }).click();
+  await stale.evaluate(() => { window.myco.browser.record.start = async () => { throw { code: "profile_locked", reason: "leftover_unverified" }; }; });
+  await stale.getByRole("button", { name: "Record", exact: true }).click();
+  const locked = stale.getByRole("dialog", { name: "Record" });
+  await locked.getByLabel("Open URL").fill("https://forum.example.com/");
+  await locked.getByRole("button", { name: "Start recording" }).click();
+  await stale.getByText("This profile's previous browser is still running. Close it and retry, or restart your computer.").waitFor();
   await stale.close();
   assert.deepEqual(errors, []);
   console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, profile proxy/UA/argument settings, recordings from the browser panel with deletions, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");

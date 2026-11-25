@@ -130,3 +130,9 @@ export function browser(): BrowserBridge | undefined {
 export function errorCode(error: unknown) {
   return (error as { code?: string })?.code || "failed";
 }
+/** Optional detail for some codes (profile_locked: leftover_unverified,
+ *  cleanup_pending, cleanup_failed); older Apps never send it. */
+export function errorReason(error: unknown) {
+  const reason = (error as { reason?: unknown })?.reason;
+  return typeof reason === "string" ? reason : "";
+}
