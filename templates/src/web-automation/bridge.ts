@@ -89,6 +89,9 @@ export interface BrowserBridge {
      *  next time the profile's browser starts. Rejects with "cancelled"
      *  when declined and "invalid_argument" for a disallowed value. */
     configure?(id: string, settings: ProfileSettingsInput): Promise<BrowserProfile>;
+    /** Owner-confirmed permanent deletion. Requires profile_delete; busy
+     *  browser windows and controlled profiles cannot be deleted. */
+    remove?(id: string): Promise<true>;
   };
   record: {
     start(options: { profile: string; url: string }): Promise<{ id: string }>;

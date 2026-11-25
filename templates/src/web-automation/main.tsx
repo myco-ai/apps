@@ -139,9 +139,18 @@ function profileSummary(settings?: ProfileSettings) {
 function ProfilesDialog({ status, refresh, close }: { status: BrowserStatus; refresh: () => void; close: () => void }) {
   const [name, setName] = useState("");
   const [editing, setEditing] = useState("");
+  const [removing, setRemoving] = useState("");
   const bridge = browser()!;
   const act = (task: Promise<unknown>) => void task.then(refresh, error => kit.flash(bridgeError(errorCode(error), errorReason(error))));
   const configure = bridge.profiles.configure?.bind(bridge.profiles);
+  const remove = status.features?.includes("profile_delete") ? bridge.profiles.remove?.bind(bridge.profiles) : undefined;
+  const deleteProfile = async (id: string) => {
+    if (!remove || removing) return;
+    setRemoving(id);
+    try { await remove(id); refresh(); }
+    catch (error) { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error), errorReason(error))); }
+    finally { setRemoving(""); }
+  };
   const current = status.profiles.find(profile => profile.id === editing);
   if (current && configure) return <ProfileSettingsDialog profile={current} close={close} back={() => setEditing("")}
     save={settings => configure(current.id, settings).then(() => { refresh(); setEditing(""); kit.flash(current.running ? uiText("已保存，关掉这个浏览器后再打开生效") : uiText("已保存")); },
@@ -154,6 +163,9 @@ function ProfilesDialog({ status, refresh, close }: { status: BrowserStatus; ref
         <span className="wa-profile-name"><strong>{profile.name}</strong><small>{[profile.running ? uiText("浏览器开着") : uiText("未打开"), profileSummary(profile.settings)].filter(Boolean).join(" · ")}</small></span>
         <button type="button" className="wa-btn is-ghost is-small" onClick={() => act(bridge.profiles.open(profile.id))}>{uiText("打开浏览器登录")}</button>
         {configure && <button type="button" className="wa-btn is-ghost is-small" aria-label={uiText("「{0}」的浏览器设置", profile.name)} onClick={() => setEditing(profile.id)}><Icon.settings size={14}/>{uiText("设置")}</button>}
+        {remove && <button type="button" className="wa-btn is-ghost is-small" aria-label={uiText("删除「{0}」", profile.name)}
+          disabled={Boolean(removing) || profile.running} title={profile.running ? uiText("请先关闭这个 profile 的浏览器窗口或停止运行。") : uiText("删除此 profile，需在 App 中确认。")}
+          onClick={() => void deleteProfile(profile.id)}>{removing === profile.id ? uiText("正在删除…") : uiText("删除")}</button>}
         <span className="wa-profile-agents">{uiText("允许 agent 使用")}<Switch label={uiText("允许 agent 使用")} checked={profile.agents} onChange={value => act(bridge.profiles.allowAgents(profile.id, value))}/></span>
       </li>)}
       {!status.profiles.length && <li className="wa-muted">{uiText("还没有 profile。")}</li>}

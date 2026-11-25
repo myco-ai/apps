@@ -132,6 +132,7 @@ export function issueText(issue: Issue) {
 export function bridgeError(code: string, reason = "") {
   if (code === "profile_locked" && reason === "leftover_unverified") return uiText("这个 profile 的旧浏览器进程还在，请关闭后重试，或重启电脑。");
   if (code === "profile_locked" && (reason === "cleanup_pending" || reason === "cleanup_failed")) return uiText("这个 profile 的旧浏览器还没清理完，请关闭它后再试。");
+  if (code === "busy" && reason === "owner_window_open") return uiText("请先关闭这个 profile 的浏览器窗口，再让 agent 操作。");
   switch (code) {
     case "unsupported": return uiText("这台电脑的 App 还不支持这个操作。");
     case "not_installed": return uiText("请先安装浏览器组件。");

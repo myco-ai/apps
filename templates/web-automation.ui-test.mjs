@@ -28,10 +28,13 @@ const browser = await chromium.launch({ executablePath: process.env.UI_SMOKE_EXE
 function bridge({ sample, withBrowser, outdated = false }) {
   const rows = new Map();
   window.rows = rows;
+  const assertIdle = p => { if (p.running) throw Object.assign(new Error("In use"),{code:"busy"}); };
   const listeners = [];
   for (const [collection, list] of Object.entries(JSON.parse(sample))) for (const { id, ...data } of list) rows.set(collection + "/" + id, { collection, id, data, version: 1 });
   const browserCalls = [];
   window.browserCalls = browserCalls;
+  window.cancelProfileDeletion = true;
+  window.profileFeatures = ["profile_delete"];
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   let recordQueue = [], recordDone = false, run = null, installed = outdated, approvals = [];
   const profiles = [{ id: "pf_post", name: "发帖号", running: false, agents: false }];
@@ -52,12 +55,18 @@ function bridge({ sample, withBrowser, outdated = false }) {
       on: f => { listeners.push(f); return () => {}; },
     },
     browser: withBrowser ? {
-      status: async () => ({ protocol: 1, version: installed ? (outdated ? "0.1.0" : "0.1.1") : "", installed, update_available: installed && outdated, supported: true, browsers: ["chrome"], machine: "Studio Mac", profiles: installed ? profiles.map(profile => ({ ...profile })) : [] }),
+      status: async () => ({ protocol: 1, features: window.profileFeatures, version: installed ? (outdated ? "0.1.0" : "0.1.1") : "", installed, update_available: installed && outdated, supported: true, browsers: ["chrome"], machine: "Studio Mac", profiles: installed ? profiles.map(profile => ({ ...profile })) : [] }),
       // Like the App, install() answers without profiles; the page must re-read status.
       install: async () => { browserCalls.push(["install"]); installed = true; outdated = false; return { ...(await window.myco.browser.status()), profiles: [] }; },
       profiles: {
         create: async name => { const profile = { id: "pf_" + profiles.length, name, running: false, agents: false }; profiles.push(profile); return profile; },
         open: async () => true,
+        remove: async id => {
+          browserCalls.push(["remove",id]);
+          if (window.cancelProfileDeletion) throw Object.assign(new Error("Declined"),{code:"cancelled"});
+          const i=profiles.findIndex(p=>p.id===id);
+          assertIdle(profiles[i]); profiles.splice(i,1); return true;
+        },
         configure: async (id, settings) => {
           browserCalls.push(["configure", id, JSON.parse(JSON.stringify(settings))]);
           const profile = profiles.find(item => item.id === id);
@@ -257,6 +266,21 @@ try {
   await profiles.getByLabel("New profile name").fill("工作号");
   await profiles.getByRole("button", { name: "New", exact: true }).click();
   await profiles.getByText("工作号").waitFor();
+  const remove = profiles.getByRole("button",{name:"Delete “工作号”",exact:true});
+  await remove.click();
+  await live.waitForFunction(()=>window.browserCalls.some(call=>call[0]==="remove"));
+  await profiles.getByText("工作号").waitFor(); // Declined owner confirmation keeps it.
+  await live.evaluate(()=>{window.cancelProfileDeletion=false;});
+  await remove.click();
+  await profiles.getByText("工作号",{exact:true}).waitFor({state:"hidden"});
+  await live.evaluate(()=>{window.profileFeatures=[];});
+  // A successful bridge operation refreshes the component status.
+  await profiles.getByLabel("New profile name").fill("Legacy fixture");
+  await profiles.getByRole("button",{name:"New",exact:true}).click();
+  await profiles.getByText("Legacy fixture",{exact:true}).waitFor();
+  await profiles.getByRole("button",{name:"Delete “发帖号”",exact:true}).waitFor({state:"hidden"});
+  assert.equal(await profiles.getByRole("button",{name:/^Delete “/}).count(),0,"old components have no deletion control");
+
   await profiles.getByRole("button", { name: "Done" }).click();
   // Record into a new script.
   await live.locator(".wa-switcher").click();

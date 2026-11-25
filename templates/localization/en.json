@@ -4111,5 +4111,9 @@
   "回到上一页，和浏览器的后退按钮一样": "Go to the previous page, like the browser's back button",
   "前进到下一页": "Go forward to the next page",
   "重新加载当前页面": "Reload the current page",
-  "切到或关闭一个标签页": "Switch to or close a tab"
+  "切到或关闭一个标签页": "Switch to or close a tab",
+  "删除「{0}」": "Delete “{0}”",
+  "请先关闭这个 profile 的浏览器窗口或停止运行。": "Close this profile’s browser window or stop its run first.",
+  "删除此 profile，需在 App 中确认。": "Delete this profile, with confirmation in the App.",
+  "请先关闭这个 profile 的浏览器窗口，再让 agent 操作。": "Close this profile’s browser window before letting an agent control it."
 }
