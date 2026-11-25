@@ -320,7 +320,7 @@ function App() {
   const [search, setSearch] = useState("");
   const [tag, setTag] = useState("");
   const [state, setState] = useState("");
-  const [quota, setQuota] = useState<{ used: number; max: number }>();
+  const [quota, setQuota] = useState<{ used: number; max: number; bytesUsed?: number; bytesMax?: number }>();
   const record = entries.get(id) || undefined;
   const refreshQuota = () => {
     if (canUseOriginals) void myco!.projectFiles!.info().then(setQuota).catch(() => undefined);
@@ -334,7 +334,7 @@ function App() {
       .some(value => value?.toLocaleLowerCase().includes(query)))).sort((a, b) => (b.data.date || "").localeCompare(a.data.date || "") || b.id.localeCompare(a.id));
 
   async function submit(data: Entry, files: PendingFile[], baseVersion: number) {
-    if (quota && quota.used + files.length > quota.max) {
+    if (quota && (quota.used + files.length > quota.max || (quota.bytesMax !== undefined && (quota.bytesUsed ?? 0) + files.reduce((sum,item)=>sum+item.file.size,0) > quota.bytesMax))) {
       kit.flash(uiText("项目文件空间不足，请清理后再上传。"));
       return;
     }
@@ -363,7 +363,7 @@ function App() {
   }
 
   return <div className="mk-app">
-    <header className="mk-header"><div><h1>{uiText("素材库")}</h1>{quota && <p className="mk-quota" data-near={quota.used >= quota.max - 10}>{uiText("项目文件已用 {0}/{1}", quota.used, quota.max)}{quota.used >= quota.max - 10 ? " · " + uiText("配额快满了") : ""}</p>}</div>
+    <header className="mk-header"><div><h1>{uiText("素材库")}</h1>{quota && <p className="mk-quota" data-near={quota.used >= quota.max - 10}>{uiText("项目文件已用 {0}/{1}", quota.used, quota.max)}{quota.bytesMax !== undefined ? " · " + uiText("总大小 {0}/{1} GiB", ((quota.bytesUsed ?? 0)/1024**3).toFixed(2), (quota.bytesMax/1024**3).toFixed(2)) : ""}{quota.used >= quota.max - 10 ? " · " + uiText("配额快满了") : ""}</p>}</div>
       {kit.canEdit && !id && !editing && <button className="btn btn-primary" onClick={() => setEditing(true)}><Plus size={16}/>{uiText("新增条目")}</button>}</header>
     {!kit.canEdit && <p className="mk-notice">{uiText("只能看")}</p>}
     {!canUseOriginals && <p className="mk-notice">{uiText("要上传、播放或下载项目文件，请在新版桌面 App 打开此项目页面。")}</p>}

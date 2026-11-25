@@ -27,6 +27,7 @@ let downloaded;
 const downloadOrder = [];
 let failDownload;
 let projectFileBase = 91;
+let modernQuota = false;
 let requests = 0;
 const json = (res, data) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(data));
 const host = `
@@ -93,6 +94,10 @@ const server = createServer(async (req, res) => {
       const type = name.endsWith(".js") ? "text/javascript" : "text/css";
       return res.writeHead(200, { "content-type": type }).end(body);
     } catch { return res.writeHead(404).end(); }
+  }
+  if (route === "/app/hubs/hub/projects/pilot/storage") {
+    if(!modernQuota)return res.writeHead(404,{"content-type":"application/json"}).end(JSON.stringify({error:"not_found",message:"old Hub"}));
+    return json(res,{files_used:files.size,files_max:1000,bytes_used:[...files.values()].reduce((sum,f)=>sum+f.bytes.length,0),bytes_max:2*1024**3,docs_used:projectFileBase,docs_max:100});
   }
   if (route === "/app/hubs/hub/projects/pilot") {
     return json(res, { docs: Array.from({ length: projectFileBase + files.size }, () => ({})) });
@@ -437,6 +442,13 @@ try {
   await fallback.getByRole("button", { name: /Usage reporting/ }).click();
   assert.equal(await fallback.getByRole("button", { name: "Edit or add files" }).count(), 0);
   assert.ok(await fallback.getByRole("button", { name: "Download original" }).isEnabled());
+  modernQuota=true;
+  const modern=await browser.newPage();await modern.goto(base);
+  const modernContent=modern.frameLocator("iframe");
+  await modernContent.locator(".mk-quota").filter({hasText:/\/1000/}).waitFor();
+  await modernContent.locator(".mk-quota").filter({hasText:/Total size .*\/2\.00 GiB/}).waitFor();
+  assert.ok(!(await modernContent.locator(".mk-quota").innerText()).includes("Nearly full"));
+  await modern.close();
   console.log("Media Kit: scoped files, 11 MiB PNG, 15 MiB MP4 playback and byte-for-byte download, WebM, GIF, validated links, legacy bridge, asset filters, ordered batch download and bilingual responsive views passed");
 } finally {
   await browser.close();

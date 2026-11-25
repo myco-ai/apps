@@ -31,7 +31,8 @@ interface Bridge {
   readonly preferences?: PagePreferences;
   /** Desktop, scoped to a Media Kit page and its own project. Check ready.projectFiles. */
   projectFiles?: {
-    info(): Promise<{ used: number; max: number; maxBytes: number }>;
+    /** maxBytes is per file; optional bytesMax is the project total (new Hubs). */
+    info(): Promise<{ used: number; max: number; maxBytes: number; bytesUsed?: number; bytesMax?: number; docsUsed?: number; docsMax?: number }>;
     put(name: string, blob: Blob): Promise<true>;
     get(name: string): Promise<Blob>;
     download(name: string): Promise<true>;
