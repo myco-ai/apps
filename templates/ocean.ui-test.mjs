@@ -121,12 +121,36 @@ try {
   await card.getByRole("button", { name: "收起" }).click();
   assert.equal(await card.count(), 0, "closed until you leave");
   assert.match(await page.locator(".oc-chip").first().textContent(), /在 椰子岛 附近/);
-  // running into it: stopped short of the land, told why
-  await world(page, (w) => { w.moveBoat(-330, -300, 0); w.boat.speed = 8; w.boat.throttle = 1; });
-  await page.locator(".oc-alert").waitFor({ timeout: 15000 });
-  assert.match(await page.locator(".oc-alert").textContent(), /触底了/);
-  assert.ok(await world(page, (w) => w.ground(w.boat.x, w.boat.z) < -0.3), "the boat is still in water");
-  await world(page, (w) => { w.boat.throttle = 0; w.boat.speed = 0; });
+  // Running into it: use simulation time, not software GPU throughput.
+  // The RAF loop caps a slow frame at 0.5 s; 15 s of wall time need not
+  // contain enough simulation to reach the shore and publish the next HUD.
+  // Keep the real terrain, collision physics, rendering and React alert.
+  const impact = await world(page, (w) => {
+    w.stop();
+    w.moveBoat(-330, -300, 0); w.boat.speed = 8; w.boat.throttle = 1;
+    let steps = 0;
+    while (!Number.isFinite(w.boat.aground) && steps < 360) {
+      w.advance(1 / 60);
+      steps++;
+    }
+    return { seconds: steps / 60, aground: w.boat.aground, speed: w.boat.speed, z: w.boat.z };
+  });
+  try {
+    assert.ok(impact.seconds > 0 && impact.seconds <= 6 && Number.isFinite(impact.aground) && impact.aground < 1 / 30,
+      `the real boat must hit the real shore within six simulated seconds: ${JSON.stringify(impact)}`);
+    assert.ok(impact.z < -300 && impact.speed < 0, "the boat travelled north and bounced off the shore");
+    // Present the frozen impact state, including the HUD's throttled callback.
+    // Do not let extra fast frames age its 1.2 s alert while observing React.
+    await page.waitForFunction(() => {
+      window.__ocean.frame(0);
+      return !!document.querySelector(".oc-alert");
+    }, null, { timeout: 15000 });
+    await page.locator(".oc-alert").waitFor({ timeout: 15000 });
+    assert.match(await page.locator(".oc-alert").textContent(), /触底了/);
+    assert.ok(await world(page, (w) => w.ground(w.boat.x, w.boat.z) < -0.3), "the boat is still in water");
+  } finally {
+    await world(page, (w) => { w.boat.throttle = 0; w.boat.speed = 0; w.start(); });
+  }
 
   // the map: every island, the one found counted, a course from it
   await page.locator(".oc-canvas").click({ position: { x: 600, y: 500 } });
