@@ -191,12 +191,15 @@ function ProfileSettingsDialog({ profile, close, back, save }: {
     args: badArgs.length ? uiText("不支持：{0}", badArgs.join("  ")) : "",
   };
   const invalid = Object.values(errors).some(Boolean);
-  const hadPassword = Boolean(saved.proxy?.has_password);
+  // A saved password only ever goes to the server and account it was saved for.
+  const sameAccount = Boolean(saved.proxy) && server === saved.proxy?.server && username.trim() === saved.proxy?.username;
+  const hadPassword = Boolean(saved.proxy?.has_password) && sameAccount;
+  const lostPassword = Boolean(saved.proxy?.has_password) && !sameAccount && kind !== "none" && !password;
   const submit = () => {
     if (invalid) return;
     const proxy = kind === "none" ? null : {
       server, username: username.trim(), bypass: bypass.split(/[,\s]+/).map(item => item.trim()).filter(Boolean),
-      ...(password ? { password } : clearPassword || !username.trim() ? { password: "" } : {}),
+      ...(password ? { password } : clearPassword || !username.trim() || !sameAccount ? { password: "" } : {}),
     };
     setBusy(true);
     void save({ proxy, user_agent: ua.trim(), lang: lang.trim(), args: argList }).finally(() => setBusy(false));
@@ -225,6 +228,7 @@ function ProfileSettingsDialog({ profile, close, back, save }: {
               placeholder={hadPassword && !clearPassword ? "••••••••" : ""} onChange={event => { setPassword(event.target.value); setClearPassword(false); }}/>
           </Field>
         </div>
+        {lostPassword && username.trim() && <p className="wa-error" role="note">{uiText("换了代理地址或账号，已保存的密码不会带过去，请重新填写密码。")}</p>}
         {hadPassword && username.trim() && !password && <button type="button" className="wa-btn is-ghost is-small" aria-pressed={clearPassword}
           onClick={() => setClearPassword(value => !value)}>{clearPassword ? uiText("保留已保存的密码") : uiText("清除已保存的密码")}</button>}
         <Field label={uiText("不走代理的地址")} htmlFor="wa-proxy-bypass" hint={uiText("用逗号分开，例如 localhost, *.example.com")}>

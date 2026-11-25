@@ -4072,5 +4072,6 @@
   "启动参数": "Launch arguments",
   "每行一个": "One per line",
   "只支持窗口大小、缩放、GPU、后台节流、功能开关和不加载图片这几类，其余会被拒绝。": "Only window size, scaling, GPU, background throttling, feature switches and turning off images are allowed; anything else is rejected.",
-  "UA 只能是一行英文字符，最长 512 个": "The UA must be one line of plain ASCII, at most 512 characters"
+  "UA 只能是一行英文字符，最长 512 个": "The UA must be one line of plain ASCII, at most 512 characters",
+  "换了代理地址或账号，已保存的密码不会带过去，请重新填写密码。": "The proxy address or username changed, so the saved password is not carried over. Enter the password again."
 }

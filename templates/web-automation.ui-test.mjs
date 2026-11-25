@@ -62,7 +62,10 @@ function bridge({ sample, withBrowser, outdated = false }) {
           browserCalls.push(["configure", id, JSON.parse(JSON.stringify(settings))]);
           const profile = profiles.find(item => item.id === id);
           const { password, ...proxy } = settings.proxy || {};
-          profile.settings = { ...settings, proxy: settings.proxy ? { ...proxy, has_password: Boolean(password) } : null };
+          // Like the component: an omitted password is kept only for the same server and username.
+          const before = profile.settings?.proxy;
+          const keep = password === undefined && before && before.server === proxy.server && before.username === proxy.username && before.has_password;
+          profile.settings = { ...settings, proxy: settings.proxy ? { ...proxy, has_password: Boolean(password) || Boolean(keep) } : null };
           return { ...profile };
         },
         allowAgents: async (id, agents) => { browserCalls.push(["allow", id, agents]); const profile = profiles.find(item => item.id === id); profile.agents = agents; return { ...profile }; },
@@ -238,6 +241,14 @@ try {
   await profiles.getByText("en-US").waitFor();
   const kept = await live.evaluate(() => window.browserCalls.filter(call => call[0] === "configure")[1][2].proxy);
   assert(!("password" in kept), "an untouched saved password is kept");
+  // A different server never inherits the saved password.
+  await profiles.getByRole("button", { name: "Browser settings for “发帖号”" }).click();
+  await profileSettings.getByLabel("Address").fill("other.example.com:1080");
+  await profileSettings.getByText("The proxy address or username changed, so the saved password is not carried over. Enter the password again.").waitFor();
+  await profileSettings.getByRole("button", { name: "Save", exact: true }).click();
+  await profiles.getByText("Proxy other.example.com:1080").waitFor();
+  const moved = await live.evaluate(() => window.browserCalls.filter(call => call[0] === "configure")[2][2].proxy);
+  assert.equal(moved.password, "", "a new server clears the saved password");
   await profiles.getByLabel("New profile name").fill("工作号");
   await profiles.getByRole("button", { name: "New", exact: true }).click();
   await profiles.getByText("工作号").waitFor();
