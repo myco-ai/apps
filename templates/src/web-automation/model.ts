@@ -290,7 +290,17 @@ export function order(script: Script): ScriptNode[] {
 /** Appends recorded steps after the last step of a linear script. */
 export function append(script: Script, steps: ScriptNode[]): Script {
   const ids = new Set(script.graph.nodes.map(node => node.id));
-  const fresh = steps.filter(step => nodeTypes.includes(step.type) && step.id && !ids.has(step.id) && ids.add(step.id));
+  // Recorded outputs (data1, data2…) never overwrite a name the script already uses.
+  const names = new Set([...script.params.map(param => param.name), ...script.graph.nodes.map(node => node.into || "")]);
+  const rename = (step: ScriptNode): ScriptNode => {
+    if (!step.into || (step.type !== "extract" && step.type !== "js") || !names.has(step.into)) { if (step.into) names.add(step.into); return step; }
+    const base = step.into.replace(/_?\d+$/, "") || "data";
+    let n = 1, name = base + n;
+    while (names.has(name)) name = base + ++n;
+    names.add(name);
+    return { ...step, into: name };
+  };
+  const fresh = steps.filter(step => nodeTypes.includes(step.type) && step.id && !ids.has(step.id) && ids.add(step.id)).map(rename);
   if (!fresh.length) return script;
   const sequence = order(script);
   const outgoing = new Set(script.graph.edges.map(edge => edge[0]));

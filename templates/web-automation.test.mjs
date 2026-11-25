@@ -115,6 +115,15 @@ const run = { script_id: "s", script_version: 1, script_name: "s", state: "runni
 const fitted = m.fitRun(run);
 assert(m.bytes(fitted) < m.recordLimit && fitted.error.length === 1000 && fitted.steps.at(-1).node === "n1999", "runs keep their newest steps under 64 KB");
 assert(m.finished("offline") && !m.finished("paused"));
+// Recorded extract outputs never clash with names the script already uses.
+{
+  const base = m.append(m.newScript("x"), [{ id: "e1", type: "extract", what: "text", into: "data1", target: { locators: [{ kind: "css", value: "#a" }] } }]);
+  const more = m.append({ ...base, params: [{ name: "data2", type: "string" }] }, [
+    { id: "e2", type: "extract", what: "text", into: "data1", target: { locators: [{ kind: "css", value: "#b" }] } },
+    { id: "e3", type: "extract", what: "text", into: "data2", target: { locators: [{ kind: "css", value: "#c" }] } },
+    { id: "e4", type: "extract", what: "text", into: "title", target: { locators: [{ kind: "css", value: "#d" }] } }]);
+  assert.deepEqual(more.graph.nodes.map(node => node.into), ["data1", "data3", "data4", "title"]);
+}
 // Profile settings: only allowlisted launch arguments, well-formed proxies and languages.
 assert(m.launchArgOk("--start-maximized") && m.launchArgOk("--window-size=1440,900") && m.launchArgOk("--disable-features=Translate,AutofillServerCommunication"));
 for (const bad of ["--remote-debugging-port=9222", "--user-data-dir=/tmp/x", "--load-extension=/x", "--disable-web-security", "--no-sandbox", "--proxy-server=http://x:1",
