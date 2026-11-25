@@ -3,7 +3,7 @@ import type { Issue, LocatorKind, NodeType, ParamType, RunState } from "./model"
 
 export type Category = "page" | "data" | "flow" | "note";
 export const groups: { key: Category; name: () => string; types: NodeType[] }[] = [
-  { key: "page", name: () => uiText("页面操作"), types: ["navigate", "click", "type", "select", "press", "hover", "drag", "scroll", "upload", "tab", "dialog"] },
+  { key: "page", name: () => uiText("页面操作"), types: ["navigate", "back", "forward", "reload", "click", "type", "select", "press", "hover", "drag", "scroll", "upload", "tab", "dialog"] },
   { key: "data", name: () => uiText("等待与数据"), types: ["wait", "assert", "extract", "js", "screenshot"] },
   { key: "flow", name: () => uiText("流程"), types: ["branch", "loop", "subflow", "confirm", "note"] },
 ];
@@ -12,6 +12,9 @@ export const category = (type: NodeType): Category => type === "note" ? "note" :
 export function typeName(type: NodeType) {
   switch (type) {
     case "navigate": return uiText("打开网址");
+    case "back": return uiText("后退");
+    case "forward": return uiText("前进");
+    case "reload": return uiText("刷新页面");
     case "click": return uiText("点击");
     case "type": return uiText("输入");
     case "select": return uiText("选择");
@@ -151,6 +154,7 @@ export function tabName(tab: string) {
     case "popup": return uiText("上一步打开的标签页");
     case "new": return uiText("新标签页");
     case "opener": return uiText("回到原来的标签页");
+    case "close": return uiText("关闭当前标签页");
     default: return /^\d+$/.test(tab) ? uiText("第 {0} 个标签页", Number(tab) + 1) : tab;
   }
 }

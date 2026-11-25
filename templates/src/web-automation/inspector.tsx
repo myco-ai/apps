@@ -145,7 +145,7 @@ export function NodeInspector({ node, script, scripts, issues, editable, tools, 
 
   return <div className="wa-panel" aria-label={uiText("步骤详情")} role="region">
     <header className="wa-panel-head">
-      <IconButton label={uiText("返回积木")} onClick={back}><Icon.back size={16}/></IconButton>
+      <IconButton label={uiText("返回积木")} onClick={back}><Icon.backArrow size={16}/></IconButton>
       <span className="wa-tile" data-cat={category(node.type)}><StepIcon type={node.type} size={16}/></span>
       <span className="wa-panel-title"><strong>{typeName(node.type)}</strong><small>{typeHint(node.type)}</small></span>
     </header>
@@ -201,7 +201,7 @@ export function NodeInspector({ node, script, scripts, issues, editable, tools, 
         </div> : toggle("full", uiText("整页截图")))}
         {draft.type === "tab" && <Choice label={uiText("切到哪个标签页")} value={draft.tab || "popup"} onChange={tab => change({ tab })}
           hint={draft.tab === "popup" || !draft.tab ? uiText("上一步点开的新窗口或新标签页；回放时不会重复打开。") : undefined}
-          options={["popup", "new", "opener", "0", "1", "2", "3"].map(tab => ({ value: tab, label: tabName(tab) }))}/>}
+          options={["popup", "new", "opener", "close", "0", "1", "2", "3"].map(tab => ({ value: tab, label: tabName(tab) }))}/>}
         {draft.type === "dialog" && <>
           <Choice label={uiText("怎么处理")} value={draft.dialog || "accept"} onChange={dialog => change({ dialog })}
             options={[{ value: "accept", label: uiText("接受") }, { value: "dismiss", label: uiText("取消") }]}

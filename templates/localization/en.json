@@ -4103,5 +4103,13 @@
   "删除当前素材": "Delete this asset",
   "正在删除…": "Deleting…",
   "固定等 {0} 秒": "Wait {0} s",
-  "最多 {0} 秒": "up to {0} s"
+  "最多 {0} 秒": "up to {0} s",
+  "后退": "Back",
+  "前进": "Forward",
+  "刷新页面": "Reload",
+  "关闭当前标签页": "Close the current tab",
+  "回到上一页，和浏览器的后退按钮一样": "Go to the previous page, like the browser's back button",
+  "前进到下一页": "Go forward to the next page",
+  "重新加载当前页面": "Reload the current page",
+  "切到或关闭一个标签页": "Switch to or close a tab"
 }

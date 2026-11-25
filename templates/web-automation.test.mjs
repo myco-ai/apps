@@ -137,6 +137,13 @@ assert(m.finished("offline") && !m.finished("paused"));
   const fine = m.normalize({ name: "x", graph: { nodes: [{ id: "s", type: "screenshot", clip: { x: 0, y: 0, width: 5, height: 5 } }], edges: [] } });
   assert(!m.validate(fine).some(issue => issue.code === "clip"));
 }
+// Back, forward, reload and closing a tab are steps of their own (agent drafts record them).
+{
+  const s = m.normalize({ name: "x", graph: { nodes: ["back", "forward", "reload"].map((type, i) => ({ id: "n" + i, type })).concat([{ id: "t", type: "tab", tab: "close" }]), edges: [["n0", "n1"], ["n1", "n2"], ["n2", "t"]] } });
+  assert.deepEqual(s.graph.nodes.map(node => node.type), ["back", "forward", "reload", "tab"]);
+  assert.deepEqual(m.validate(s), [], "back/forward/reload and tab close are valid");
+  assert(m.validate(m.normalize({ name: "x", graph: { nodes: [{ id: "t", type: "tab", tab: "shut" }], edges: [] } })).some(issue => issue.code === "tab"));
+}
 // Profile settings: only allowlisted launch arguments, well-formed proxies and languages.
 assert(m.launchArgOk("--start-maximized") && m.launchArgOk("--window-size=1440,900") && m.launchArgOk("--disable-features=Translate,AutofillServerCommunication"));
 for (const bad of ["--remote-debugging-port=9222", "--user-data-dir=/tmp/x", "--load-extension=/x", "--disable-web-security", "--no-sandbox", "--proxy-server=http://x:1",
@@ -148,4 +155,4 @@ assert.deepEqual(m.splitProxy("https://p.example.com:443"), { kind: "https", add
 assert(m.langOk("") && m.langOk("zh-CN") && m.langOk("en") && !m.langOk("zh_CN") && !m.langOk("--lang"));
 assert(m.userAgentOk("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36") && m.userAgentOk(""));
 for (const bad of ["a\nb", "a\rb", "中文", "x".repeat(513)]) assert(!m.userAgentOk(bad), bad);
-console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets, profile settings, region screenshots and sample");
+console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets, profile settings, region screenshots, navigation steps and sample");

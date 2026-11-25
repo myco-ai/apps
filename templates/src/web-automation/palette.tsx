@@ -10,6 +10,9 @@ import { dragType } from "./canvas";
 export function typeHint(type: NodeType) {
   switch (type) {
     case "navigate": return uiText("在当前标签页打开一个网址");
+    case "back": return uiText("回到上一页，和浏览器的后退按钮一样");
+    case "forward": return uiText("前进到下一页");
+    case "reload": return uiText("重新加载当前页面");
     case "click": return uiText("单击、双击或右键一个元素");
     case "type": return uiText("在输入框里填文字");
     case "select": return uiText("在下拉框里选一项");
@@ -18,7 +21,7 @@ export function typeHint(type: NodeType) {
     case "drag": return uiText("把元素拖到另一个元素上");
     case "scroll": return uiText("滚动页面或元素");
     case "upload": return uiText("给文件框选一个文件");
-    case "tab": return uiText("切到另一个标签页");
+    case "tab": return uiText("切到或关闭一个标签页");
     case "dialog": return uiText("接受或取消网页弹出的对话框");
     case "wait": return uiText("等元素出现、网络空闲或一段时间");
     case "assert": return uiText("检查不通过就按出错处理");

@@ -2,7 +2,7 @@
 // agents rely on. Pure functions only: no bridge, no UI text.
 
 export const nodeTypes = [
-  "navigate", "click", "type", "select", "press", "hover", "drag", "scroll", "upload",
+  "navigate", "back", "forward", "reload", "click", "type", "select", "press", "hover", "drag", "scroll", "upload",
   "wait", "assert", "extract", "js", "screenshot", "tab", "dialog",
   "branch", "loop", "subflow", "confirm", "note",
 ] as const;
@@ -194,7 +194,7 @@ export function validate(script: Script, scriptIds: string[] = [], selfId = ""):
     if (node.type === "wait" && node.wait === "time" && !(Number(node.ms) > 0 && Number(node.ms) <= 600000)) issue("ms");
     if (node.type === "wait" && node.wait === "url" && !node.value?.trim()) issue("wait_url");
     if (node.type === "wait" && node.wait === "download" && node.into && !validName(node.into)) issue("into", node.into);
-    if (node.type === "tab" && !/^(\d{1,2}|new|popup|opener)$/.test((node.tab || "").trim())) issue("tab");
+    if (node.type === "tab" && !/^(\d{1,2}|new|popup|opener|close)$/.test((node.tab || "").trim())) issue("tab");
     if (node.type === "dialog" && node.dialog !== "accept" && node.dialog !== "dismiss") issue("dialog");
     if ((node.type === "extract" || node.type === "js") && node.into && !validName(node.into)) issue("into", node.into);
     if (node.type === "extract" && !node.into) issue("into", "");

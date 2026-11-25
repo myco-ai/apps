@@ -33,6 +33,7 @@ Node types and their fields:
 | type | fields |
 | --- | --- |
 | `navigate` | `url` (http/https, may use `${…}`) |
+| `back`, `forward`, `reload` | no fields (the browser's back, forward and reload; components before 0.5.0 report `unsupported_node`) |
 | `click` | `target`, `button` (`left`/`right`/`middle`), `count` (1 or 2) |
 | `type` | `target`, `value`, `clear`, `sensitive` (then `value` must be just `${param}`) |
 | `select` | `target`, `value` |
@@ -45,7 +46,7 @@ Node types and their fields:
 | `extract` | `target`, `what` (`text`/`attribute`/`html`/`table`/`js`), `attr`, `code`, `into` (variable) |
 | `js` | `code`, optional `into` |
 | `screenshot` | optional `target`, `full`, or `clip` `{x,y,width,height}` (a region of the visible page in CSS pixels; only with neither `target` nor `full`, and only components that list the `screenshot_clip` feature can run it) |
-| `tab` | `tab`: `popup` (the tab the previous step opened), `new` (an empty tab), `opener` (back), or an index from `0` |
+| `tab` | `tab`: `popup` (the tab the previous step opened), `new` (an empty tab), `opener` (back), or an index from `0`; `close` closes the current tab and returns to the previous one |
 | `dialog` | `dialog`: `accept` or `dismiss` the native alert/confirm/prompt the previous step opened; `value`: a prompt's text (may be a secret parameter) |
 | `loop` | `list` (e.g. `${rows}`), `as` (item variable) |
 | `subflow` | `script_id` (another script), `args` ({param: value}) |
