@@ -16,13 +16,20 @@ type CardData = { node: ScriptNode; issue: boolean; mark: Mark; breakpoint: bool
 type CardNode = Node<CardData, "step">;
 type Actions = { remove: (id: string) => void; toggleBreakpoint: (id: string) => void; runFrom?: (id: string) => void };
 
+const seconds = (ms: number) => String(Math.round(ms / 100) / 10);
+
 export function summary(node: ScriptNode) {
   switch (node.type) {
     case "navigate": return node.url || "";
     case "type": case "select": return [describeTarget(node.target), node.sensitive ? "•••" : node.value].filter(Boolean).join(" ← ");
     case "press": return node.key || "";
-    case "wait": return node.wait === "time" ? `${node.ms || 0} ms` : node.wait === "network" ? uiText("网络空闲") : node.wait === "url" ? uiText("网址包含 {0}", node.value || "")
-      : node.wait === "download" ? uiText("下载完成") : describeTarget(node.target);
+    case "wait": {
+      if (node.wait === "time") return uiText("固定等 {0} 秒", seconds(node.ms || 0));
+      // Condition waits end as soon as the condition holds; show their limit.
+      const what = node.wait === "network" ? uiText("网络空闲") : node.wait === "url" ? uiText("网址包含 {0}", node.value || "")
+        : node.wait === "download" ? uiText("下载完成") : describeTarget(node.target);
+      return `${what} · ${uiText("最多 {0} 秒", seconds(node.timeout_ms || 30000))}`;
+    }
     case "tab": return tabName(node.tab || "");
     case "dialog": return node.dialog === "dismiss" ? uiText("取消") : node.value ? `${uiText("接受")} ← ${node.value}` : uiText("接受");
     case "extract": case "js": return node.into ? `→ \${${node.into}}` : describeTarget(node.target);

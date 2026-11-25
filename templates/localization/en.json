@@ -4101,5 +4101,7 @@
   "删除「{0}」？原文件不再被其他素材引用时也会清理。": "Delete “{0}”? Its original will be removed when no other assets use it.",
   "此素材": "this asset",
   "删除当前素材": "Delete this asset",
-  "正在删除…": "Deleting…"
+  "正在删除…": "Deleting…",
+  "固定等 {0} 秒": "Wait {0} s",
+  "最多 {0} 秒": "up to {0} s"
 }
