@@ -44,7 +44,7 @@ Node types and their fields:
 | `assert` / `branch` | `check`: `visible`, `hidden`, `text` (with `target`, `value`), `url` (`value`), `expr` (`code`) |
 | `extract` | `target`, `what` (`text`/`attribute`/`html`/`table`/`js`), `attr`, `code`, `into` (variable) |
 | `js` | `code`, optional `into` |
-| `screenshot` | optional `target`, `full` |
+| `screenshot` | optional `target`, `full`, or `clip` `{x,y,width,height}` (a region of the visible page in CSS pixels; only with neither `target` nor `full`, and only components that list the `screenshot_clip` feature can run it) |
 | `tab` | `tab`: `popup` (the tab the previous step opened), `new` (an empty tab), `opener` (back), or an index from `0` |
 | `dialog` | `dialog`: `accept` or `dismiss` the native alert/confirm/prompt the previous step opened; `value`: a prompt's text (may be a secret parameter) |
 | `loop` | `list` (e.g. `${rows}`), `as` (item variable) |

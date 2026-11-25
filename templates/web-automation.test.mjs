@@ -124,6 +124,19 @@ assert(m.finished("offline") && !m.finished("paused"));
     { id: "e4", type: "extract", what: "text", into: "title", target: { locators: [{ kind: "css", value: "#d" }] } }]);
   assert.deepEqual(more.graph.nodes.map(node => node.into), ["data1", "data3", "data4", "title"]);
 }
+// Region screenshots: only well-formed clips on screenshots survive, and never with target or full.
+{
+  const shot = (extra) => m.normalize({ graph: { nodes: [{ id: "s", type: "screenshot", ...extra }], edges: [] } }).graph.nodes[0];
+  assert.deepEqual(shot({ clip: { x: 10, y: "20", width: 300, height: 200 } }).clip, { x: 10, y: 20, width: 300, height: 200 });
+  for (const bad of [{ x: -1, y: 0, width: 10, height: 10 }, { x: 0, y: 0, width: 0, height: 10 }, { x: 0, y: 0, width: Infinity, height: 1 }, "x", null])
+    assert(!("clip" in shot({ clip: bad })), JSON.stringify(bad));
+  const notShot = m.normalize({ graph: { nodes: [{ id: "c", type: "click", clip: { x: 1, y: 1, width: 5, height: 5 }, target: { locators: [{ kind: "css", value: "a" }] } }], edges: [] } }).graph.nodes[0];
+  assert(!("clip" in notShot), "clip only on screenshots");
+  const both = m.normalize({ name: "x", graph: { nodes: [{ id: "s", type: "screenshot", full: true, clip: { x: 0, y: 0, width: 5, height: 5 } }], edges: [] } });
+  assert(m.validate(both).some(issue => issue.code === "clip"));
+  const fine = m.normalize({ name: "x", graph: { nodes: [{ id: "s", type: "screenshot", clip: { x: 0, y: 0, width: 5, height: 5 } }], edges: [] } });
+  assert(!m.validate(fine).some(issue => issue.code === "clip"));
+}
 // Profile settings: only allowlisted launch arguments, well-formed proxies and languages.
 assert(m.launchArgOk("--start-maximized") && m.launchArgOk("--window-size=1440,900") && m.launchArgOk("--disable-features=Translate,AutofillServerCommunication"));
 for (const bad of ["--remote-debugging-port=9222", "--user-data-dir=/tmp/x", "--load-extension=/x", "--disable-web-security", "--no-sandbox", "--proxy-server=http://x:1",
@@ -135,4 +148,4 @@ assert.deepEqual(m.splitProxy("https://p.example.com:443"), { kind: "https", add
 assert(m.langOk("") && m.langOk("zh-CN") && m.langOk("en") && !m.langOk("zh_CN") && !m.langOk("--lang"));
 assert(m.userAgentOk("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36") && m.userAgentOk(""));
 for (const bad of ["a\nb", "a\rb", "中文", "x".repeat(513)]) assert(!m.userAgentOk(bad), bad);
-console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets, profile settings and sample");
+console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets, profile settings, region screenshots and sample");

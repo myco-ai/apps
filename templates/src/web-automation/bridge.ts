@@ -17,6 +17,8 @@ export type BrowserProfile = {
 };
 export type BrowserStatus = {
   protocol: number;
+  /** Optional component abilities, e.g. "screenshot_clip"; older ones omit it. */
+  features?: string[];
   /** The component's version; "" while it is not installed. */
   version: string;
   /** The optional component is on this computer (an App reports the

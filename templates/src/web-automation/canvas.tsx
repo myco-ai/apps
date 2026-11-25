@@ -30,6 +30,7 @@ export function summary(node: ScriptNode) {
     case "confirm": return node.message || "";
     case "note": return node.note || "";
     case "subflow": return node.script_id || "";
+    case "screenshot": return node.clip ? uiText("区域 {0}×{1}", Math.round(node.clip.width), Math.round(node.clip.height)) : node.full ? uiText("整页") : describeTarget(node.target);
     default: return describeTarget(node.target);
   }
 }

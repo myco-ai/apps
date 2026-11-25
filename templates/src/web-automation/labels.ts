@@ -107,6 +107,7 @@ export function issueText(issue: Issue) {
     case "wait_url": return uiText("请填写网址里要包含的文字。");
     case "tab": return uiText("请选择要切到哪个标签页。");
     case "dialog": return uiText("请选择接受还是取消弹窗。");
+    case "clip": return uiText("区域截图不能同时是整页截图或元素截图。");
     case "into": return issue.detail ? uiText("变量名「{0}」不可用。", issue.detail) : uiText("请填写保存到哪个变量。");
     case "code": return uiText("请填写 JS 代码。");
     case "code_var": return uiText("代码里不能用 ${…}：参数或网页内容拼进代码，就能执行任意代码。请写成固定代码。");

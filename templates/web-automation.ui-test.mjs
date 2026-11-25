@@ -382,8 +382,19 @@ try {
   assert.deepEqual(await stale.evaluate(() => window.browserCalls), [["install"]]);
   await stale.getByRole("button", { name: "Profiles" }).click();
   await stale.getByRole("dialog", { name: "Profiles" }).getByText("发帖号").waitFor();
-  // A profile whose old browser could not be verified explains what to do.
+  // A region screenshot shows its area, and an older component refuses to run it.
+  await stale.evaluate(() => window.myco.data.put("scripts", { name: "Clip shot", start_url: "https://forum.example.com/", profile: "发帖号", params: [], on_error: "stop",
+    graph: { nodes: [{ id: "c1", type: "screenshot", pos: [0, 0], clip: { x: 12, y: 34, width: 320, height: 180 } }], edges: [] } }, { id: "scr_clip" }));
   await stale.getByRole("dialog", { name: "Profiles" }).getByRole("button", { name: "Done" }).click();
+  await stale.locator(".wa-switcher").click();
+  await stale.getByRole("dialog", { name: "Scripts" }).getByText("Clip shot").click();
+  await stale.locator(".wa-node").filter({ hasText: "Region 320×180" }).click();
+  await stale.getByText("12, 34 · 320×180").waitFor();
+  await stale.getByRole("button", { name: "Run", exact: true }).click();
+  await stale.getByRole("dialog", { name: /Run “Clip shot”/ }).getByRole("button", { name: "Start run" }).click();
+  await stale.getByText("This script has a region screenshot. Update the browser component first.").waitFor();
+  assert(!(await stale.evaluate(() => window.browserCalls.some(call => call[0] === "run"))), "no run starts without screenshot_clip");
+  // A profile whose old browser could not be verified explains what to do.
   await stale.evaluate(() => { window.myco.browser.record.start = async () => { throw { code: "profile_locked", reason: "leftover_unverified" }; }; });
   await stale.getByRole("button", { name: "Record", exact: true }).click();
   const locked = stale.getByRole("dialog", { name: "Record" });

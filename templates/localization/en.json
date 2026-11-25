@@ -4079,5 +4079,12 @@
   "浏览器里开始了录制，步骤会记到新脚本「{0}」": "Recording started in the browser; steps go to the new script “{0}”",
   "这个 profile 的旧浏览器进程还在，请关闭后重试，或重启电脑。": "This profile's previous browser is still running. Close it and retry, or restart your computer.",
   "这个 profile 的旧浏览器还没清理完，请关闭它后再试。": "This profile's previous browser has not been cleaned up yet. Close it and try again.",
-  "浏览器组件没有响应": "The browser component did not respond"
+  "浏览器组件没有响应": "The browser component did not respond",
+  "区域截图不能同时是整页截图或元素截图。": "A region screenshot cannot also be a full-page or element screenshot.",
+  "区域 {0}×{1}": "Region {0}×{1}",
+  "整页": "Full page",
+  "截图区域": "Screenshot region",
+  "改成整页或元素截图": "Use full page or an element instead",
+  "在浏览器里框选的区域，按页面可见区域的位置截取，页面布局变了位置不会跟着变。": "The region selected in the browser, taken at that position in the visible page; it does not follow layout changes.",
+  "这个脚本里有区域截图，请先更新浏览器组件。": "This script has a region screenshot. Update the browser component first."
 }

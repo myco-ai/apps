@@ -29,6 +29,9 @@ export type ScriptNode = {
    *  previous step opened; never opened again) or "opener" (back). */
   check?: "visible" | "hidden" | "text" | "url" | "expr"; what?: "text" | "attribute" | "html" | "table" | "js";
   attr?: string; into?: string; list?: string; as?: string; tab?: string; full?: boolean;
+  /** screenshot only: a region of the top-level viewport in CSS pixels
+   *  (recorded by the browser panel; needs the "screenshot_clip" feature). */
+  clip?: Clip;
   /** dialog: how to answer the native alert/confirm/prompt the previous
    *  step opened; value is a prompt's text (may be a secret parameter). */
   dialog?: "accept" | "dismiss";
@@ -105,7 +108,12 @@ export function normalize(raw: unknown): Script {
   const ids = new Set<string>();
   const nodes = (Array.isArray(value.graph?.nodes) ? value.graph!.nodes : []).filter(node =>
     node && typeof node.id === "string" && node.id && nodeTypes.includes(node.type) && !ids.has(node.id) && ids.add(node.id),
-  ).map(node => ({ ...node, pos: [Number(node.pos?.[0]) || 0, Number(node.pos?.[1]) || 0] as [number, number] }));
+  ).map(node => {
+    const out = { ...node, pos: [Number(node.pos?.[0]) || 0, Number(node.pos?.[1]) || 0] as [number, number] };
+    // Keep a clip only where it means something and is well formed.
+    if ("clip" in out) { const clip = node.type === "screenshot" ? validClip(node.clip) : undefined; if (clip) out.clip = clip; else delete out.clip; }
+    return out;
+  });
   const edges = (Array.isArray(value.graph?.edges) ? value.graph!.edges : []).filter(edge =>
     Array.isArray(edge) && ids.has(edge[0]) && ids.has(edge[1]) && edge[0] !== edge[1],
   ).map(edge => (edge[2] ? [edge[0], edge[1], String(edge[2])] : [edge[0], edge[1]]) as Edge);
@@ -122,6 +130,16 @@ export function normalize(raw: unknown): Script {
 }
 
 export type Issue = { node?: string; code: string; detail?: string };
+export type Clip = { x: number; y: number; width: number; height: number };
+const clipLimit = 100000;
+/** A clip is finite, starts at or after 0,0 and has a positive size. */
+export function validClip(value: unknown): Clip | undefined {
+  const c = value as Partial<Clip> | null;
+  if (!c || typeof c !== "object") return undefined;
+  const nums = [c.x, c.y, c.width, c.height].map(Number);
+  if (nums.some(n => !Number.isFinite(n) || n < 0 || n > clipLimit) || nums[2] <= 0 || nums[3] <= 0) return undefined;
+  return { x: nums[0], y: nums[1], width: nums[2], height: nums[3] };
+}
 
 /** What keeps a script from running, in node order. The codes are stable:
  *  the page translates them, agents read them in agent.md. */
@@ -165,6 +183,7 @@ export function validate(script: Script, scriptIds: string[] = [], selfId = ""):
   for (const node of runnable) {
     const issue = (code: string, detail?: string) => issues.push({ node: node.id, code, detail });
     if (targetTypes.has(node.type) && !node.target?.locators?.length) issue("target");
+    if (node.type === "screenshot" && node.clip && (node.full || node.target?.locators?.length)) issue("clip");
     if (node.type === "drag" && !node.to?.locators?.length) issue("drag_to");
     if ((node.type === "wait" && node.wait === "element") && !node.target?.locators?.length) issue("target");
     if ((node.type === "assert" || node.type === "branch") && (node.check === "visible" || node.check === "hidden" || node.check === "text") && !node.target?.locators?.length) issue("target");

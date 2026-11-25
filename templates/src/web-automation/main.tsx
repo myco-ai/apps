@@ -489,6 +489,10 @@ function App() {
 
   async function startRun(input: { values: Record<string, string>; secrets: Record<string, string>; profile: string; headless: boolean; startAt?: string }) {
     if (!bridge || !script || !record) return;
+    // An older component would ignore a region and capture the whole page.
+    if (script.graph.nodes.some(node => node.type === "screenshot" && node.clip) && !status?.features?.includes("screenshot_clip")) {
+      kit.flash(uiText("这个脚本里有区域截图，请先更新浏览器组件。")); return;
+    }
     const recordId = uid("run_");
     const profileName = profiles.find(item => item.id === input.profile)?.name || input.profile;
     let run: Run = {

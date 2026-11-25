@@ -127,7 +127,8 @@ export function NodeInspector({ node, script, scripts, issues, editable, tools, 
       onChange={value => change({ [key]: value === "" ? undefined : Number(value) })}/>;
   const toggle = (key: "clear" | "sensitive" | "full", label: string, hint?: string) =>
     <Toggle label={label} hint={hint} checked={Boolean(draft[key])} onChange={value => change({ [key]: value })} disabled={!editable}/>;
-  const showTarget = ["click", "type", "select", "hover", "drag", "upload", "extract", "press", "scroll", "screenshot"].includes(draft.type)
+  const showTarget = ["click", "type", "select", "hover", "drag", "upload", "extract", "press", "scroll"].includes(draft.type)
+    || (draft.type === "screenshot" && !draft.clip)
     || (draft.type === "wait" && (draft.wait || "element") === "element")
     || ((draft.type === "assert" || draft.type === "branch") && ["visible", "hidden", "text"].includes(draft.check || "visible"));
   const optionalTarget = draft.type === "press" || draft.type === "scroll" || draft.type === "screenshot";
@@ -192,7 +193,12 @@ export function NodeInspector({ node, script, scripts, issues, editable, tools, 
           {text("code", uiText("JS 代码"), { long: true, mono: true, placeholder: "return document.title", hint: uiText("固定代码，不能用 ${…}。") })}
           {text("into", uiText("返回值保存到变量（可不填）"), { mono: true })}
         </>}
-        {draft.type === "screenshot" && toggle("full", uiText("整页截图"))}
+        {draft.type === "screenshot" && (draft.clip ? <div className="ui-field">
+          <label>{uiText("截图区域")}</label>
+          <div className="wa-row"><code className="wa-code">{`${Math.round(draft.clip.x)}, ${Math.round(draft.clip.y)} · ${Math.round(draft.clip.width)}×${Math.round(draft.clip.height)}`}</code>
+            {editable && <button type="button" className="wa-btn is-small is-ghost" onClick={() => change({ clip: undefined })}>{uiText("改成整页或元素截图")}</button>}</div>
+          <small>{uiText("在浏览器里框选的区域，按页面可见区域的位置截取，页面布局变了位置不会跟着变。")}</small>
+        </div> : toggle("full", uiText("整页截图")))}
         {draft.type === "tab" && <Choice label={uiText("切到哪个标签页")} value={draft.tab || "popup"} onChange={tab => change({ tab })}
           hint={draft.tab === "popup" || !draft.tab ? uiText("上一步点开的新窗口或新标签页；回放时不会重复打开。") : undefined}
           options={["popup", "new", "opener", "0", "1", "2", "3"].map(tab => ({ value: tab, label: tabName(tab) }))}/>}
