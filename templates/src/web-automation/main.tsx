@@ -567,7 +567,7 @@ function App() {
         : status.reason || uiText("这台电脑暂时不能运行浏览器组件。")}</span>
       {status.supported && bridge && <button type="button" className="wa-btn is-small" disabled={installing} onClick={() => {
         setInstalling(true);
-        void bridge.install().then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }).finally(() => setInstalling(false));
+        void bridge.install().then(() => bridge.status()).then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }).finally(() => setInstalling(false));
       }}>{installing ? uiText("正在安装…") : uiText("安装组件")}</button>}
     </div>}
 
@@ -576,7 +576,7 @@ function App() {
       <span><strong>{uiText("浏览器组件有新版本")}</strong>{uiText("新版本修复了网站验证和兼容问题，更新后录制和回放更稳定。")}</span>
       <button type="button" className="wa-btn is-small" disabled={installing} onClick={() => {
         setInstalling(true);
-        void bridge.install().then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }).finally(() => setInstalling(false));
+        void bridge.install().then(() => bridge.status()).then(setStatus, error => { if (errorCode(error) !== "cancelled") kit.flash(bridgeError(errorCode(error))); }).finally(() => setInstalling(false));
       }}>{installing ? uiText("正在更新…") : uiText("更新组件")}</button>
     </div>}
 

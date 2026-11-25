@@ -53,7 +53,8 @@ function bridge({ sample, withBrowser, outdated = false }) {
     },
     browser: withBrowser ? {
       status: async () => ({ protocol: 1, version: installed ? (outdated ? "0.1.0" : "0.1.1") : "", installed, update_available: installed && outdated, supported: true, browsers: ["chrome"], machine: "Studio Mac", profiles: installed ? profiles.map(profile => ({ ...profile })) : [] }),
-      install: async () => { browserCalls.push(["install"]); installed = true; outdated = false; return window.myco.browser.status(); },
+      // Like the App, install() answers without profiles; the page must re-read status.
+      install: async () => { browserCalls.push(["install"]); installed = true; outdated = false; return { ...(await window.myco.browser.status()), profiles: [] }; },
       profiles: {
         create: async name => { const profile = { id: "pf_" + profiles.length, name, running: false, agents: false }; profiles.push(profile); return profile; },
         open: async () => true,
@@ -326,6 +327,8 @@ try {
   await stale.getByRole("button", { name: "Update component" }).click();
   await stale.getByText("Browser component update available").waitFor({ state: "detached" });
   assert.deepEqual(await stale.evaluate(() => window.browserCalls), [["install"]]);
+  await stale.getByRole("button", { name: "Profiles" }).click();
+  await stale.getByRole("dialog", { name: "Profiles" }).getByText("发帖号").waitFor();
   await stale.close();
   assert.deepEqual(errors, []);
   console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, profile proxy/UA/argument settings, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");
