@@ -12,6 +12,10 @@ export type PageDataQuery = {
 };
 export type PageDataList = { records: MycoRecord[]; seq: number; next?: string; query_version?: number };
 export type PageDataCount = { count: number; seq: number; query_version: number };
+/** Page-owned original; store this value in a declared file field. */
+export type PageFile = { file_id: string; page: string; collection: string; name: string; size: number; sha256: string; content_type: string; by?: string; legacy_name?: string; state: "pending" | "ready"; created_at: string; expires_at?: string };
+export type PageFileUsage = { files_used: number; files_max: number; bytes_used: number; bytes_max: number; max_file_bytes: number };
+export type PageFileList = { attachments_version: number; attachments: PageFile[]; usage: PageFileUsage; next?: string };
 export type MycoChange = { seq: number; collection: string; record: string; op: "put" | "delete"; data?: Record<string, unknown>; version: number; by?: string };
 export type PagePreferences = { language: "zh" | "en"; theme: "light" | "dark" };
 export type PageActionDescriptor = { name: string; version: number; input_schema: Record<string, unknown> };
@@ -25,9 +29,20 @@ export type PageActionBridge = {
 // isolation is set by the desktop host after opening an interactive per-page
 // origin. Use IndexedDB or page data as appropriate. Never store app data in
 // cookies: the loopback hostname is shared and cookies do not scope by port.
-type Ctx = { isolation?: boolean; projectFiles?: boolean; projectMedia?: boolean; preferences?: PagePreferences; page: { id: string; name: string; url?: string }; me: { name: string; can_edit?: boolean; can_manage?: boolean }; render?: { instance: string } };
+type Ctx = { pageFiles?: boolean; isolation?: boolean; projectFiles?: boolean; projectMedia?: boolean; preferences?: PagePreferences; page: { id: string; name: string; url?: string }; me: { name: string; can_edit?: boolean; can_manage?: boolean }; render?: { instance: string } };
 
 interface Bridge {
+  /** Optional desktop bridge. Check ready.pageFiles; old Hubs cannot upload. */
+  pageFiles?: {
+    info(): Promise<PageFileUsage>;
+    list(options?: {limit?: number; after?: string}): Promise<PageFileList>;
+    put(collection: string, name: string, blob: Blob, options?: {key?: string}): Promise<PageFile>;
+    resolve(name: string): Promise<PageFile>;
+    get(file: string | Pick<PageFile, "file_id">): Promise<Blob>;
+    download(file: string | Pick<PageFile, "file_id">): Promise<true>;
+    remove(file: string | Pick<PageFile, "file_id">): Promise<true>;
+  };
+
   readonly preferences?: PagePreferences;
   /** Desktop, scoped to a Media Kit page and its own project. Check ready.projectFiles. */
   projectFiles?: {

@@ -4086,5 +4086,20 @@
   "截图区域": "Screenshot region",
   "改成整页或元素截图": "Use full page or an element instead",
   "在浏览器里框选的区域，按页面可见区域的位置截取，页面布局变了位置不会跟着变。": "The region selected in the browser, taken at that position in the visible page; it does not follow layout changes.",
-  "这个脚本里有区域截图，请先更新浏览器组件。": "This script has a region screenshot. Update the browser component first."
+  "这个脚本里有区域截图，请先更新浏览器组件。": "This script has a region screenshot. Update the browser component first.",
+  "页面附件空间不足，请清理后再上传。": "Page attachment storage is full. Remove unused files before uploading.",
+  "上传在第 {0} 个文件停止。请检查文件格式、大小和页面额度。": "Upload stopped at file {0}. Check its format, size, and page quota.",
+  "页面附件已用 {0}/{1}": "Page files used {0}/{1}",
+  "当前只能查看。请更新工作区和桌面 App 后使用页面附件。": "View only. Update the workspace and desktop App to use page attachments.",
+  "文件已上传，但记录未建成。请凭附件编号补录：{0}": "File uploaded, but its record was not saved. Restore it using attachment ID: {0}",
+  "上传在第 {0} 个文件停止：{1}": "Upload stopped at file {0}: {1}",
+  "旧素材仍可查看，附件引用更新失败：{0}": "Legacy assets remain readable. Could not update their attachment references: {0}",
+  "旧原文件尚未迁移，请稍后重试删除。": "The legacy original has not migrated yet. Try deleting it after migration.",
+  "素材已删除，其他记录仍在使用原文件，已保留。": "Asset deleted. Its original is still used by other records and was kept.",
+  "素材已删除，原文件尚未清理。可让 agent 按附件编号重试：{0}": "Asset deleted; its original could not be removed. Ask an agent to retry using attachment ID: {0}",
+  "素材已删除": "Asset deleted",
+  "删除「{0}」？原文件不再被其他素材引用时也会清理。": "Delete “{0}”? Its original will be removed when no other assets use it.",
+  "此素材": "this asset",
+  "删除当前素材": "Delete this asset",
+  "正在删除…": "Deleting…"
 }

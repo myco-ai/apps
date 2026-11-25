@@ -3,8 +3,8 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Copy, Download, ImageIcon, Maximi
 import { mount, Toast, uid, useKit } from "../_lib/appkit";
 import { language, t as uiText } from "../_lib/i18n";
 import { myco, type MycoRecord } from "../_lib/myco";
-import { canUseMedia, canUseOriginals, dateToday, entries, imageTypes, initialize, kit, mediaAspect, mediaKind, mediaTags, mediaTypes, needsMediaBridge, pictures, platforms, statuses, thumbnail, videoLinks, videoURL, type Entry, type Picture, type Status } from "./model";
-import { saveEntry, savePicture } from "./edit";
+import { canUseMedia, canUseOriginals, hasPageFiles, backfillLegacyReferences, images, readOriginal, downloadOriginal, originalID, dateToday, entries, imageTypes, initialize, kit, mediaAspect, mediaKind, mediaTags, mediaTypes, needsMediaBridge, pictures, platforms, statuses, thumbnail, videoLinks, videoURL, type Entry, type Picture, type Status } from "./model";
+import { saveEntry, savePicture, removePicture } from "./edit";
 import { blankPicture, upload, type PendingFile, type PictureOptions } from "./upload";
 import { aspectName, AssetFilters, ImageBadge, platformName, useAssetFilters } from "./filters";
 import { ImageViewer, type ImageNavigation } from "./image-viewer";
@@ -23,7 +23,7 @@ async function copyText(text: string) {
 }
 
 function Preview({ record, full = false, navigation }: { record?: MycoRecord<Picture>; full?: boolean; navigation?: ImageNavigation }) {
-  const file = record?.data.file;
+  const file = originalID(record?.data);
   const imageKey = file || record?.id;
   const [original, setOriginal] = useState<{ file: string; url: string }>();
   const [failedKey, setFailedKey] = useState<string | null>(null);
@@ -36,10 +36,10 @@ function Preview({ record, full = false, navigation }: { record?: MycoRecord<Pic
   const poster = thumbnail(record?.data.preview);
   const alt = record?.data.caption || record?.data.name || "";
   useEffect(() => {
-    if (!full || !canUseOriginals || !file || (isNewMedia && !canUseMedia)) return;
+    if (!full || !canDownload(record?.data) || !file) return;
     let active = true;
     let address = "";
-    void myco!.projectFiles!.get(file).then(blob => {
+    void readOriginal(record!.data).then(blob => {
       if (active) { address = URL.createObjectURL(blob); setOriginal({ file, url: address }); }
     }).catch(() => { if (active) setFailedKey(file); });
     return () => { active = false; if (address) URL.revokeObjectURL(address); };
@@ -58,8 +58,8 @@ function Preview({ record, full = false, navigation }: { record?: MycoRecord<Pic
     {expanded && navigation && !video && <ImageViewer src={src} alt={alt} original={!!url && !failed} navigation={navigation} close={() => setExpanded(false)}/>}
     {video && !full && <span className="mk-play-mark"><Play size={18} fill="currentColor" aria-hidden/></span>}
     {full && failed && <p role="status" className="mk-media-message">{uiText("无法预览原文件，请尝试下载。")}</p>}
-    {full && video && file && canUseMedia && !url && !failed && <p role="status" className="mk-media-message">{uiText("正在载入视频…")}</p>}
-    {full && isNewMedia && !canUseMedia && <p className="mk-media-message">{uiText("更新桌面 App 后可播放和下载此文件。")}</p>}
+    {full && video && file && canDownload(record?.data) && !url && !failed && <p role="status" className="mk-media-message">{uiText("正在载入视频…")}</p>}
+    {full && ((isNewMedia && !canUseMedia) || (record?.data.attachment && !hasPageFiles && !record.data.file)) && <p className="mk-media-message">{uiText("更新桌面 App 后可播放和下载此文件。")}</p>}
   </>;
 }
 
@@ -159,15 +159,21 @@ function AssetTags({ options, update }: { options: PictureOptions; update: (valu
     onChange={event => { setTags(event.target.value); update({ ...options, tags: mediaTags(event.target.value) }); }}/></label>;
 }
 
-function PictureEditor({ record }: { record: MycoRecord<Picture> }) {
+function PictureEditor({ record, onFilesChanged }: { record: MycoRecord<Picture>; onFilesChanged: () => void }) {
   const [draft, setDraft] = useState<PictureOptions | null>(null);
   const [version, setVersion] = useState(0);
   const [busy, setBusy] = useState(false);
-  if (!draft) return <button type="button" className="btn" onClick={() => {
+  if (!draft) return <div className="mk-photo-actions"><button type="button" className="btn" disabled={busy} onClick={() => {
     const { language, theme, caption, platform, tags, description } = record.data;
     setDraft({ ...blankPicture(), language, theme, caption, platform: platform || "app", tags: tags || [], description: description || "" });
     setVersion(record.version);
-  }}>{uiText("编辑素材信息")}</button>;
+  }}>{uiText("编辑素材信息")}</button>
+    <button type="button" className="btn" disabled={busy} onClick={async () => {
+      if (!window.confirm(uiText("删除「{0}」？原文件不再被其他素材引用时也会清理。", record.data.name || uiText("此素材")))) return;
+      setBusy(true);
+      try { await kit.track(removePicture(record)); onFilesChanged(); } finally { setBusy(false); }
+    }}>{busy ? uiText("正在删除…") : uiText("删除当前素材")}</button>
+  </div>;
   return <form className="mk-picture-editor" onSubmit={async event => {
     event.preventDefault();
     if (!draft.description.trim()) return;
@@ -184,17 +190,17 @@ function PictureEditor({ record }: { record: MycoRecord<Picture> }) {
 }
 
 function canDownload(data?: Picture) {
-  return !!data?.file && canUseOriginals && (!needsMediaBridge(data) || canUseMedia);
+  return !!(data?.file || (hasPageFiles && data?.attachment?.file_id)) && canUseOriginals && (!needsMediaBridge(data) || canUseMedia);
 }
 
-function Detail({ record, edit, back, uploading }: { record: MycoRecord<Entry>; edit: () => void; back: () => void; uploading: boolean }) {
+function Detail({ record, edit, back, uploading, onFilesChanged }: { record: MycoRecord<Entry>; edit: () => void; back: () => void; uploading: boolean; onFilesChanged: () => void }) {
   const [activeID, setActiveID] = useState("");
   const filters = useAssetFilters("detail");
   const [downloading, setDownloading] = useState(false);
   const assets = pictures(record.id);
   const photos = assets.filter(({ data }) => (!filters.language || data.language === filters.language) && filters.matches(data));
   const imageSet = photos.filter(({ data }) => data.kind !== "video" && (thumbnail(data.preview) || canDownload(data)));
-  const originals = photos.filter(({ data }) => data.kind !== "video" && data.file);
+  const originals = photos.filter(({ data }) => data.kind !== "video" && originalID(data));
   const n = Math.max(0, photos.findIndex(item => item.id === activeID));
   const picture = photos[n];
   const entry = record.data;
@@ -213,7 +219,7 @@ function Detail({ record, edit, back, uploading }: { record: MycoRecord<Entry>; 
       if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") throw new Error();
       // Pass the promise into ClipboardItem so the click's activation survives
       // the image fetch on WebKit.
-      const png = myco!.projectFiles!.get(picture.data.file).then(async blob => {
+      const png = readOriginal(picture.data).then(async blob => {
         if (blob.type === "image/png") return blob;
         const image = await createImageBitmap(blob);
         try {
@@ -232,7 +238,7 @@ function Detail({ record, edit, back, uploading }: { record: MycoRecord<Entry>; 
   }
   async function download() {
     if (!picture || !canRead) return;
-    try { await myco!.projectFiles!.download(picture.data.file); kit.flash(uiText("已下载")); }
+    try { await downloadOriginal(picture.data); kit.flash(uiText("已下载")); }
     catch { kit.flash(uiText("下载原文件失败，请稍后重试。")); }
   }
   async function downloadSet() {
@@ -241,7 +247,7 @@ function Detail({ record, edit, back, uploading }: { record: MycoRecord<Entry>; 
     let saved = 0;
     try {
       for (const { data } of originals) {
-        try { await myco!.projectFiles!.download(data.file); saved++; }
+        try { await downloadOriginal(data); saved++; }
         catch { /* Keep downloading the other images in the selected set. */ }
       }
       kit.flash(saved === originals.length ? uiText("已下载 {0} 张图片", saved)
@@ -280,7 +286,7 @@ function Detail({ record, edit, back, uploading }: { record: MycoRecord<Entry>; 
           <p className="mk-photo-meta">{languageText(picture.data.language)} · {themeText(picture.data.theme)} · {picture.data.width} × {picture.data.height}{aspect ? " · " + aspectName(aspect) : ""}{picture.data.platform ? " · " + platformName(picture.data.platform) : ""}{picture.data.caption ? " · " + picture.data.caption : ""}</p>
           {picture.data.description && <p className="mk-description">{picture.data.description}</p>}
           {!!picture.data.tags?.length && <p className="mk-photo-meta">{picture.data.tags.join(" · ")}</p>}
-          {kit.canEdit && <PictureEditor key={picture.id} record={picture}/>}
+          {kit.canEdit && <PictureEditor key={picture.id} record={picture} onFilesChanged={onFilesChanged}/>}
         </>}
       </section>
       <section className="mk-copy">
@@ -323,9 +329,15 @@ function App() {
   const [quota, setQuota] = useState<{ used: number; max: number; bytesUsed?: number; bytesMax?: number }>();
   const record = entries.get(id) || undefined;
   const refreshQuota = () => {
-    if (canUseOriginals) void myco!.projectFiles!.info().then(setQuota).catch(() => undefined);
+    if (hasPageFiles) void myco!.pageFiles!.info().then(q => setQuota({ used: q.files_used, max: q.files_max, bytesUsed: q.bytes_used, bytesMax: q.bytes_max })).catch(() => undefined);
   };
-  useEffect(refreshQuota, []);
+  useEffect(() => {
+    refreshQuota();
+    void backfillLegacyReferences();
+    if (!hasPageFiles) return;
+    const timer = window.setInterval(() => { refreshQuota(); void backfillLegacyReferences(); }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [images.rows.length]);
   const tags = [...new Set(entries.rows.flatMap(row => row.data.tags || []))].sort((a, b) => a.localeCompare(b));
   const query = search.trim().toLocaleLowerCase();
   const visible = entries.rows.map(item => ({ ...item, assets: pictures(item.id).filter(({ data }) => filters.matches(data)) }));
@@ -334,8 +346,8 @@ function App() {
       .some(value => value?.toLocaleLowerCase().includes(query)))).sort((a, b) => (b.data.date || "").localeCompare(a.data.date || "") || b.id.localeCompare(a.id));
 
   async function submit(data: Entry, files: PendingFile[], baseVersion: number) {
-    if (quota && (quota.used + files.length > quota.max || (quota.bytesMax !== undefined && (quota.bytesUsed ?? 0) + files.reduce((sum,item)=>sum+item.file.size,0) > quota.bytesMax))) {
-      kit.flash(uiText("项目文件空间不足，请清理后再上传。"));
+    if (files.length && quota && (quota.used + files.length > quota.max || (quota.bytesMax !== undefined && (quota.bytesUsed ?? 0) + files.reduce((sum,item)=>sum+item.file.size,0) > quota.bytesMax))) {
+      kit.flash(uiText("页面附件空间不足，请清理后再上传。"));
       return;
     }
     const entryID = record?.id || uid("entry_");
@@ -353,9 +365,11 @@ function App() {
       kit.flash(uiText("已上传 {0} 个文件", completed));
     } catch (error) {
       const filename = (error as { file?: string }).file;
+      const failure = error as { code?: string; message?: string };
       kit.flash(filename
-        ? uiText("文件已上传，但记录未建成。请凭文件名补录：{0}", filename)
-        : uiText("上传在第 {0} 个文件停止。请检查文件格式、大小和项目配额。", completed + 1));
+        ? uiText("文件已上传，但记录未建成。请凭附件编号补录：{0}", filename)
+        : failure.code && failure.message ? uiText("上传在第 {0} 个文件停止：{1}", completed + 1, failure.message)
+        : uiText("上传在第 {0} 个文件停止。请检查文件格式、大小和页面额度。", completed + 1));
     } finally {
       setUploading(false);
       refreshQuota();
@@ -363,12 +377,12 @@ function App() {
   }
 
   return <div className="mk-app">
-    <header className="mk-header"><div><h1>{uiText("素材库")}</h1>{quota && <p className="mk-quota" data-near={quota.used >= quota.max - 10}>{uiText("项目文件已用 {0}/{1}", quota.used, quota.max)}{quota.bytesMax !== undefined ? " · " + uiText("总大小 {0}/{1} GiB", ((quota.bytesUsed ?? 0)/1024**3).toFixed(2), (quota.bytesMax/1024**3).toFixed(2)) : ""}{quota.used >= quota.max - 10 ? " · " + uiText("配额快满了") : ""}</p>}</div>
+    <header className="mk-header"><div><h1>{uiText("素材库")}</h1>{quota && <p className="mk-quota" data-near={quota.used >= quota.max - 10}>{uiText("页面附件已用 {0}/{1}", quota.used, quota.max)}{quota.bytesMax !== undefined ? " · " + uiText("总大小 {0}/{1} GiB", ((quota.bytesUsed ?? 0)/1024**3).toFixed(2), (quota.bytesMax/1024**3).toFixed(2)) : ""}{quota.used >= quota.max - 10 ? " · " + uiText("配额快满了") : ""}</p>}</div>
       {kit.canEdit && !id && !editing && <button className="btn btn-primary" onClick={() => setEditing(true)}><Plus size={16}/>{uiText("新增条目")}</button>}</header>
     {!kit.canEdit && <p className="mk-notice">{uiText("只能看")}</p>}
-    {!canUseOriginals && <p className="mk-notice">{uiText("要上传、播放或下载项目文件，请在新版桌面 App 打开此项目页面。")}</p>}
+    {!hasPageFiles && <p className="mk-notice">{uiText("当前只能查看。请更新工作区和桌面 App 后使用页面附件。")}</p>}
     {editing ? <EntryEditor key={id} record={record} close={() => setEditing(false)} submit={submit}/> :
-      record ? <Detail key={id} record={record} uploading={uploading} edit={() => setEditing(true)} back={() => setID("")}/> :
+      record ? <Detail key={id} record={record} uploading={uploading} onFilesChanged={refreshQuota} edit={() => setEditing(true)} back={() => setID("")}/> :
       <main className="mk-main">
         <div className="mk-filters">
           <label className="mk-search"><Search size={15}/><input className="inp" aria-label={uiText("搜索素材")} placeholder={uiText("搜索素材")} value={search} onChange={event => setSearch(event.target.value)}/></label>

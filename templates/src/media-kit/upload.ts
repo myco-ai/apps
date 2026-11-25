@@ -65,7 +65,7 @@ export async function upload(entry: string, file: File, options: PictureOptions)
     ? types.find(([, type]) => type === file.type)
     : types.find(([ext]) => ext === (extension === "jpeg" ? "jpg" : extension));
   if (!format || file.size > maxFile || !file.size) throw new Error("invalid_media");
-  const bridge = myco?.projectFiles;
+  const bridge = myco?.pageFiles;
   if (!bridge) throw new Error("bridge_missing");
   const [suffix, type] = format;
   const blob = file.type === type ? file : file.slice(0, file.size, type);
@@ -73,13 +73,13 @@ export async function upload(entry: string, file: File, options: PictureOptions)
   const info = await (kind === "video" ? inspectVideo(blob) : inspectImage(blob));
   const id = crypto.randomUUID().replace(/-/g, "").slice(0, 20);
   const name = "mk-" + kit.page + "-" + entry + "-" + id + "." + suffix;
-  await bridge.put(name, blob);
+  const attachment = await bridge.put("images", name, blob, { key: id });
   try {
     await savePicture("img_" + id, {
-      entry, file: name, name: file.name.slice(0, 200), kind, bytes: file.size, order: Date.now(), ...info, ...options, aspect: mediaAspect(info.width, info.height), description: options.description.trim(),
+      entry, attachment, file: "", name: file.name.slice(0, 200), kind, bytes: file.size, order: Date.now(), ...info, ...options, aspect: mediaAspect(info.width, info.height), description: options.description.trim(),
     }, 0);
   } catch {
     // Keep the already uploaded file identifiable for a retry by an agent.
-    throw Object.assign(new Error("metadata_failed"), { file: name });
+    throw Object.assign(new Error("metadata_failed"), { file: attachment.file_id });
   }
 }

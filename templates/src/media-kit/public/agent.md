@@ -1,10 +1,14 @@
 # Media Kit · 素材库
 
-Shared release entries live in page data. Original images, GIFs and short videos live in the page's project files. Use the project name and page ID from the request or page metadata.
+Shared release entries live in page data. Original images, GIFs and short videos are page-owned attachments. They follow page permissions and never enter project context or project pull. Use the page ID from the request or page metadata. Do not upload application media to project files.
+
+Requires a CLI with `myco page file` and a Hub advertising page attachments. If
+that command is missing, ask the owner to update the CLI. Keep old filenames for
+read compatibility; never fall back to project-file uploads.
 
 ## Find and read
 
-Set `PAGE` to the page ID and `PROJECT` to the project name. List entries and filter locally. Change the tag, status or keyword in this example as needed.
+Set `PAGE` to the page ID. List entries and filter locally. Change the tag, status or keyword in this example as needed.
 
 ```sh
 myco page data list --page "$PAGE" --collection entries |
@@ -15,10 +19,10 @@ myco page data list --page "$PAGE" --collection entries |
 myco page data get --page "$PAGE" --collection entries --id "$ENTRY"
 myco page data list --page "$PAGE" --collection images |
   jq --arg entry "$ENTRY" '[.records[] | select(.data.entry == $entry)] | sort_by(.data.order)'
-myco project file get --name "$PROJECT" --file "$FILENAME" --out ./screenshot.png
+myco page file get --page "$PAGE" --file "$FILE_ID" --out ./screenshot.png
 ```
 
-Use each media record's `data.file` for `FILENAME`. Sample images only have previews.
+Use each record's `data.attachment.file_id` for `FILE_ID`. Legacy records keep `data.file`; the same page-file get command accepts this old name after Hub migration. Sample images only have previews.
 
 ## Create and edit an entry
 
@@ -30,11 +34,13 @@ Choose a unique entry ID of 1–42 lowercase letters, digits, underscores or hyp
 
 ## Add an image or short video
 
-1. Choose a unique lowercase alphanumeric suffix of 8–32 characters. Form the file name `mk-${PAGE}-${ENTRY}-${SUFFIX}.png` (or `.jpg`, `.webp`, `.gif`, `.mp4`, or `.webm`). Keep the entry ID in the file name.
-2. Upload the original: `myco project file put --name "$PROJECT" --path ./screenshot.png --as "$FILENAME"`.
-3. Create an `images` record with `myco page data put --page "$PAGE" --collection images --id "img_$SUFFIX" --if-version 0 --file image.json`. Include `kind` (`video` for MP4/WebM, `gif` for GIF, `screenshot` for other images; legacy `image` records still work), `entry` (entry ID), `file` (project file name), `name` (display name), `language` (`zh`, `en`, `none`), `theme` (`light`, `dark`), `width` and `height` (pixels), `bytes`, and `order` (ascending, the gallery uses the first available thumbnail). Optionally include `caption` and a PNG, JPEG or WebP data URI `preview` of up to 18,000 characters for the gallery. For a video, use a still of the first frame as its preview. If record creation fails after upload, use the same file name to finish the record.
+1. Choose a descriptive file name and a stable upload key for retries.
+2. Upload the original: `myco page file put --page "$PAGE" --collection images --path ./screenshot.png --key "$UPLOAD_KEY"`. Save the returned attachment metadata, especially `file_id`, `size`, and `sha256`.
+3. Create an `images` record with `myco page data put --page "$PAGE" --collection images --id "img_$SUFFIX" --if-version 0 --file image.json`. Set `attachment` to the returned metadata (at least `{ "file_id": "paf_..." }`) and leave legacy `file` empty. Include `kind` (`video`, `gif`, or `screenshot`), `entry`, `name`, `language`, `theme`, `width`, `height`, `bytes`, and `order`. An optional PNG, JPEG or WebP `preview` data URI, up to 18,000 characters, supplies the gallery thumbnail; use a still frame for video.
 
-New Hubs count inline context documents separately (100 documents). Other files default to 1,000 slots per project; all project files together default to 2 GiB. Workspace owners/admins can set overrides up to 10,000 files / 20 GiB. The bridge `projectFiles.info()` reports the effective count and optional `bytesUsed`/`bytesMax`; old Hubs fall back to 100 shared slots. Each upload is capped at 20 MiB. Project membership controls access to the originals. The desktop app needs the project image bridge to upload, play, download or copy supported originals. Agents use the CLI.
+Associate an upload with a record within 24 hours. If record creation fails, reuse the same upload key to recover its ID, then finish the record. To remove an original, remove its record references first, then run `myco page file remove --page "$PAGE" --file "$FILE_ID"`. Do not remove originals referenced by another record.
+
+Each page defaults to 1000 files / 2 GiB total, with a 20 MiB per-file cap. `myco page file list --page "$PAGE"` returns actual quota usage. The desktop bridge advertises `ready.pageFiles`; `pageFiles.info()` reports the same quota. Older Hubs or desktop versions remain read-only and request an upgrade; never substitute project-file uploads. Existing page manifests need a page upgrade before writing the new `attachment` field. The Hub migrates referenced legacy project files and keeps old-name read aliases without changing record JSON or versions. After a page upgrade, writable pages CAS-add `attachment` while preserving `file`; a conflict re-reads the current record. View-only pages and export renderers do not backfill. The Delete action removes the image record first, then cleans up the original only when no other record uses it.
 
 ## Link to a longer video
 
@@ -58,4 +64,4 @@ myco page data list --page "$PAGE" --collection images |
       | sort_by(.data.order)'
 ```
 
-Add `and .data.entry == $entry` and pass `--arg entry "$ENTRY"` to restrict the query to one entry. Download each returned `data.file` with `myco project file get`.
+Add `and .data.entry == $entry` and pass `--arg entry "$ENTRY"` to restrict the query to one entry. Download each returned `data.attachment.file_id` (or legacy `data.file`) with `myco page file get --page "$PAGE" --file ... --out ...`.

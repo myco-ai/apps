@@ -1,7 +1,7 @@
 {
   "id": "myco/media-kit",
   "name": "素材库",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "kind": "custom",
   "category": "creative",
   "icon": "icon.svg",
@@ -39,11 +39,15 @@
         "platform": "select",
         "aspect": "select",
         "tags": "multi",
-        "description": "text"
+        "description": "text",
+        "attachment": "file"
       }
     }
   },
   "requires": {
     "hub": "0.20.7"
-  }
+  },
+  "permissions": [
+    "download"
+  ]
 }
