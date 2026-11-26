@@ -150,15 +150,37 @@ on the owner's computer and turn what you did into a draft script.
    format. Only your own close returns them; if the owner stops you, the grant
    ends or the session idles for 5 minutes, the steps are discarded. A session
    records at most 200 steps (`recording_limit`).
-7. Write the draft: lay the steps out left to right (`pos` = [i*256, 0]),
+7. Check that it works before you hand it over. When `myco action list` shows
+   `browser.page.run` (the component reports `agent_replay`), replay the steps
+   in the same session and grant, still within the granted sites:
+
+       browser.page.run {"session": …, "graph": {"nodes": […], "edges": [[…]]}, "timeout_ms"?: 300000}
+
+   Build the graph from the closed session's `steps` (open a new session to
+   replay): put a `navigate` to the start URL first, connect the steps in
+   order, and fill in the example values you typed (no `${…}` and no
+   parameters here). Only steps you could do by hand are allowed: `js`, `expr`
+   checks, `extract` with `what: "js"`, `upload`, `branch`, `loop`,
+   `subflow`, `confirm`, `wait: "download"` and `goto:` error handling are
+   refused before anything runs (`invalid_argument` with `error_node`).
+   The result is `{ok, state, steps, output, error_node?, error?, url, tabs}`:
+   `output` holds each step's `into` value (a `screenshot` step with `into`
+   gives a private image's `artifact_id`), so compare it with what you saw
+   while recording. A failed step stops the replay; fix that step's locators
+   or add a wait, and run again. Replays are not recorded, and refs from
+   earlier snapshots are stale afterwards. A navigation outside the granted
+   sites cancels the replay (`host_not_allowed`). If `browser.page.run` is not
+   offered, say the draft is untested.
+8. Write the draft: lay the steps out left to right (`pos` = [i*256, 0]),
    connect them in order, replace values that should vary with `${param}` and
    declare those `params`, then put it in `drafts` with `source: "agent"`,
    `by` (your name), `created_at`, `start_url` and `profile`:
 
        myco page data put --page <page> --collection drafts --id draft_<id> --if-version 0 --json '{…}'
 
-   Tell the person it is there; they review it on the canvas and adopt it as a
-   script. Never write it straight into `scripts`.
+   Tell the person it is there and what the replay returned (or that it is
+   untested); they review it on the canvas and adopt it as a script. Never
+   write it straight into `scripts`.
 
 ## Safety
 
