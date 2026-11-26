@@ -107,7 +107,7 @@ try {
     assert.equal(await app.locator("html").getAttribute("data-myco-theme"), theme);
     assert.ok(await app.locator("html").evaluate((html, size) => html.scrollWidth <= size, width));
     if (width === 1280) await page.screenshot({ path: new URL(`${locale}-${theme}.png`, artifacts).pathname });
-    const full = app.getByRole("button", { name: zh ? "全屏 · 服务健康状态" : "Fullscreen · Service health" });
+    const full = app.getByRole("button", { name: zh ? "放大面板 · 服务健康状态" : "Expand panel · Service health" });
     const originalTable = app.locator("article[data-panel=health] .dash-table-wrap");
     await originalTable.getByText(zh ? "观察中" : "Watching").first().waitFor();
     assert.equal(await originalTable.locator(".dash-table-label.is-amber").count(), 2);
@@ -117,17 +117,20 @@ try {
     assert.ok(Math.abs(tableArea.height - tableArea.body) <= 5);
     if (width >= 1180) assert.ok(tableArea.height > 230, "tall tables exceed the former fixed cap");
     await full.click();
-    const dialog = app.getByRole("dialog", { name: zh ? "服务健康状态" : "Service health" });
-    await dialog.waitFor();
-    const box = await dialog.boundingBox();
-    assert.deepEqual([box.x, box.y, box.width, box.height].map(Math.round), [0, 0, width, height]);
-    await dialog.locator(".dash-table-label.is-red").waitFor();
-    await page.screenshot({ path: new URL(`fullscreen-${locale}-${theme}.png`, artifacts).pathname });
-    if (zh) await dialog.getByRole("button", { name: "退出全屏" }).click();
+    const expanded = app.locator(".is-expanded article[data-panel=health]");
+    await expanded.waitFor();
+    const box = await expanded.boundingBox();
+    const toolbar = app.locator(".dash-top");
+    const toolbarBox = await toolbar.boundingBox();
+    assert.ok(box.y >= toolbarBox.y + toolbarBox.height, "the dashboard header stays above the expanded panel");
+    assert.ok(box.width >= width - 34 && box.height >= height - toolbarBox.height - 45);
+    assert.equal(await app.locator(".dash-card:visible").count(), 1);
+    await expanded.locator(".dash-table-label.is-red").waitFor();
+    await page.screenshot({ path: new URL(`expanded-${locale}-${theme}.png`, artifacts).pathname });
+    if (zh) await expanded.getByRole("button", { name: "还原面板 · 服务健康状态" }).click();
     else await page.keyboard.press("Escape");
-    await dialog.waitFor({ state: "hidden" });
-    await full.evaluate(el => new Promise(resolve => requestAnimationFrame(resolve)));
-    assert.equal(await full.evaluate(el => el === el.ownerDocument.activeElement), true, "fullscreen returns focus");
+    await full.waitFor();
+    assert.equal(await full.evaluate(el => el === el.ownerDocument.activeElement), true, "restoring keeps focus on the panel toggle");
     await app.getByRole("combobox", { name: zh ? "切换仪表盘" : "Switch dashboard" }).selectOption("quality");
     await app.locator(".is-line svg[role=img]").waitFor();
     assert.equal(await app.locator(".dash-legend li").count(), 2);
@@ -219,22 +222,23 @@ try {
   assert.equal(rows.has("datasets/daily_traffic"), true);
   await page.close();
 
-  const native = await launch({ viewport: { width: 1100, height: 800 } }, "/?native");
-  await native.app.getByRole("button", { name: "Fullscreen · Traffic over time" }).click();
-  await native.page.waitForFunction(() => !!document.querySelector("iframe").contentDocument.fullscreenElement);
-  const nativeDialog = native.app.getByRole("dialog", { name: "Traffic over time" });
-  await nativeDialog.locator("svg[role=img]").waitFor();
-  await nativeDialog.getByRole("button", { name: "Exit fullscreen" }).click();
-  await native.page.waitForFunction(() => !document.fullscreenElement);
-  await nativeDialog.waitFor({ state: "hidden" });
-  await native.page.close();
+  const allowed = await launch({ viewport: { width: 1100, height: 800 } }, "/?native");
+  await allowed.app.locator("html").evaluate(html => {
+    html.requestFullscreen = () => { throw new Error("Panel expansion must not request fullscreen"); };
+  });
+  await allowed.app.getByRole("button", { name: "Expand panel · Traffic over time" }).click();
+  await allowed.app.locator(".is-expanded").getByRole("img", { name: "Traffic over time · Area" }).waitFor();
+  assert.equal(await allowed.page.evaluate(() => document.fullscreenElement), null);
+  await allowed.app.getByRole("combobox", { name: "Switch dashboard" }).selectOption("quality");
+  assert.equal(await allowed.app.locator(".is-expanded").count(), 0);
+  await allowed.page.close();
 
   const readOnly = await launch({ viewport: { width: 1100, height: 800 } }, "/?readonly#dashboard?id=quality");
   await readOnly.app.getByRole("main", { name: "Quality report" }).waitFor();
   assert.equal(await readOnly.app.getByRole("button", { name: "New dashboard" }).count(), 0);
   assert.equal(await readOnly.app.getByRole("button", { name: "Edit layout" }).count(), 0);
   assert.deepEqual(errors, []);
-  console.log("PASS dashboards: six panel types, full-height tables, colored labels, fullscreen, snapshot reload, drag, resize, collision, keyboard, save, cancel, delete, deep links, permissions, responsive bilingual themes");
+  console.log("PASS dashboards: six panel types, full-height tables, colored labels, in-page expansion, snapshot reload, drag, resize, collision, keyboard, save, cancel, delete, deep links, permissions, responsive bilingual themes");
 } finally {
   await browser.close();
   server.close();

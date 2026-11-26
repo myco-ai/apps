@@ -2,11 +2,11 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { X } from "lucide-react";
 import { kindTitle, kinds, labelColors, labelColorTitle, maxTableLabels, readTableLabels, tr, validID, type LabelColor, type TableLabel, type Board, type Dataset, type Kind, type Panel } from "./model";
 
-export function Dialog({ title, children, close, fullscreen = false }: { title: string; children: ReactNode; close: () => void; fullscreen?: boolean }) {
+export function Dialog({ title, children, close }: { title: string; children: ReactNode; close: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { ref.current?.showModal(); }, []);
-  return <dialog ref={ref} className={fullscreen ? "dash-fullscreen" : undefined} aria-label={title} onCancel={event => { event.preventDefault(); close(); }}>
-    <div className="dash-dialog-head"><h2>{title}</h2><button type="button" className="dash-icon" onClick={close} aria-label={fullscreen ? tr("Exit fullscreen", "退出全屏") : tr("Close", "关闭")}><X size={18}/></button></div>
+  return <dialog ref={ref} aria-label={title} onCancel={event => { event.preventDefault(); close(); }}>
+    <div className="dash-dialog-head"><h2>{title}</h2><button type="button" className="dash-icon" onClick={close} aria-label={tr("Close", "关闭")}><X size={18}/></button></div>
     {children}
   </dialog>;
 }

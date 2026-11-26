@@ -62,7 +62,7 @@ coordinates control placement. Overlapping panels are moved down to free space. 
 - Donut uses one numeric column and positive values. Supply one row per category. Categories after the first five are grouped as Other.
 - Metric displays the last non-null numeric value in its column. Sort the rows in chronological order when using a dated dataset.
 - Table displays all dataset columns. In Panel settings, add colored labels by choosing a column, its exact value, and a color. The same setting in a table panel record is `"tableLabels": [{"column":"Status","value":"Healthy","color":"green"}]`. Available colors are `neutral`, `blue`, `green`, `amber`, `red`, and `purple`. A panel supports up to 24 rules.
-- The Fullscreen button expands any panel without changing its saved layout. Select Exit fullscreen or press Escape to return.
+- Use Expand panel to fill the dashboard content area while keeping its toolbar visible. Select Restore panel or press Escape to return to the saved layout.
 - Position uses zero-based `x` and `y` with column span `w` (12 columns total) and row span `h` (up to 12). Earlier layouts with `width` still load. Narrow viewing windows reflow panels in reading order.
 
 A link ending with `#dashboard?id=RECORD_ID` opens that dashboard on clients with page fragment support.

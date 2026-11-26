@@ -174,16 +174,18 @@ dialog::backdrop { background: #11182765; }
 .dash-label-fields > button { justify-self: start; }
 .dash-label-rule { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(74px, .6fr) auto; gap: 6px; align-items: end; }
 @media (max-width: 680px) {
-  .dash-grid-wrap:not(.is-editing) .dash-card.is-table .dash-panel-body { max-height: 56vh; }
+  .dash-grid-wrap:not(.is-editing):not(.is-expanded) .dash-card.is-table .dash-panel-body { max-height: 56vh; }
 }
 @media (max-width: 420px) {
   .dash-label-rule { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
   .dash-label-rule label:first-child { grid-column: 1 / -1; }
 }
-dialog.dash-fullscreen[open] {
-  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0;
-  border: 0; border-radius: 0; display: flex; flex-direction: column; overflow: hidden;
-}
-.dash-fullscreen-panel { display: flex; flex-direction: column; min-height: 0; flex: 1; padding: 8px 18px 16px; }
-.dash-fullscreen-panel.is-table th, .dash-fullscreen-panel.is-table td { max-width: none; }
-.dash-fullscreen-panel .dash-donut { max-width: min(42vh, 100%); }
+.dash-shell:has(.is-expanded) { height: 100dvh; display: flex; flex-direction: column; }
+.dash-shell:has(.is-expanded) .dash-top { flex: 0 0 auto; }
+.dash-shell:has(.is-expanded) .dash-main { display: flex; flex-direction: column; flex: 1; min-height: 0; width: 100%; }
+.dash-grid-wrap.is-expanded { flex: 1; min-height: 0; }
+.is-expanded .dash-grid { display: flex; height: 100%; }
+.is-expanded .dash-card { flex: 1; }
+.dash-card[hidden] { display: none; }
+.is-expanded .dash-card.is-table th, .is-expanded .dash-card.is-table td { max-width: none; }
+.is-expanded .dash-donut { max-width: min(42vh, 100%); }

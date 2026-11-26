@@ -155,7 +155,7 @@ function Dashboards({ canEdit, pageID }: { canEdit: boolean; pageID: string }) {
     <main className="dash-main" aria-label={edit?.title || board?.data.title || tr("Dashboards", "仪表盘")}>
       {(load === "error" || saveError) && <p role="alert" className="dash-error">{saveError || tr("Could not load dashboard data. Try reloading.", "无法读取仪表盘数据，请重试。")}</p>}
       {notice && <div className="dash-sr" role="status">{notice}</div>}
-      {panels.length ? <Grid panels={panels} edit={edit ? {
+      {panels.length ? <Grid key={(edit?.id || board?.id) + (edit ? ":edit" : ":view")} panels={panels} edit={edit ? {
         panels,
         change: next => setEdit(current => current && ({ ...current, panels: next })),
         settings: id => setPane(panels.find(panel => panel.id === id) ?? null),
