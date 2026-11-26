@@ -1,0 +1,10 @@
+{
+  "id": "myco/code-graph",
+  "name": "代码图谱",
+  "version": "1.0.0",
+  "kind": "custom",
+  "category": "dev",
+  "icon": "icon.svg",
+  "description": "在本机导入 Graphify 图谱或读取代码文件夹，查看依赖、关系来源和节点之间的路径。",
+  "requires": { "hub": "0.20.7" }
+}

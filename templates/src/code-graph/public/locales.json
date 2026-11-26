@@ -1,0 +1,10 @@
+{
+  "en": {
+    "name": "Code Graph",
+    "description": "Import a Graphify graph or read a local code folder to explore dependencies, source evidence, and paths between nodes."
+  },
+  "zh": {
+    "name": "代码图谱",
+    "description": "在本机导入 Graphify 图谱或读取代码文件夹，查看依赖、关系来源和节点之间的路径。"
+  }
+}

@@ -167,5 +167,9 @@
   "dashboards": [
     "Dashboards",
     "Build dashboards from data collected by agents. View snapshots as line, bar and donut charts, number cards, and tables."
+  ],
+  "code-graph": [
+    "Code Graph",
+    "Import a Graphify graph or read a local code folder to explore dependencies, source evidence, and paths between nodes."
   ]
 }

@@ -49,6 +49,16 @@
       "description": "VS Code 同款的编辑器：文件树、多标签、语法高亮、查找替换、多光标、小地图；agent 直接写文件，你在里面改；HTML 和 Markdown 能直接预览，整个项目能下载成 zip。"
     }
   },
+  "myco/code-graph": {
+    "en": {
+      "name": "Code Graph",
+      "description": "Import a Graphify graph or read a local code folder to explore dependencies, source evidence, and paths between nodes."
+    },
+    "zh": {
+      "name": "代码图谱",
+      "description": "在本机导入 Graphify 图谱或读取代码文件夹，查看依赖、关系来源和节点之间的路径。"
+    }
+  },
   "myco/dashboards": {
     "en": {
       "name": "Dashboards",
