@@ -1,7 +1,7 @@
 {
   "id": "myco/web-automation",
   "name": "网页自动化",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "kind": "custom",
   "category": "tools",
   "icon": "icon.svg",
@@ -36,7 +36,8 @@
         "error": "text",
         "output": "json",
         "steps": "json",
-        "question": "text"
+        "question": "text",
+        "output_file": "file"
       }
     },
     "drafts": {

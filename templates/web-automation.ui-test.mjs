@@ -459,8 +459,42 @@ try {
   assert.deepEqual([libStored.source, libStored.library, libStored.graph.nodes.length], ["library", { id: "bw_hn", version: 1 }, 2]);
   assert(await shelf.evaluate(() => window.netCalls.every(call => call.startsWith("https://raw.githubusercontent.com/myco-ai/browser-scripts/main/"))), "only the library's own address is read");
   await shelf.close();
+  // Large extracted data: a table with downloads, a note about the cut, and the complete data kept as a page file.
+  const bulk = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  bulk.on("pageerror", error => errors.push(error.message));
+  await bulk.addInitScript(bridge, { sample, withBrowser: true, outdated: true });
+  await bulk.addInitScript(() => {
+    window.fileCalls = [];
+    window.myco.pageFiles = {
+      put: async (collection, name, blob) => { window.fileCalls.push(["put", collection, name, (await blob.text()).length]); return { file_id: "paf_full", page: "pg", collection, name, size: blob.size, sha256: "", content_type: blob.type, state: "ready", created_at: "" }; },
+      download: async file => { window.fileCalls.push(["download", file.file_id]); return true; },
+    };
+    window.myco.browser.runs.start = async () => ({ id: "bulk" });
+    window.myco.browser.runs.get = async (_id, after) => ({ state: "succeeded", node: "n1", steps: [{ node: "n1", state: "ok", ms: 900 }], next: after + 1, error: "", error_node: "",
+      output: { hot_list: JSON.stringify(Array.from({ length: 300 }, (_, i) => ({ rank: i + 1, title: "Story " + (i + 1), url: "https://news.example/" + i }))), source: "news" } });
+  });
+  await bulk.goto(url);
+  await bulk.evaluate(() => window.myco.data.put("scripts", { name: "Bulk list", start_url: "https://news.example/", profile: "发帖号", params: [], on_error: "stop",
+    graph: { nodes: [{ id: "n1", type: "js", code: "return 1;", into: "hot_list", pos: [0, 0] }], edges: [] } }, { id: "scr_bulk" }));
+  await bulk.locator(".wa-switcher").click();
+  await bulk.getByRole("dialog", { name: "Scripts" }).getByText("Bulk list").click();
+  await bulk.getByRole("button", { name: "Run", exact: true }).click();
+  await bulk.getByRole("dialog", { name: /Run “Bulk list”/ }).getByRole("button", { name: "Start run" }).click();
+  const card = bulk.locator(".wa-output-card").filter({ hasText: "hot_list" });
+  await card.getByText("200 rows · 3 columns").waitFor();
+  await card.locator(".wa-table td").getByText("Story 200", { exact: true }).waitFor();
+  await bulk.getByText("The data was too large, so only part of it is kept here. Use “Download complete data” for all of it.").waitFor();
+  await bulk.getByRole("button", { name: "Download complete data" }).click();
+  const fileCalls = await bulk.evaluate(() => window.fileCalls);
+  assert.deepEqual(fileCalls.map(call => call.slice(0, 3)), [["put", "runs", fileCalls[0][2]], ["download", "paf_full"]]);
+  assert(/^run-run_/.test(fileCalls[0][2]) && fileCalls[0][3] > 10000, "the complete output is saved as a page file");
+  const bulkRun = await bulk.evaluate(() => [...window.rows.values()].find(row => row.collection === "runs" && row.data.script_name === "Bulk list").data);
+  assert.equal(bulkRun.output.hot_list.length, 200);
+  assert.equal(bulkRun.output_file.file_id, "paf_full");
+  await card.getByRole("button", { name: "CSV" }).waitFor();
+  await bulk.close();
   assert.deepEqual(errors, []);
-  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, profile proxy/UA/argument settings, recordings from the browser panel with deletions, agent-run approval, hosts without approvals, profiles, recording, paused run approval, script library and narrow dark layout");
+  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, profile proxy/UA/argument settings, recordings from the browser panel with deletions, agent-run approval, hosts without approvals, profiles, recording, paused run approval, script library, extracted data tables and complete-data files, and narrow dark layout");
 } finally {
   await browser.close();
   server.close();

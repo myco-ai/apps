@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { XYPosition } from "@xyflow/react";
 import { Kit, mount, uid, useKit } from "../_lib/appkit";
 import { locale, t as uiText } from "../_lib/i18n";
-import { Store, type MycoRecord } from "../_lib/myco";
+import { myco, Store, type MycoRecord } from "../_lib/myco";
 import { browser, errorCode, errorReason, type Approval, type BrowserProfile, type BrowserStatus, type RunUpdate } from "./bridge";
 import { Canvas } from "./canvas";
 import { NodeInspector, ScriptSettings, type AgentAccess, type Tools } from "./inspector";
@@ -11,6 +11,7 @@ import { append, withSecretParams, bytes, columnGap, connect, cutOutput, emptySe
   proxyServer, recordLimit, removeNode, runArguments, splitProxy, userAgentOk, validate, type Draft, type NodeType, type ProfileSettings, type ProfileSettingsInput,
   type ProxyKind, type Run, type RunStep, type Script } from "./model";
 import { Palette } from "./palette";
+import { RunOutput } from "./output";
 import { categoryLabel, libraryAvailable, loadIndex, loadScript, statusLabel, updated, type LibraryEntry } from "./library";
 import { Icon, StepIcon } from "./icons";
 import { Field, Popover, Segmented, Select, Switch, Toggle } from "./ui";
@@ -326,7 +327,6 @@ function RunDetail({ run, script, live, control }: {
 }) {
   const nodes = new Map((script?.graph.nodes || []).map(node => [node.id, node]));
   const data = run.data;
-  const output = Object.entries(data.output || {});
   return <section className="wa-run" aria-label={uiText("运行详情")}>
     <header className="wa-run-head">
       <div>
@@ -357,6 +357,8 @@ function RunDetail({ run, script, live, control }: {
         </div> : <p className="wa-muted">{uiText("等触发运行的人或 agent 回答。")}</p>}</div>
     </div>}
     {data.error && <div className="wa-error-box"><Icon.warning size={15}/><span>{nodes.get(data.error_node) ? `${nodes.get(data.error_node)!.title || typeName(nodes.get(data.error_node)!.type)} · ` : ""}{data.error}</span></div>}
+    <RunOutput run={data} flash={message => kit.flash(message)}/>
+    {data.steps.length > 0 && <h3 className="wa-section-title">{uiText("步骤")}</h3>}
     <ol className="wa-timeline">
       {data.steps.map((step, index) => { const node = nodes.get(step.node); return <li key={index} data-state={step.state}>
         <span className="wa-tile" data-cat={node ? category(node.type) : "note"}>{node ? <StepIcon type={node.type} size={15}/> : <Icon.file size={15}/>}</span>
@@ -365,8 +367,6 @@ function RunDetail({ run, script, live, control }: {
         <span className={`wa-step-state is-${step.state}`}>{step.state === "skipped" ? uiText("跳过") : step.state === "running" ? uiText("运行中") : step.state === "failed" ? uiText("失败") : ms(step.ms)}</span>
       </li>; })}
     </ol>
-    {output.length > 0 && <section className="wa-output"><h3>{uiText("提取的数据")}</h3>
-      <dl>{output.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{typeof value === "string" ? value : JSON.stringify(value)}</dd></div>)}</dl></section>}
     {!data.steps.length && !data.error && <p className="wa-muted">{uiText("还没有步骤记录。")}</p>}
   </section>;
 }
@@ -597,12 +597,26 @@ function App() {
         const important = next.state !== run.state || finished(next.state) || Date.now() - last > 1500;
         run = next;
         if (important) { last = Date.now(); await write(next); }
-        if (finished(change.state)) break;
+        if (finished(change.state)) {
+          if (next.output.truncated) await keepFullOutput(recordId, change.output || {}, secretValues);
+          break;
+        }
       }
     } catch (error) {
       await write({ ...run, state: "failed", error: bridgeError(errorCode(error), errorReason(error)), ended_at: new Date().toISOString() });
     }
     setLive(undefined);
+  }
+
+  /** The record cut the output to fit: keep all of it as a page file, secrets masked. */
+  async function keepFullOutput(recordId: string, output: Record<string, unknown>, secrets: string[]) {
+    if (!myco?.pageFiles) return;
+    try {
+      const text = secrets.filter(Boolean).reduce((value, secret) => value.split(JSON.stringify(secret).slice(1, -1)).join("•••"), JSON.stringify(output, null, 2));
+      const file = await myco.pageFiles.put("runs", `run-${recordId}.json`, new Blob([text], { type: "application/json" }), { key: recordId });
+      const current = runs.get(recordId)?.data;
+      if (current) await kit.track(runs.put({ ...current, output_file: { file_id: file.file_id, name: file.name, size: file.size } }, recordId));
+    } catch { kit.flash(uiText("完整数据没能保存，这里只有一部分")); }
   }
 
   function control(action: "pause" | "resume" | "step" | "cancel", choice?: string) {

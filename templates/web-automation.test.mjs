@@ -108,7 +108,20 @@ assert.deepEqual(m.order(forked).map(node => node.id), ["a", "f", "b", "c"]);
 const params = [{ name: "title", type: "string", required: true }, { name: "count", type: "number", default: "2" }, { name: "pw", type: "secret", required: true }];
 assert.deepEqual(m.runArguments(params, { title: "Hi", pw: "s3cret" }), { values: { title: "Hi", count: "2" }, secrets: { pw: "s3cret" }, missing: [] });
 assert.deepEqual(m.runArguments(params, { count: "x" }).missing, ["title", "count", "pw"]);
-assert.deepEqual(m.cutOutput({ a: "token s3cret here", b: "y".repeat(5000) }, ["s3cret"]), { a: "token ••• here", b: "y".repeat(2000) });
+assert.deepEqual(m.cutOutput({ a: "token s3cret here", b: "y".repeat(5000) }, ["s3cret"]), { a: "token ••• here", b: "y".repeat(2000), truncated: true });
+// A script's JSON.stringify(list) keeps whole items instead of its first 2,000 characters.
+{
+  const items = Array.from({ length: 30 }, (_, i) => ({ rank: i + 1, title: "t".repeat(80), url: "https://x.test/" + i }));
+  const kept = m.cutOutput({ list: JSON.stringify(items), note: "[not json", n: 3 });
+  assert.equal(kept.list.length, 30);
+  assert.deepEqual(kept.list[29], items[29]);
+  assert.equal(kept.note, "[not json");
+  assert.equal(kept.truncated, undefined, "nothing was cut");
+  const many = m.cutOutput({ list: JSON.stringify(Array.from({ length: 500 }, (_, i) => i)) });
+  assert.equal(many.list.length, 200);
+  assert.equal(many.truncated, true, "a cut list is marked");
+  assert.deepEqual(m.cutOutput({ s: JSON.stringify({ token: "s3cret" }) }, ["s3cret"]), { s: { token: "•••" } }, "secrets are masked inside parsed JSON");
+}
 assert.equal(m.cutOutput({ a: "x".repeat(1900), b: "x".repeat(1900) }, [], 2500).truncated, true);
 const run = { script_id: "s", script_version: 1, script_name: "s", state: "running", node: "", by: "a", by_kind: "person", machine: "", profile: "", started_at: "", ended_at: "",
   error_node: "", error: "e".repeat(3000), output: {}, steps: Array.from({ length: 2000 }, (_, index) => ({ node: "n" + index, state: "ok", ms: index, error: "x".repeat(40) })) };

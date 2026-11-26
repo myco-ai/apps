@@ -66,6 +66,8 @@ export type Run = {
   steps: RunStep[];
   /** What a paused confirm node asks. */
   question?: string;
+  /** The complete output, saved as a page file when the record had to cut it. */
+  output_file?: { file_id: string; name: string; size: number };
 };
 export type Draft = Script & { by: string; created_at: string };
 
@@ -394,20 +396,28 @@ export function runArguments(params: Param[], input: Record<string, string>) {
  *  object kept under budget, secrets' values masked wherever they appear. */
 export function cutOutput(output: Record<string, unknown>, secrets: string[] = [], budget = 16 * 1024): Record<string, unknown> {
   const mask = (text: string) => secrets.filter(Boolean).reduce((value, secret) => value.split(secret).join("•••"), text);
+  let cut = false;
   const clean = (value: unknown, depth = 0): unknown => {
-    if (typeof value === "string") return mask(value).slice(0, 2000);
+    if (typeof value === "string") {
+      // Scripts often return JSON.stringify(list): keep its items, not its first characters.
+      if (/^\s*[[{]/.test(value)) { try { return clean(JSON.parse(value), depth); } catch { /* plain text */ } }
+      if (value.length > 2000) cut = true;
+      return mask(value).slice(0, 2000);
+    }
     if (typeof value === "number" || typeof value === "boolean" || value === null) return value;
-    if (depth > 4) return null;
-    if (Array.isArray(value)) return value.slice(0, 200).map(item => clean(item, depth + 1));
-    if (typeof value === "object") return Object.fromEntries(Object.entries(value as object).slice(0, 100).map(([key, item]) => [key, clean(item, depth + 1)]));
+    if (depth > 4) { cut = true; return null; }
+    if (Array.isArray(value)) { if (value.length > 200) cut = true; return value.slice(0, 200).map(item => clean(item, depth + 1)); }
+    if (typeof value === "object") { const entries = Object.entries(value as object); if (entries.length > 100) cut = true;
+      return Object.fromEntries(entries.slice(0, 100).map(([key, item]) => [key, clean(item, depth + 1)])); }
     return null;
   };
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(output)) {
     const cleaned = clean(value);
-    if (bytes({ ...result, [key]: cleaned }) > budget) { result.truncated = true; break; }
+    if (bytes({ ...result, [key]: cleaned }) > budget) { cut = true; break; }
     result[key] = cleaned;
   }
+  if (cut) result.truncated = true;
   return result;
 }
 

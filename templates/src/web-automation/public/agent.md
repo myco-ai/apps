@@ -87,8 +87,10 @@ Read-only for you unless you are the one running: `script_id`,
 `script_version`, `script_name`, `state` (`queued`, `running`, `paused`,
 `succeeded`, `failed`, `cancelled`, `offline`), `node` (the current step), `by`,
 `by_kind` (`person`/`agent`), `machine`, `profile`, `started_at`, `ended_at`,
-`error_node`, `error`, `output` (the `into` variables, cut to fit; secrets are
-masked), `steps` ([{node, state, ms, error}]), `question` (what a paused
+`error_node`, `error`, `output` (the `into` variables, cut to fit and marked
+`truncated: true` when cut; secrets are masked; a script that returns
+`JSON.stringify(list)` is kept as the list), `output_file` (when the output was
+cut, the complete data as a page file: `myco page file get`), `steps` ([{node, state, ms, error}]), `question` (what a paused
 `confirm` asks).
 
 ## Running a script on another computer
