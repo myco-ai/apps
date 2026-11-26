@@ -83,7 +83,7 @@ interface Bridge {
 }
 
 /** An error from myco.os: err.code is one of these. */
-export type OSErrorCode = "conflict" | "outcome_unknown" | "invalid_argument" | "not_found" | "exists" | "permission_denied" | "unsupported" | "timeout" | "cancelled" | "too_large" | "failed";
+export type OSErrorCode = "conflict" | "outcome_unknown" | "invalid_argument" | "not_found" | "exists" | "permission_denied" | "unsupported" | "timeout" | "cancelled" | "too_large" | "failed" | "no_credentials" | "service_not_enabled";
 
 /** A job: a capability that runs a while (fs.scan, exec.spawn). */
 export interface OSJob<T> {
@@ -116,7 +116,10 @@ export type OSImage = { type: string; width: number; height: number; base64: str
 export type OSAudioSource = { id: string; kind: "mic" | "system" | "app"; name: string; default?: boolean; playing?: boolean; bundle?: string };
 export type OSAudioLevel = { seconds: number; tracks: Record<string, { rms: number; peak: number }> };
 export type OSRecording = { dir: string; seconds: number; rate: number; ended: "stopped" | "cancelled" | "limit"; tracks: { id: string; source: string; path: string; seconds: number; bytes?: number; error?: string }[] };
-export type OSSpeechStatus = { ready: boolean; engine: boolean; engine_version: string; vad: boolean; dir: string; engine_size_mb: number; diarize?: boolean; models: { id: string; name: string; languages: string[]; size_mb: number; installed: boolean }[] };
+export type OSSpeechCloudStatus =
+  | { ready: true }
+  | { ready: false; code: "no_credentials" | "service_not_enabled" | "unsupported"; message: string };
+export type OSSpeechStatus = { ready: boolean; engine: boolean; engine_version: string; vad: boolean; dir: string; engine_size_mb: number; cloud?: { doubao?: OSSpeechCloudStatus }; diarize?: boolean; models: { id: string; name: string; languages: string[]; size_mb: number; installed: boolean }[] };
 export type OSSegment = { start: number; end: number; text: string };
 export type OSRun = { code: number; stdout: string; stderr: string; stdout_encoding?: "base64"; stderr_encoding?: "base64"; timed_out?: boolean; truncated?: boolean; ms: number };
 type ExecArgs = { argv?: string[]; shell?: string; cwd?: string; env?: Record<string, string>; stdin?: string; stdin_encoding?: "base64"; timeout_ms?: number; max_output?: number };
@@ -198,7 +201,8 @@ export interface MycoOS {
     /** Events "progress" {step: engine | vad | model, received, total, unpacking?}. */
     install(a?: { model?: string }): OSJob<OSSpeechStatus>;
     /** Events "segment" (one sentence) and "progress" {done, total} (seconds). WAV, or other formats via afconvert / ffmpeg. */
-    transcribe(a: { path: string; model?: string; language?: string; offset?: number }): OSJob<{ segments: OSSegment[]; seconds: number; ms: number; model: string }>;
+    transcribe(a: { path: string; engine?: undefined; model?: string; language?: string; offset?: number }): OSJob<{ segments: OSSegment[]; seconds: number; ms: number; model: string }>;
+    transcribe(a: { path: string; engine: "doubao"; language?: string; offset?: number }): OSJob<{ segments: OSSegment[]; seconds: number; ms: number; engine: "doubao" }>;
     /** Who speaks when: speakers numbered 0, 1… in the order they first speak. speakers: how many, when known. Events "progress" {percent}. */
     diarize(a: { path: string; speakers?: number; threshold?: number }): OSJob<{ turns: { start: number; end: number; speaker: number }[]; speakers: number; ms: number }>;
   };
