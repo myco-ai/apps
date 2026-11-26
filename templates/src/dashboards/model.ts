@@ -10,9 +10,18 @@ export const kindTitle = (kind: Kind) => ({
   donut: tr("Donut", "环形饼图"), metric: tr("Number", "指标卡"), table: tr("Table", "表格"),
 })[kind];
 
+export const labelColors = ["neutral", "blue", "green", "amber", "red", "purple"] as const;
+export const labelColorTitle = (color: LabelColor) => ({
+  neutral: tr("Gray", "灰色"), blue: tr("Blue", "蓝色"), green: tr("Green", "绿色"),
+  amber: tr("Amber", "琥珀色"), red: tr("Red", "红色"), purple: tr("Purple", "紫色"),
+})[color];
+export type LabelColor = typeof labelColors[number];
+export type TableLabel = { column: string; value: string; color: LabelColor };
+export const maxTableLabels = 24;
+
 export type Panel = {
   id: string; title: string; kind: Kind; dataset: string; label: string; values: string[];
-  width: "compact" | "half" | "wide"; unit: string; position?: Position;
+  width: "compact" | "half" | "wide"; unit: string; position?: Position; tableLabels?: TableLabel[];
 };
 export type Board = { title: string; description: string; panels: Panel[] };
 type Cell = string | number | null;
@@ -31,6 +40,19 @@ const string = (value: unknown, limit: number) => typeof value === "string" ? va
 const strings = (value: unknown, limit: number) => Array.isArray(value)
   ? [...new Set(value.slice(0, limit).map(item => string(item, 80)).filter(Boolean))] : [];
 
+export function readTableLabels(value: unknown): TableLabel[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  return value.slice(0, maxTableLabels).flatMap((item): TableLabel[] => {
+    const rule = object(item);
+    const column = string(rule.column, 80), match = string(rule.value, 240);
+    const key = JSON.stringify([column, match]);
+    if (!column || !match || seen.has(key) || !labelColors.includes(rule.color as LabelColor)) return [];
+    seen.add(key);
+    return [{ column, value: match, color: rule.color as LabelColor }];
+  });
+}
+
 export function boardFrom(record: MycoRecord): MycoRecord<Board> {
   const { panels, title, description } = record.data;
   const ids = new Set<string>();
@@ -46,6 +68,7 @@ export function boardFrom(record: MycoRecord): MycoRecord<Board> {
         id, kind: p.kind as Kind, title: string(p.title, 80), dataset: string(p.dataset, 80),
         label: string(p.label, 80), values: strings(p.values, 6), unit: string(p.unit, 24),
         width: p.width === "wide" || p.width === "compact" ? p.width : "half",
+        ...(p.kind === "table" && Array.isArray(p.tableLabels) ? { tableLabels: readTableLabels(p.tableLabels) } : {}),
         position: readPosition(p.position, p.kind as Kind),
       }];
     }),

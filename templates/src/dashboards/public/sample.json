@@ -126,8 +126,25 @@
             "x": 5,
             "y": 7,
             "w": 7,
-            "h": 4
-          }
+            "h": 6
+          },
+          "tableLabels": [
+            {
+              "column": "Status",
+              "value": "Healthy",
+              "color": "green"
+            },
+            {
+              "column": "Status",
+              "value": "Watching",
+              "color": "amber"
+            },
+            {
+              "column": "Status",
+              "value": "Action needed",
+              "color": "red"
+            }
+          ]
         }
       ]
     },
@@ -362,6 +379,46 @@
           "Webhooks",
           "Healthy",
           281
+        ],
+        [
+          "Worker queue",
+          "Watching",
+          419
+        ],
+        [
+          "Search index",
+          "Healthy",
+          138
+        ],
+        [
+          "Exports",
+          "Action needed",
+          815
+        ],
+        [
+          "API gateway",
+          "Healthy",
+          192
+        ],
+        [
+          "File preview",
+          "Healthy",
+          214
+        ],
+        [
+          "Automation",
+          "Watching",
+          403
+        ],
+        [
+          "Notifications",
+          "Healthy",
+          262
+        ],
+        [
+          "Activity log",
+          "Healthy",
+          171
         ]
       ]
     }

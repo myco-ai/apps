@@ -21,7 +21,9 @@ const translations = {
   "Nov 18–24": "11 月 18–24 日", "Day": "日期", "Median (ms)": "中位数（ms）", "P95 (ms)": "P95（ms）",
   "Errors": "错误数", "Service": "服务", "Source": "来源", "Status": "状态", "Console": "控制台",
   "Agent API": "Agent 接口", "Pages": "应用页面", "Webhooks": "通知回调", "Files": "项目文件", "Desktop": "桌面",
-  "Mobile": "移动端", "Web": "网页", "Healthy": "正常",
+  "Mobile": "移动端", "Web": "网页", "Healthy": "正常", "Watching": "观察中", "Action needed": "需处理",
+  "Worker queue": "任务队列", "Search index": "搜索索引", "Exports": "导出", "API gateway": "API 网关",
+  "File preview": "文件预览", "Automation": "自动化", "Notifications": "通知", "Activity log": "活动日志",
 };
 function localize(value) {
   if (typeof value === "string") return translations[value] ?? value.replace(/^Nov (\d+)$/, "11/$1");
@@ -48,7 +50,10 @@ frame.src = "/app/" + location.hash;`;
 const mime = { ".js": "text/javascript", ".css": "text/css", ".html": "text/html" };
 const server = createServer(async (req, res) => {
   const route = new URL(req.url, "http://local").pathname;
-  if (route === "/") return res.writeHead(200, { "content-type": "text/html" }).end('<style>html,body,iframe{width:100%;height:100%;margin:0;border:0;display:block}</style><iframe></iframe><script src="/host.js"></script>');
+  if (route === "/") {
+    const fullscreen = new URL(req.url, "http://local").searchParams.has("native") ? " allowfullscreen" : "";
+    return res.writeHead(200, { "content-type": "text/html" }).end(`<style>html,body,iframe{width:100%;height:100%;margin:0;border:0;display:block}</style><iframe${fullscreen}></iframe><script src="/host.js"></script>`);
+  }
   if (route === "/host.js") return res.writeHead(200, { "content-type": "text/javascript" }).end(outer);
   if (route === "/app/bridge.js") return res.writeHead(200, { "content-type": "text/javascript" }).end(bridge);
   if (route.startsWith("/app/")) {
@@ -102,6 +107,27 @@ try {
     assert.equal(await app.locator("html").getAttribute("data-myco-theme"), theme);
     assert.ok(await app.locator("html").evaluate((html, size) => html.scrollWidth <= size, width));
     if (width === 1280) await page.screenshot({ path: new URL(`${locale}-${theme}.png`, artifacts).pathname });
+    const full = app.getByRole("button", { name: zh ? "全屏 · 服务健康状态" : "Fullscreen · Service health" });
+    const originalTable = app.locator("article[data-panel=health] .dash-table-wrap");
+    await originalTable.getByText(zh ? "观察中" : "Watching").first().waitFor();
+    assert.equal(await originalTable.locator(".dash-table-label.is-amber").count(), 2);
+    const tableArea = await originalTable.evaluate(table => ({
+      height: table.clientHeight, body: table.parentElement.clientHeight,
+    }));
+    assert.ok(Math.abs(tableArea.height - tableArea.body) <= 5);
+    if (width >= 1180) assert.ok(tableArea.height > 230, "tall tables exceed the former fixed cap");
+    await full.click();
+    const dialog = app.getByRole("dialog", { name: zh ? "服务健康状态" : "Service health" });
+    await dialog.waitFor();
+    const box = await dialog.boundingBox();
+    assert.deepEqual([box.x, box.y, box.width, box.height].map(Math.round), [0, 0, width, height]);
+    await dialog.locator(".dash-table-label.is-red").waitFor();
+    await page.screenshot({ path: new URL(`fullscreen-${locale}-${theme}.png`, artifacts).pathname });
+    if (zh) await dialog.getByRole("button", { name: "退出全屏" }).click();
+    else await page.keyboard.press("Escape");
+    await dialog.waitFor({ state: "hidden" });
+    await full.evaluate(el => new Promise(resolve => requestAnimationFrame(resolve)));
+    assert.equal(await full.evaluate(el => el === el.ownerDocument.activeElement), true, "fullscreen returns focus");
     await app.getByRole("combobox", { name: zh ? "切换仪表盘" : "Switch dashboard" }).selectOption("quality");
     await app.locator(".is-line svg[role=img]").waitFor();
     assert.equal(await app.locator(".dash-legend li").count(), 2);
@@ -129,6 +155,10 @@ try {
   await app.getByLabel("Panel title").fill("Recent checks");
   await app.getByLabel("Visualization").selectOption("table");
   await app.getByLabel("Dataset", { exact: true }).selectOption("service_health");
+  await app.getByRole("button", { name: "Add label" }).click();
+  await app.getByLabel("Column", { exact: true }).selectOption("Status");
+  await app.getByLabel("Cell value").fill("Healthy");
+  await app.getByLabel("Color", { exact: true }).selectOption("purple");
   await app.getByRole("button", { name: "Add to dashboard" }).click();
 
   const grid = await app.locator(".dash-grid").boundingBox();
@@ -164,10 +194,12 @@ try {
 
   const created = [...rows.values()].find(record => record.data.title === "New service report");
   assert.ok(created);
+  assert.deepEqual(created.data.panels[1].tableLabels, [{ column: "Status", value: "Healthy", color: "purple" }]);
   assert.deepEqual(created.data.panels.map(panel => panel.position), [{ x: 0, y: 0, w: 7, h: 5 }, { x: 5, y: 5, w: 6, h: 4 }]);
   await page.reload();
   await app.getByRole("combobox", { name: "Switch dashboard" }).selectOption(created.id);
   await latency.waitFor();
+  assert.ok(await checks.locator(".dash-table-label.is-purple").count());
   assert.equal(Math.round((await latency.boundingBox()).height), Math.round(afterResize.height));
   await app.getByRole("button", { name: "Edit layout" }).click();
   await app.getByRole("button", { name: "Resize panel · Latency" }).press("ArrowDown");
@@ -187,12 +219,22 @@ try {
   assert.equal(rows.has("datasets/daily_traffic"), true);
   await page.close();
 
+  const native = await launch({ viewport: { width: 1100, height: 800 } }, "/?native");
+  await native.app.getByRole("button", { name: "Fullscreen · Traffic over time" }).click();
+  await native.page.waitForFunction(() => !!document.querySelector("iframe").contentDocument.fullscreenElement);
+  const nativeDialog = native.app.getByRole("dialog", { name: "Traffic over time" });
+  await nativeDialog.locator("svg[role=img]").waitFor();
+  await nativeDialog.getByRole("button", { name: "Exit fullscreen" }).click();
+  await native.page.waitForFunction(() => !document.fullscreenElement);
+  await nativeDialog.waitFor({ state: "hidden" });
+  await native.page.close();
+
   const readOnly = await launch({ viewport: { width: 1100, height: 800 } }, "/?readonly#dashboard?id=quality");
   await readOnly.app.getByRole("main", { name: "Quality report" }).waitFor();
   assert.equal(await readOnly.app.getByRole("button", { name: "New dashboard" }).count(), 0);
   assert.equal(await readOnly.app.getByRole("button", { name: "Edit layout" }).count(), 0);
   assert.deepEqual(errors, []);
-  console.log("PASS dashboards: six panel types, snapshot reload, drag, resize, collision, keyboard, save, cancel, delete, deep links, permissions, responsive bilingual themes");
+  console.log("PASS dashboards: six panel types, full-height tables, colored labels, fullscreen, snapshot reload, drag, resize, collision, keyboard, save, cancel, delete, deep links, permissions, responsive bilingual themes");
 } finally {
   await browser.close();
   server.close();

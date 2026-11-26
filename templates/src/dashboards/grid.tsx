@@ -1,7 +1,8 @@
-import { useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { ArrowDownRight, GripHorizontal, Settings2 } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { ArrowDownRight, GripHorizontal, Maximize2, Settings2 } from "lucide-react";
 import { columns, gap, rowHeight, changePosition, shiftPosition, type PositionedPanel } from "./layout";
 import { kindTitle, tr } from "./model";
+import { Dialog } from "./editor";
 
 type Edit = { panels: PositionedPanel[]; change: (panels: PositionedPanel[]) => void; settings: (id: string) => void };
 type Gesture = {
@@ -11,6 +12,50 @@ type Gesture = {
 
 export function Grid({ panels, edit, render }: { panels: PositionedPanel[]; edit?: Edit; render: (panel: PositionedPanel) => ReactNode }) {
   const grid = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const opening = useRef(false);
+  const native = useRef(false);
+  const trigger = useRef<HTMLButtonElement>();
+  function restoreFullscreenFocus() {
+    const button = trigger.current;
+    trigger.current = undefined;
+    requestAnimationFrame(() => { if (button?.isConnected) button.focus({ preventScroll: true }); });
+  }
+  const focused = panels.find(panel => panel.id === expanded);
+  function closeFullscreen() {
+    opening.current = false;
+    setExpanded(null);
+    restoreFullscreenFocus();
+    if (native.current && document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => undefined);
+  }
+  useEffect(() => {
+    function changed() {
+      if (document.fullscreenElement || !native.current) return;
+      native.current = false;
+      opening.current = false;
+      setExpanded(null);
+      restoreFullscreenFocus();
+    }
+    document.addEventListener("fullscreenchange", changed);
+    return () => {
+      document.removeEventListener("fullscreenchange", changed);
+      opening.current = false;
+      if (native.current && document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => undefined);
+    };
+  }, []);
+  useEffect(() => { if (expanded && !focused) closeFullscreen(); }, [expanded, focused]);
+  function openFullscreen(id: string, button: HTMLButtonElement) {
+    trigger.current = button;
+    setExpanded(id);
+    opening.current = true;
+    const root = document.documentElement;
+    if (!document.fullscreenElement && document.fullscreenEnabled && root.requestFullscreen) {
+      void root.requestFullscreen().then(() => {
+        if (opening.current) native.current = true;
+        else if (document.fullscreenElement === root) void document.exitFullscreen().catch(() => undefined);
+      }).catch(() => undefined);
+    }
+  }
   const active = useRef<Gesture>();
   const pending = useRef<number>();
   const ordered = edit ? panels : [...panels].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
@@ -67,7 +112,7 @@ export function Grid({ panels, edit, render }: { panels: PositionedPanel[]; edit
       onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => keyboard(event, panel, resize) };
   }
 
-  return <div className={edit ? "dash-grid-wrap is-editing" : "dash-grid-wrap"}>
+  return <><div className={edit ? "dash-grid-wrap is-editing" : "dash-grid-wrap"}>
     <div className="dash-grid" ref={grid}>
       {ordered.map(panel => <article key={panel.id} className={`dash-card is-${panel.kind}`} data-panel={panel.id}
         style={{ gridColumn: `${panel.position.x + 1} / span ${panel.position.w}`, gridRow: `${panel.position.y + 1} / span ${panel.position.h}` }}>
@@ -75,6 +120,9 @@ export function Grid({ panels, edit, render }: { panels: PositionedPanel[]; edit
           <h2>{edit
             ? <button className="dash-move" {...handle(panel, false)}><GripHorizontal size={17}/><span>{panel.title || kindTitle(panel.kind)}</span></button>
             : panel.title || kindTitle(panel.kind)}</h2>
+          <button className="dash-icon dash-expand" type="button" title={tr("Fullscreen", "全屏")}
+            aria-label={tr("Fullscreen", "全屏") + " · " + (panel.title || kindTitle(panel.kind))}
+            onClick={event => openFullscreen(panel.id, event.currentTarget)}><Maximize2 size={15}/></button>
           {edit && <button className="dash-icon" type="button" title={tr("Panel settings", "面板设置")} aria-label={tr("Panel settings", "面板设置") + " · " + panel.title}
             onClick={() => edit.settings(panel.id)}><Settings2 size={15}/></button>}
         </header>
@@ -82,5 +130,9 @@ export function Grid({ panels, edit, render }: { panels: PositionedPanel[]; edit
         {edit && <button className="dash-icon dash-resize" {...handle(panel, true)}><ArrowDownRight size={16}/></button>}
       </article>)}
     </div>
-  </div>;
+  </div>
+    {focused && <Dialog fullscreen title={focused.title || kindTitle(focused.kind)} close={closeFullscreen}>
+      <div className={`dash-fullscreen-panel is-${focused.kind}`}><div className="dash-panel-body">{render(focused)}</div></div>
+    </Dialog>}
+  </>;
 }

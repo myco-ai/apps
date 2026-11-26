@@ -146,3 +146,44 @@ dialog::backdrop { background: #11182765; }
 .dash-checks legend { color: var(--secondary); font-size: 12px; font-weight: 600; }
 .dash-checks label { flex-direction: row; align-items: center; font-weight: 400; }
 .dash-checks input { width: 15px; height: 15px; min-height: auto; accent-color: var(--series-0); }
+
+.dash-expand.dash-icon { width: 26px; min-height: 25px; }
+.is-table > .dash-panel-body { overflow: hidden; }
+.is-table > .dash-panel-body > .dash-table-wrap { flex: 1; min-height: 0; max-height: none; }
+.dash-table-label {
+  --label-color: var(--secondary);
+  display: inline-block; max-width: 100%; padding: 1px 7px; border-radius: 999px;
+  background: color-mix(in srgb, var(--label-color) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--label-color) 30%, var(--surface));
+  color: var(--label-color); font-weight: 650;
+}
+.dash-table-label.is-blue { --label-color: #2359a1; }
+.dash-table-label.is-green { --label-color: #1a6b4f; }
+.dash-table-label.is-amber { --label-color: #815600; }
+.dash-table-label.is-red { --label-color: #a52a42; }
+.dash-table-label.is-purple { --label-color: #663d99; }
+@media (prefers-color-scheme: dark) {
+  .dash-table-label.is-blue { --label-color: #93bcff; }
+  .dash-table-label.is-green { --label-color: #7bdabb; }
+  .dash-table-label.is-amber { --label-color: #efc67e; }
+  .dash-table-label.is-red { --label-color: #ffa0ad; }
+  .dash-table-label.is-purple { --label-color: #d0acff; }
+}
+.dash-editor .dash-label-fields { grid-column: 1 / -1; gap: 8px; }
+.dash-label-fields legend { font-weight: 650; margin-bottom: 4px; }
+.dash-label-fields > button { justify-self: start; }
+.dash-label-rule { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(74px, .6fr) auto; gap: 6px; align-items: end; }
+@media (max-width: 680px) {
+  .dash-grid-wrap:not(.is-editing) .dash-card.is-table .dash-panel-body { max-height: 56vh; }
+}
+@media (max-width: 420px) {
+  .dash-label-rule { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .dash-label-rule label:first-child { grid-column: 1 / -1; }
+}
+dialog.dash-fullscreen[open] {
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0;
+  border: 0; border-radius: 0; display: flex; flex-direction: column; overflow: hidden;
+}
+.dash-fullscreen-panel { display: flex; flex-direction: column; min-height: 0; flex: 1; padding: 8px 18px 16px; }
+.dash-fullscreen-panel.is-table th, .dash-fullscreen-panel.is-table td { max-width: none; }
+.dash-fullscreen-panel .dash-donut { max-width: min(42vh, 100%); }

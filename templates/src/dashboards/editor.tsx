@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { X } from "lucide-react";
-import { kindTitle, kinds, tr, validID, type Board, type Dataset, type Kind, type Panel } from "./model";
+import { kindTitle, kinds, labelColors, labelColorTitle, maxTableLabels, readTableLabels, tr, validID, type LabelColor, type TableLabel, type Board, type Dataset, type Kind, type Panel } from "./model";
 
-export function Dialog({ title, children, close }: { title: string; children: ReactNode; close: () => void }) {
+export function Dialog({ title, children, close, fullscreen = false }: { title: string; children: ReactNode; close: () => void; fullscreen?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { ref.current?.showModal(); }, []);
-  return <dialog ref={ref} aria-label={title} onCancel={event => { event.preventDefault(); close(); }}>
-    <div className="dash-dialog-head"><h2>{title}</h2><button type="button" className="dash-icon" onClick={close} aria-label={tr("Close", "关闭")}><X size={18}/></button></div>
+  return <dialog ref={ref} className={fullscreen ? "dash-fullscreen" : undefined} aria-label={title} onCancel={event => { event.preventDefault(); close(); }}>
+    <div className="dash-dialog-head"><h2>{title}</h2><button type="button" className="dash-icon" onClick={close} aria-label={fullscreen ? tr("Exit fullscreen", "退出全屏") : tr("Close", "关闭")}><X size={18}/></button></div>
     {children}
   </dialog>;
 }
@@ -16,7 +16,7 @@ function PanelFields({ panel, datasets, change }: { panel: Panel; datasets: Map<
   const single = panel.kind === "metric" || panel.kind === "donut";
   const options = dataset ? dataset.columns : [];
   const [customDataset, setCustomDataset] = useState(!datasets.size || (!!panel.dataset && !dataset));
-  const bind = (dataset: string) => change({ ...panel, dataset, label: "", values: [] });
+  const bind = (dataset: string) => change({ ...panel, dataset, label: "", values: [], tableLabels: undefined });
   const set = <K extends keyof Panel>(key: K, value: Panel[K]) => change({ ...panel, [key]: value });
   return <div className="dash-fields">
     <label>{tr("Panel title", "面板标题")}<input required maxLength={80} value={panel.title} onChange={event => set("title", event.target.value)}/></label>
@@ -34,7 +34,7 @@ function PanelFields({ panel, datasets, change }: { panel: Panel; datasets: Map<
     </select></label>
     {customDataset && <label>{tr("Dataset ID", "数据集 ID")}<input maxLength={80} pattern="[a-zA-Z0-9_\\-]{1,80}" value={panel.dataset}
       placeholder={tr("e.g. weekly_usage", "例如 weekly_usage")} onChange={event => bind(event.target.value)}/></label>}
-    {panel.kind !== "table" && <>
+    {panel.kind === "table" ? <TableLabelFields panel={panel} dataset={dataset} change={labels => set("tableLabels", labels)}/> : <>
       <label>{tr("Label column", "标签列")}<input maxLength={80} list={`cols-${panel.id}`} value={panel.label} onChange={event => set("label", event.target.value)}/></label>
       {single || !options.length
         ? <label>{single ? tr("Value column", "数值列") : tr("Value columns", "数值列")}
@@ -55,6 +55,41 @@ function PanelFields({ panel, datasets, change }: { panel: Panel; datasets: Map<
   </div>;
 }
 
+function TableLabelFields({ panel, dataset, change }: { panel: Panel; dataset?: Dataset; change: (labels: TableLabel[]) => void }) {
+  const rules = panel.tableLabels ?? [];
+  const columns = dataset?.columns || [];
+  const update = (index: number, part: Partial<TableLabel>) =>
+    change(rules.map((rule, i) => i === index ? { ...rule, ...part } : rule));
+  return <fieldset className="dash-label-fields">
+    <legend>{tr("Colored labels", "彩色标签")}</legend>
+    {rules.map((rule, index) => {
+      const columnIndex = columns.indexOf(rule.column);
+      const suggestions = columnIndex < 0 ? [] : [...new Set(dataset?.rows.map(row => row[columnIndex])
+        .filter(value => value !== null).map(value => String(value).trim()).filter(Boolean))].slice(0, 24);
+      const list = `dash-label-${panel.id}-${index}`;
+      return <div className="dash-label-rule" key={index}>
+        <label>{tr("Column", "列")}
+          {columns.length ? <select aria-label={tr("Column", "列")} required value={rule.column} onChange={e => update(index, { column: e.target.value, value: "" })}>
+            <option value="">{tr("Choose a column", "选择列")}</option>
+            {[...new Set([...columns, rule.column].filter(Boolean))].map(column => <option key={column}>{column}</option>)}
+          </select> : <input required maxLength={80} value={rule.column} onChange={e => update(index, { column: e.target.value })}/>}
+        </label>
+        <label>{tr("Cell value", "单元格值")}<input required maxLength={240} list={list} value={rule.value}
+          onChange={e => update(index, { value: e.target.value })}/>
+          <datalist id={list}>{suggestions.map(value => <option key={value} value={value}/>)}</datalist>
+        </label>
+        <label>{tr("Color", "颜色")}<select aria-label={tr("Color", "颜色")} value={rule.color} onChange={e => update(index, { color: e.target.value as LabelColor })}>
+          {labelColors.map(color => <option key={color} value={color}>{labelColorTitle(color)}</option>)}
+        </select></label>
+        <button type="button" className="dash-icon" title={tr("Remove label", "移除标签")} aria-label={tr("Remove label", "移除标签")}
+          onClick={() => change(rules.filter((_, i) => index !== i))}><X size={15}/></button>
+      </div>;
+    })}
+    <button type="button" className="dash-btn" disabled={rules.length >= maxTableLabels}
+      onClick={() => change([...rules, { column: "", value: "", color: "blue" }])}>{tr("Add label", "添加标签")}</button>
+  </fieldset>;
+}
+
 export function PanelEditor({ panel, datasets, isNew, apply, remove, close }: {
   panel: Panel; datasets: Map<string, Dataset>; isNew: boolean; apply: (panel: Panel) => void; remove: () => void; close: () => void;
 }) {
@@ -66,7 +101,12 @@ export function PanelEditor({ panel, datasets, isNew, apply, remove, close }: {
       setError(tr("Enter a panel name and a valid dataset ID.", "请填写面板名称和有效的数据集 ID。"));
       return;
     }
-    apply({ ...draft, title: draft.title.trim() });
+    const tableLabels = draft.kind === "table" ? readTableLabels(draft.tableLabels) : undefined;
+    if (tableLabels && tableLabels.length !== (draft.tableLabels?.length ?? 0)) {
+      setError(tr("Use a unique value for each label in a column.", "同一列的标签值必须填写且不能重复。"));
+      return;
+    }
+    apply({ ...draft, title: draft.title.trim(), tableLabels: tableLabels?.length ? tableLabels : undefined });
   }
   return <Dialog title={isNew ? tr("Add panel", "添加面板") : tr("Panel settings", "面板设置")} close={close}>
     <form onSubmit={submit} className="dash-editor">

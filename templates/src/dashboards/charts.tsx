@@ -1,17 +1,23 @@
 import { memo, useEffect, useId, useRef, useState } from "react";
 import { BarChart3 } from "lucide-react";
 import { language } from "../_lib/i18n";
-import { kindTitle, number, seriesFor, tr, type Dataset, type Panel } from "./model";
+import { kindTitle, number, seriesFor, tr, type Dataset, type TableLabel, type Panel } from "./model";
 
 function Empty({ text }: { text: string }) {
   return <div className="dash-chart-empty"><BarChart3 size={22} aria-hidden="true"/><span>{text}</span></div>;
 }
 
-function DataTable({ dataset, columns }: { dataset: Dataset; columns: string[] }) {
+function DataTable({ dataset, columns, labels = [] }: { dataset: Dataset; columns: string[]; labels?: TableLabel[] }) {
   const indices = columns.map(column => dataset.columns.indexOf(column)).filter(index => index >= 0);
+  const colors = new Map(labels.map(rule => [JSON.stringify([rule.column, rule.value]), rule.color]));
   return <div className="dash-table-wrap" tabIndex={0} role="region" aria-label={tr("Data table", "数据表")}>
     <table><thead><tr>{indices.map(index => <th key={index} scope="col">{dataset.columns[index]}</th>)}</tr></thead>
-    <tbody>{dataset.rows.map((row, line) => <tr key={line}>{indices.map(index => <td key={index}>{typeof row[index] === "number" ? number(row[index]) : row[index] ?? "—"}</td>)}</tr>)}</tbody></table>
+    <tbody>{dataset.rows.map((row, line) => <tr key={line}>{indices.map(index => {
+      const value = row[index];
+      const text = typeof value === "number" ? number(value) : value ?? "—";
+      const color = value === null ? undefined : colors.get(JSON.stringify([dataset.columns[index], String(value).trim()]));
+      return <td key={index}>{color ? <span className={`dash-table-label is-${color}`}>{text}</span> : text}</td>;
+    })}</tr>)}</tbody></table>
   </div>;
 }
 
@@ -130,7 +136,7 @@ function Cartesian({ panel, names, series }: { panel: Panel } & ReturnType<typeo
 export const Chart = memo(function Chart({ panel, dataset }: { panel: Panel; dataset?: Dataset }) {
   if (!dataset) return <Empty text={panel.dataset ? tr("Waiting for a dataset", "等待数据集") : tr("Choose a dataset in Edit layout", "请在编辑布局中选择数据集")}/>;
   if (!dataset.rows.length) return <Empty text={tr("This snapshot has no rows", "这个快照没有数据行")}/>;
-  if (panel.kind === "table") return <DataTable dataset={dataset} columns={dataset.columns}/>;
+  if (panel.kind === "table") return <DataTable dataset={dataset} columns={dataset.columns} labels={panel.tableLabels}/>;
   const { names, series } = seriesFor(panel, dataset);
   if (!series.length) return <Empty text={tr("Choose a numeric column in Edit layout", "请在编辑布局中选择数值列")}/>;
   if (panel.kind === "metric") {
