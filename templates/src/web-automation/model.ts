@@ -46,8 +46,10 @@ export type Param = { name: string; type: ParamType; required?: boolean; default
 export type Script = {
   name: string; description?: string; start_url: string; profile: string;
   params: Param[]; graph: { nodes: ScriptNode[]; edges: Edge[] }; on_error: OnError;
-  /** Who produced it: "record", "agent" (from a draft) or "manual". */
+  /** Who produced it: "record", "agent" (from a draft), "manual" or "library". */
   source?: string;
+  /** The library script it was copied from, for offering newer versions. */
+  library?: { id: string; version: number };
 };
 
 export const runStates = ["queued", "running", "paused", "succeeded", "failed", "cancelled", "offline"] as const;
@@ -126,6 +128,9 @@ export function normalize(raw: unknown): Script {
     profile: typeof value.profile === "string" ? value.profile : "",
     params, graph: { nodes, edges }, on_error: typeof value.on_error === "string" ? value.on_error as OnError : "stop",
     source: typeof value.source === "string" ? value.source : undefined,
+    ...(value.library && typeof value.library.id === "string" && /^[a-z0-9_]{1,60}$/.test(value.library.id)
+      && Number.isInteger(value.library.version) && value.library.version >= 1
+      ? { library: { id: value.library.id, version: value.library.version } } : {}),
   };
 }
 

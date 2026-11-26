@@ -11,6 +11,7 @@ import { append, withSecretParams, bytes, columnGap, connect, cutOutput, emptySe
   proxyServer, recordLimit, removeNode, runArguments, splitProxy, userAgentOk, validate, type Draft, type NodeType, type ProfileSettings, type ProfileSettingsInput,
   type ProxyKind, type Run, type RunStep, type Script } from "./model";
 import { Palette } from "./palette";
+import { categoryLabel, libraryAvailable, loadIndex, loadScript, statusLabel, updated, type LibraryEntry } from "./library";
 import { Icon, StepIcon } from "./icons";
 import { Field, Popover, Segmented, Select, Switch, Toggle } from "./ui";
 import "../_lib/sheet.css";
@@ -105,6 +106,56 @@ function RunDialog({ script, id, version, profiles, startAt, breakpoints, close,
       {missing.includes(param.name) && <small className="wa-error">{uiText("请填写有效的值。")}</small>}
     </div>)}
     <Toggle label={uiText("不显示浏览器窗口")} hint={uiText("无头运行，适合不需要看着的任务")} checked={headless} onChange={setHeadless}/>
+  </Dialog>;
+}
+
+function LibraryDialog({ added, add, update, close }: {
+  added: { id: string; library: { id: string; version: number } }[];
+  add: (entry: LibraryEntry) => Promise<void>; update: (pageScript: string, entry: LibraryEntry) => Promise<void>; close: () => void;
+}) {
+  const [entries, setEntries] = useState<LibraryEntry[] | null>(null);
+  const [failed, setFailed] = useState("");
+  const [find, setFind] = useState("");
+  const [category, setCategory] = useState("");
+  const [busy, setBusy] = useState("");
+  useEffect(() => { loadIndex().then(setEntries, error => setFailed(error instanceof Error ? error.message : String(error))); }, []);
+  const categories = useMemo(() => [...new Set((entries || []).map(entry => entry.category))].sort(), [entries]);
+  const words = find.trim().toLowerCase();
+  const shown = (entries || []).filter(entry => (!category || entry.category === category)
+    && (!words || [entry.name, entry.description, entry.id, ...entry.tags].some(value => value.toLowerCase().includes(words))));
+  const act = async (key: string, task: () => Promise<void>) => {
+    setBusy(key);
+    try { await task(); } catch (error) { kit.flash(error instanceof Error ? error.message : String(error)); } finally { setBusy(""); }
+  };
+  return <Dialog title={uiText("脚本库")} close={close} wide footer={<button type="button" className="wa-btn" onClick={closeDialog}>{uiText("关闭")}</button>}>
+    <p className="wa-muted">{uiText("现成的网页脚本，添加后复制到本页，可以改，也可以批准给 agent 运行。脚本库单独更新，不用升级 App。")}</p>
+    <div className="wa-library-tools">
+      <label className="wa-search"><Icon.search size={15}/><input autoFocus value={find} onChange={event => setFind(event.target.value)} placeholder={uiText("搜索脚本库")} aria-label={uiText("搜索脚本库")}/></label>
+      <Select value={category} onChange={setCategory} label={uiText("分类")}
+        options={[{ value: "", label: uiText("全部分类") }, ...categories.map(value => ({ value, label: categoryLabel(value) }))]}/>
+    </div>
+    {failed ? <p className="wa-library-empty" role="alert">{failed}</p>
+      : !entries ? <p className="wa-library-empty">{uiText("正在读取脚本库…")}</p>
+      : <ul className="wa-library" aria-label={uiText("脚本库")}>
+        {shown.map(entry => {
+          const mine = added.find(item => item.library.id === entry.id);
+          const newer = mine && mine.library.version < entry.version;
+          return <li key={entry.id}>
+            <div className="wa-library-text">
+              <strong>{entry.name}</strong>
+              <small>{categoryLabel(entry.category)} · {uiText("{0} 步", entry.steps)}{entry.params.length ? ` · ${uiText("参数：{0}", entry.params.join("、"))}` : ""}</small>
+              <span className="wa-library-tags">
+                <span className={`wa-chip is-${entry.status}`}>{statusLabel(entry.status)}</span>
+                {entry.requires_login && <span className="wa-chip">{uiText("要登录")}</span>}
+              </span>
+            </div>
+            {newer ? <button type="button" className="wa-btn" disabled={!!busy} onClick={() => void act(entry.id, () => update(mine.id, entry))}>{busy === entry.id ? uiText("更新中…") : uiText("更新到新版本")}</button>
+              : mine ? <span className="wa-muted">{uiText("已添加")}</span>
+              : <button type="button" className="wa-btn is-primary" disabled={!!busy} onClick={() => void act(entry.id, () => add(entry))}>{busy === entry.id ? uiText("添加中…") : uiText("添加")}</button>}
+          </li>;
+        })}
+        {!shown.length && <li className="wa-muted wa-pad">{uiText("没有匹配的脚本。")}</li>}
+      </ul>}
   </Dialog>;
 }
 
@@ -337,7 +388,7 @@ function App() {
   // Why status() failed on an App that has the bridge; "" when it did not.
   const [statusError, setStatusError] = useState<{ code: string; reason: string }>();
   const [breakpoints, setBreakpoints] = useState<Record<string, string[]>>({});
-  const [dialog, setDialog] = useState<"run" | "record" | "profiles" | "">("");
+  const [dialog, setDialog] = useState<"run" | "record" | "profiles" | "library" | "">("");
   const [switcher, setSwitcher] = useState(false);
   const [find, setFind] = useState("");
   const [startAt, setStartAt] = useState<string>();
@@ -404,6 +455,15 @@ function App() {
     const id = uid("scr_");
     const name = uiText("新脚本 {0}", scripts.rows.length + 1);
     if (await kit.track(scripts.put(newScript(name), id))) { open(id); setSide("settings"); }
+  }
+
+  async function addFromLibrary(entry: LibraryEntry) {
+    const id = uid("scr_");
+    if (await kit.track(scripts.put(await loadScript(entry), id))) { setDialog(""); open(id); kit.flash(uiText("已添加「{0}」", entry.name)); }
+  }
+  async function updateFromLibrary(pageScript: string, entry: LibraryEntry) {
+    const next = await loadScript(entry);
+    if (await update(pageScript, current => updated(current, next))) kit.flash(uiText("「{0}」已更新到新版本", entry.name));
   }
 
   async function addNode(type: NodeType, point?: XYPosition) {
@@ -599,6 +659,7 @@ function App() {
             {!filtered.length && <li className="wa-muted wa-pad">{scripts.rows.length ? uiText("没有匹配的脚本。") : uiText("还没有脚本。")}</li>}
           </ul>
           {kit.canEdit && <button type="button" className="wa-menu-action" onClick={() => void create()}><Icon.plus size={15}/>{uiText("新建脚本")}</button>}
+          {kit.canEdit && libraryAvailable() && <button type="button" className="wa-menu-action" onClick={() => { setSwitcher(false); setDialog("library"); }}><Icon.blocks size={15}/>{uiText("从脚本库添加")}</button>}
         </Popover>
       </div>
       <nav className="wa-tabs" role="tablist" aria-label={uiText("视图")}>
@@ -673,7 +734,8 @@ function App() {
         <Icon.warning size={14}/>{uiText("{0} 处需要修改", issues.length)}</button>}
     </div> : <div className="wa-body is-center"><Empty icon={<Icon.logo size={24}/>} title={uiText("录下网页操作，交给人或 agent 重复运行")}
       text={uiText("新建一个脚本，录制一遍或手动加步骤。")}
-      action={kit.canEdit ? <button type="button" className="wa-btn is-primary" onClick={() => void create()}><Icon.plus size={14}/>{uiText("新建脚本")}</button> : undefined}/></div>)}
+      action={kit.canEdit ? <span className="wa-actions"><button type="button" className="wa-btn is-primary" onClick={() => void create()}><Icon.plus size={14}/>{uiText("新建脚本")}</button>
+        {libraryAvailable() && <button type="button" className="wa-btn" onClick={() => setDialog("library")}><Icon.blocks size={14}/>{uiText("从脚本库添加")}</button>}</span> : undefined}/></div>)}
 
     {view === "runs" && <div className="wa-body">
       <aside className="wa-left wa-list-panel">
@@ -720,6 +782,8 @@ function App() {
       close={() => setDialog("")} start={input => void startRun(input)}/>}
     {dialog === "record" && script && <RecordDialog script={script} profiles={profiles} close={() => setDialog("")} start={(profile, url) => void startRecording(profile, url)}/>}
     {dialog === "profiles" && ready && status && <ProfilesDialog status={status} refresh={refresh} close={() => setDialog("")}/>}
+    {dialog === "library" && <LibraryDialog close={() => setDialog("")} add={addFromLibrary} update={updateFromLibrary}
+      added={scripts.rows.flatMap(row => row.data.library ? [{ id: row.id, library: row.data.library }] : [])}/>}
     {kit.note && <div className="wa-toast" role="status">{kit.note.text}{kit.note.undo && <button type="button" onClick={kit.note.undo}>{uiText("撤销")}</button>}</div>}
   </div>;
 }

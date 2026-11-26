@@ -360,3 +360,19 @@ textarea.wa-input { height: auto; padding: 7px 10px; line-height: 1.5; resize: v
 .wa-settings-pair .ui-field { align-content: start; }
 @media (max-width: 520px) { .wa-settings-pair { grid-template-columns: 1fr; } }
 .wa-banner code.wa-code { margin-inline-start: 6px; padding: 1px 6px; border-radius: 4px; background: var(--wa-field); color: var(--wa-sub); font: 11.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* Script library */
+.wa-library-tools { display: flex; gap: 8px; align-items: center; margin: 4px 0 10px; }
+.wa-library-tools .wa-search { flex: 1; }
+.wa-library { list-style: none; margin: 0; padding: 0; border: 1px solid var(--wa-border); border-radius: 8px; max-height: 52vh; overflow: auto; }
+.wa-library li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; }
+.wa-library li + li { border-top: 1px solid var(--wa-border); }
+.wa-library-text { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.wa-library-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wa-library-text small { color: var(--wa-muted); }
+.wa-library-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.wa-chip { font-size: 11px; line-height: 18px; padding: 0 7px; border-radius: 9px; border: 1px solid var(--wa-border); color: var(--wa-muted); }
+.wa-chip.is-verified { color: var(--wa-ok, #1a7f4b); border-color: currentColor; }
+.wa-chip.is-failing { color: var(--wa-danger, #c4402f); border-color: currentColor; }
+.wa-library-empty { padding: 24px; text-align: center; color: var(--wa-muted); }
+.wa-actions { display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center; }

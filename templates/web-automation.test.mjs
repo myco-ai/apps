@@ -155,4 +155,48 @@ assert.deepEqual(m.splitProxy("https://p.example.com:443"), { kind: "https", add
 assert(m.langOk("") && m.langOk("zh-CN") && m.langOk("en") && !m.langOk("zh_CN") && !m.langOk("--lang"));
 assert(m.userAgentOk("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36") && m.userAgentOk(""));
 for (const bad of ["a\nb", "a\rb", "中文", "x".repeat(513)]) assert(!m.userAgentOk(bad), bad);
-console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets, profile settings, region screenshots, navigation steps and sample");
+// A script copied from the library remembers where it came from; malformed references are dropped.
+assert.deepEqual(m.normalize({ name: "x", library: { id: "bw_hn", version: 2 } }).library, { id: "bw_hn", version: 2 });
+for (const bad of [{ id: "BW HN", version: 1 }, { id: "bw_hn", version: 0 }, { id: "bw_hn", version: 1.5 }, "bw_hn"]) assert.equal(m.normalize({ name: "x", library: bad }).library, undefined);
+
+// The script library: index parsing, the SHA-256 check and the app's own validation before adding.
+{
+  const { build } = await import("esbuild");
+  const out = await build({ entryPoints: [new URL("src/web-automation/library.ts", import.meta.url).pathname], bundle: true, write: false, format: "esm", platform: "neutral", logLevel: "silent" });
+  const files = {};
+  globalThis.window = globalThis.window || {};
+  window.myco = { features: ["net"], net: { fetch: async ({ url, max_bytes }) => {
+    const key = url.replace("https://raw.githubusercontent.com/myco-ai/browser-scripts/main/", "");
+    if (!(key in files)) return { status: 404, status_text: "Not Found", url, headers: {}, body: "", encoding: "utf8" };
+    return { status: 200, status_text: "OK", url, headers: {}, body: files[key], encoding: "utf8", truncated: files[key].length > max_bytes };
+  } } };
+  const lib = await import("data:text/javascript;base64," + Buffer.from(out.outputFiles[0].text).toString("base64"));
+  const { createHash } = await import("node:crypto");
+  const good = JSON.stringify({ id: "bw_hn", version: 2, name: "HN", start_url: "https://news.example/", params: [], on_error: "stop",
+    graph: { nodes: [{ id: "n1", type: "navigate", url: "https://news.example/", pos: [0, 0] }, { id: "n2", type: "js", code: "return document.title;", into: "title", pos: [0, 128] }], edges: [["n1", "n2"]] } });
+  const bad = JSON.stringify({ id: "bw_bad", version: 1, name: "Bad", params: [], graph: { nodes: [{ id: "n1", type: "js", code: "return '${x}';", pos: [0, 0] }], edges: [] } });
+  const sha = value => createHash("sha256").update(value).digest("hex");
+  files["scripts/tech/bw_hn.json"] = good;
+  files["scripts/tech/bw_bad.json"] = bad;
+  files["index.json"] = JSON.stringify({ schema: 1, scripts: [
+    { id: "bw_hn", version: 2, name: "HN", category: "tech", status: "verified", steps: 2, file: "scripts/tech/bw_hn.json", sha256: sha(good) },
+    { id: "bw_bad", version: 1, name: "Bad", category: "tech", status: "verified", file: "scripts/tech/bw_bad.json", sha256: sha(bad) },
+    { id: "bw_tampered", version: 1, name: "T", category: "tech", status: "verified", file: "scripts/tech/bw_hn.json", sha256: "0".repeat(64) },
+    { id: "../etc", version: 1, name: "x", category: "tech", status: "verified", file: "../etc/passwd", sha256: "0".repeat(64) },
+    { id: "bw_odd", version: 1, name: "x", category: "tech", status: "unknown", file: "scripts/tech/x.json", sha256: "0".repeat(64) },
+  ] });
+  assert.equal(lib.libraryAvailable(), true);
+  const index = await lib.loadIndex();
+  assert.deepEqual(index.map(entry => entry.id), ["bw_hn", "bw_bad", "bw_tampered"], "malformed entries and paths outside scripts/ are dropped");
+  const script = await lib.loadScript(index[0]);
+  assert.equal(script.source, "library");
+  assert.deepEqual(script.library, { id: "bw_hn", version: 2 });
+  assert.equal(script.graph.nodes.length, 2);
+  await assert.rejects(lib.loadScript(index[1]), /没通过检查/, "${} inside code is refused");
+  await assert.rejects(lib.loadScript(index[2]), /对不上/, "a hash mismatch is refused");
+  assert.throws(() => lib.parseIndex("{\"schema\":2,\"scripts\":[]}"), /格式不对/);
+  const mine = { ...script, name: "我的 HN", profile: "工作号" };
+  const next = lib.updated(mine, { ...script, library: { id: "bw_hn", version: 3 } });
+  assert.deepEqual([next.name, next.profile, next.library.version], ["我的 HN", "工作号", 3], "an update keeps the page's name and profile");
+}
+console.log("PASS web automation: normalising, validation codes, secrets, recorded side effects, recorded secrets, code templates, fork ports, editing, layout, run arguments, output masking, record budgets, profile settings, region screenshots, navigation steps, script library and sample");

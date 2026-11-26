@@ -426,8 +426,41 @@ try {
   await locked.getByRole("button", { name: "Start recording" }).click();
   await stale.getByText("This profile's previous browser is still running. Close it and retry, or restart your computer.").waitFor();
   await stale.close();
+  // The script library: read through the App's network bridge, checked, then copied into the page.
+  const shelf = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  shelf.on("pageerror", error => errors.push(error.message));
+  await shelf.addInitScript(bridge, { sample, withBrowser: true });
+  const libScript = JSON.stringify({ id: "bw_hn", version: 1, name: "Hacker News top", start_url: "https://news.example/", params: [], on_error: "stop",
+    graph: { nodes: [{ id: "n1", type: "navigate", url: "https://news.example/", pos: [0, 0] }, { id: "n2", type: "js", code: "return document.title;", into: "title", pos: [0, 128] }], edges: [["n1", "n2"]] } });
+  const { createHash } = await import("node:crypto");
+  const libIndex = JSON.stringify({ schema: 1, scripts: [
+    { id: "bw_hn", version: 1, name: "Hacker News top", category: "tech", status: "verified", steps: 2, file: "scripts/tech/bw_hn.json", sha256: createHash("sha256").update(libScript).digest("hex") },
+    { id: "bw_jobs", version: 1, name: "Job search", category: "jobs", status: "needs_input", requires_login: true, params: ["keyword"], steps: 3, file: "scripts/jobs/bw_jobs.json", sha256: "0".repeat(64) },
+  ] });
+  await shelf.addInitScript(({ libIndex, libScript }) => {
+    window.netCalls = [];
+    window.myco.features.push("net");
+    window.myco.net = { fetch: async ({ url }) => { window.netCalls.push(url);
+      const body = url.endsWith("/index.json") ? libIndex : url.endsWith("/bw_hn.json") ? libScript : null;
+      return body === null ? { status: 404, status_text: "Not Found", url, headers: {}, body: "", encoding: "utf8" } : { status: 200, status_text: "OK", url, headers: {}, body, encoding: "utf8" }; } };
+  }, { libIndex, libScript });
+  await shelf.goto(url);
+  await shelf.locator(".wa-switcher").click();
+  await shelf.getByRole("dialog", { name: "Scripts" }).getByRole("button", { name: "Add from library" }).click();
+  const library = shelf.getByRole("dialog", { name: "Script library" });
+  await library.getByText("Hacker News top").waitFor();
+  await library.getByText("Sign-in needed").waitFor();
+  await library.getByRole("textbox", { name: "Search the library" }).fill("job");
+  await library.getByText("Hacker News top").waitFor({ state: "detached" });
+  await library.getByRole("textbox", { name: "Search the library" }).fill("");
+  await library.locator("li").filter({ hasText: "Hacker News top" }).getByRole("button", { name: "Add", exact: true }).click();
+  await shelf.getByText("Added “Hacker News top”").waitFor();
+  const libStored = await shelf.evaluate(() => window.myco.data.list("scripts").then(result => result.records.find(row => row.data.library)?.data));
+  assert.deepEqual([libStored.source, libStored.library, libStored.graph.nodes.length], ["library", { id: "bw_hn", version: 1 }, 2]);
+  assert(await shelf.evaluate(() => window.netCalls.every(call => call.startsWith("https://raw.githubusercontent.com/myco-ai/browser-scripts/main/"))), "only the library's own address is read");
+  await shelf.close();
   assert.deepEqual(errors, []);
-  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, profile proxy/UA/argument settings, recordings from the browser panel with deletions, agent-run approval, hosts without approvals, profiles, recording, paused run approval and narrow dark layout");
+  console.log("PASS web automation UI: old-App editor, no native selects or checkboxes, script switcher, settings and step edits with drawn controls, locator order, issues, library click and drop, toolbar delete, branch ports, runs, draft adoption, component install and update, profile proxy/UA/argument settings, recordings from the browser panel with deletions, agent-run approval, hosts without approvals, profiles, recording, paused run approval, script library and narrow dark layout");
 } finally {
   await browser.close();
   server.close();
