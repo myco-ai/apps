@@ -53,6 +53,15 @@ const server = createServer(async (req, res) => {
     let raw = "";
     for await (const chunk of req) raw += chunk;
     const { method, args: a, supported, prefs } = JSON.parse(raw);
+    // Pagination updates the UI before its bridge request reaches the host.
+    // Keep a small real response delay so the assertions must observe the RPC.
+    if (
+      method === "os.call" &&
+      a.name === "forge.query" &&
+      a.args.action === "list" &&
+      a.args.page === 2
+    )
+      await new Promise((resolve) => setTimeout(resolve, 80));
     calls.push({ method, args: a });
     let value = true,
       error,
@@ -255,6 +264,20 @@ const browser = await chromium.launch({
     : {}),
 });
 const failures = [];
+const listReply = (response, check) => {
+  if (!response.url().endsWith("/rpc")) return false;
+  try {
+    const data = JSON.parse(response.request().postData() || "{}");
+    return (
+      data.method === "os.call" &&
+      data.args?.name === "forge.query" &&
+      data.args.args.action === "list" &&
+      check(data.args.args)
+    );
+  } catch {
+    return false;
+  }
+};
 try {
   const page = await browser.newPage({
     viewport: { width: 1320, height: 860 },
@@ -403,9 +426,12 @@ try {
   await app
     .getByRole("textbox", { name: "Repository path", exact: true })
     .fill("acme/not-listed");
-  await app
-    .getByRole("button", { name: "Open repository", exact: true })
-    .click();
+  await Promise.all([
+    page.waitForResponse((r) =>
+      listReply(r, (p) => p.repo === "acme/not-listed" && p.scope === "repo"),
+    ),
+    app.getByRole("button", { name: "Open repository", exact: true }).click(),
+  ]);
   await app.getByRole("button", { name: /Fix a real fixture/ }).waitFor();
   assert.ok(
     calls.some(
@@ -432,9 +458,19 @@ try {
   await app
     .getByRole("combobox", { name: "Sort", exact: true })
     .selectOption("created_asc");
-  await app.getByRole("button", { name: "Apply filters", exact: true }).click();
+  await Promise.all([
+    page.waitForResponse((r) =>
+      listReply(r, (p) => p.page === 1 && p.filters?.author === "reviewer"),
+    ),
+    app.getByRole("button", { name: "Apply filters", exact: true }).click(),
+  ]);
   await app.getByRole("button", { name: /Fix a real fixture/ }).waitFor();
-  await app.getByRole("button", { name: "Next", exact: true }).click();
+  await Promise.all([
+    page.waitForResponse((r) =>
+      listReply(r, (p) => p.page === 2 && p.filters?.author === "reviewer"),
+    ),
+    app.getByRole("button", { name: "Next", exact: true }).click(),
+  ]);
   await app.locator(".pagination span").filter({ hasText: "2" }).waitFor();
   const advanced = calls
     .filter(
@@ -453,7 +489,12 @@ try {
     sort: "created_asc",
   });
   assert.equal(advanced.args.args.repo, "acme/not-listed");
-  await app.getByRole("button", { name: "Clear filters", exact: true }).click();
+  await Promise.all([
+    page.waitForResponse((r) =>
+      listReply(r, (p) => p.page === 1 && !p.filters),
+    ),
+    app.getByRole("button", { name: "Clear filters", exact: true }).click(),
+  ]);
   await app.locator(".advanced-filters summary").click();
   await app.getByRole("button", { name: "Commit graph", exact: true }).click();
   await app.getByRole("button", { name: /Repository commit/ }).waitFor();
@@ -519,10 +560,15 @@ try {
   await app
     .getByRole("heading", { name: "Choose a repository", exact: true })
     .waitFor();
-  await app
-    .locator(".repository-options")
-    .getByRole("button", { name: /acme\/widget/ })
-    .click();
+  await Promise.all([
+    page.waitForResponse((r) =>
+      listReply(r, (p) => p.repo === "acme/widget" && p.scope === "repo"),
+    ),
+    app
+      .locator(".repository-options")
+      .getByRole("button", { name: /acme\/widget/ })
+      .click(),
+  ]);
   await app.getByRole("button", { name: /Fix a real fixture/ }).waitFor();
   const oldQuery = calls
     .filter((c) => c.method === "os.call" && c.args.args.action === "list")
