@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Check,
   ChevronRight,
   CircleDot,
-  Code2,
   ExternalLink,
   GitBranch,
   GitMerge,
@@ -36,9 +35,20 @@ import {
   type Item,
   type Page,
   type Provider,
-  type Repository,
 } from "./client";
 import { demoData } from "./demo";
+import { History } from "./history";
+import { DetailSplitter } from "./splitter";
+import { ChangedFiles } from "./files";
+import { RepositoryPicker } from "./repositories";
+import { FilterPanel } from "./filter-panel";
+import {
+  filterDemo,
+  orderItems,
+  type Filters,
+  type FilterSupport,
+  supportsFilter,
+} from "./filters";
 import "./style.css";
 
 const tr = (en: string, zh: string) => (language() === "zh" ? zh : en);
@@ -73,6 +83,10 @@ const errorText = (error: unknown) => {
     invalid_argument: tr(
       "Check the server address and required fields. Use an HTTPS origin and a valid access token.",
       "请检查服务器地址和必填项，使用 HTTPS 服务器地址和有效的访问令牌。",
+    ),
+    filter_unavailable: tr(
+      "This provider does not support the selected combination. Clear the filters or select another account.",
+      "此平台不支持所选组合，请清除条件或切换账户。",
     ),
     invalid_response: tr(
       "The server returned an unexpected response. Check the server and provider type.",
@@ -148,12 +162,24 @@ function Markdown({ text }: { text: string }) {
   );
 }
 function Skeleton({ detail = false }: { detail?: boolean }) {
-  return <div className={`skeleton ${detail ? "skeleton-detail" : "skeleton-list"}`} role="status" aria-label={tr("Loading…", "加载中…")}>
-    {Array.from({ length: detail ? 3 : 5 }, (_, i) => <div className="skeleton-row" key={i} aria-hidden="true">
-      {!detail && <span className="skeleton-icon" />}
-      <div><span className="skeleton-line" /><span className="skeleton-line short" />{detail && <span className="skeleton-line" />}</div>
-    </div>)}
-  </div>;
+  return (
+    <div
+      className={`skeleton ${detail ? "skeleton-detail" : "skeleton-list"}`}
+      role="status"
+      aria-label={tr("Loading…", "加载中…")}
+    >
+      {Array.from({ length: detail ? 3 : 5 }, (_, i) => (
+        <div className="skeleton-row" key={i} aria-hidden="true">
+          {!detail && <span className="skeleton-icon" />}
+          <div>
+            <span className="skeleton-line" />
+            <span className="skeleton-line short" />
+            {detail && <span className="skeleton-line" />}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 function ConnectDialog({
   supported,
@@ -331,7 +357,7 @@ function ConnectDialog({
                   )
                 : provider === "github"
                   ? tr(
-                      "Select your repositories and grant read access to issues, pull requests and metadata.",
+                      "Select your repositories and grant read access to issues, pull requests and metadata; commit history also needs Contents read access.",
                       "选择所需仓库，并授予 Issue、Pull request 和元数据的只读权限。",
                     )
                   : tr(
@@ -432,7 +458,8 @@ function Detail({
     [error, setError] = useState(""),
     [page, setPage] = useState(1),
     [more, setMore] = useState(false);
-  const [share, setShare] = useState(false), [copied, setCopied] = useState(false);
+  const [share, setShare] = useState(false),
+    [copied, setCopied] = useState(false);
   const shareInput = useRef<HTMLInputElement>(null);
   const generation = useRef(0);
   useEffect(() => {
@@ -479,7 +506,17 @@ function Detail({
           const data = result as Page<Comment> | Page<FileDiff>;
           setMore(data.has_more);
           if (tab === "comments") setComments(data.items as Comment[]);
-          else setFiles(data.items as FileDiff[]);
+          else
+            setFiles((prev) =>
+              page === 1
+                ? (data.items as FileDiff[])
+                : [
+                    ...prev,
+                    ...(data.items as FileDiff[]).filter(
+                      (f) => !prev.some((p) => p.name === f.name),
+                    ),
+                  ],
+            );
         }
       } catch (e) {
         if (alive && id === generation.current) setError(errorText(e));
@@ -492,26 +529,55 @@ function Detail({
       alive = false;
     };
   }, [itemKey(item), tab, page, isDemo]);
-  useEffect(() => { if (share) shareInput.current?.select(); }, [share]);
+  useEffect(() => {
+    if (share) shareInput.current?.select();
+  }, [share]);
   const address = safeLink(current.url, account.host);
   let shareURL = "";
-  try { if (pageURL && address && !isDemo) shareURL = itemLink(pageURL, account.provider, address, tab); } catch { /* The provider did not supply a canonical item URL. */ }
+  try {
+    if (pageURL && address && !isDemo)
+      shareURL = itemLink(pageURL, account.provider, address, tab);
+  } catch {
+    /* The provider did not supply a canonical item URL. */
+  }
   async function copyLink() {
     setShare(true);
     setCopied(false);
-    try { await navigator.clipboard.writeText(shareURL); setCopied(true); } catch { shareInput.current?.select(); }
+    try {
+      await navigator.clipboard.writeText(shareURL);
+      setCopied(true);
+    } catch {
+      shareInput.current?.select();
+    }
   }
   return (
     <aside className="detail" aria-label={tr("Item details", "条目详情")}>
       <header>
         <div className="detail-context">
           <span className={`status ${current.state}`}>
-            {current.title ? <><ItemIcon item={current} />{stateText(current)}</> : <span className="skeleton-line status-placeholder" />}
+            {current.title ? (
+              <>
+                <ItemIcon item={current} />
+                {stateText(current)}
+              </>
+            ) : (
+              <span className="skeleton-line status-placeholder" />
+            )}
           </span>
-          <span className="detail-repo" title={`${current.repo} #${current.number}`}>{current.repo} #{current.number}</span>
+          <span
+            className="detail-repo"
+            title={`${current.repo} #${current.number}`}
+          >
+            {current.repo} #{current.number}
+          </span>
         </div>
         <div className="head-actions">
-          {shareURL && <button className="plain" onClick={() => void copyLink()}><Link2 size={16} />{tr("Copy link", "复制链接")}</button>}
+          {shareURL && (
+            <button className="plain" onClick={() => void copyLink()}>
+              <Link2 size={16} />
+              {tr("Copy link", "复制链接")}
+            </button>
+          )}
           {address && (
             <a
               href={address}
@@ -531,18 +597,48 @@ function Detail({
           </button>
         </div>
       </header>
-      {share && <div className="share-box">
-        <label>{copied ? tr("Link copied", "链接已复制") : tr("Select and copy this link", "选中并复制此链接")}
-          <input ref={shareInput} readOnly value={shareURL} onFocus={e => e.currentTarget.select()} />
-        </label>
-        <p>{tr("The recipient needs an account with access to this item.", "接收者需要连接有权访问此条目的账户。")}</p>
-      </div>}
+      {share && (
+        <div className="share-box">
+          <label>
+            {copied
+              ? tr("Link copied", "链接已复制")
+              : tr("Select and copy this link", "选中并复制此链接")}
+            <input
+              ref={shareInput}
+              readOnly
+              value={shareURL}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          </label>
+          <p>
+            {tr(
+              "The recipient needs an account with access to this item.",
+              "接收者需要连接有权访问此条目的账户。",
+            )}
+          </p>
+        </div>
+      )}
       <div className="detail-title">
-        <h2>{current.title || <span className="skeleton-line" aria-label={tr("Loading…", "加载中…")} />}</h2>
+        <h2>
+          {current.title || (
+            <span
+              className="skeleton-line"
+              aria-label={tr("Loading…", "加载中…")}
+            />
+          )}
+        </h2>
         <div className="detail-meta">
-          {current.author && <p>{current.author}{current.updated && ` · ${date(current.updated)}`}</p>}
+          {current.author && (
+            <p>
+              {current.author}
+              {current.updated && ` · ${date(current.updated)}`}
+            </p>
+          )}
           {current.branch && (
-            <div className="branch" title={`${current.branch} → ${current.base}`}>
+            <div
+              className="branch"
+              title={`${current.branch} → ${current.base}`}
+            >
               <GitBranch size={13} />
               <code>{current.branch}</code>
               <span>→</span>
@@ -579,7 +675,7 @@ function Detail({
           <p role="alert" className="error">
             {error}
           </p>
-        ) : busy ? (
+        ) : busy && !(tab === "files" && files.length) ? (
           <Skeleton detail />
         ) : tab === "overview" ? (
           <Markdown
@@ -609,50 +705,15 @@ function Detail({
             </p>
           </>
         ) : (
-          <>
-            {files.length === 0 && (
-              <p className="muted">
-                {tr("No changed files.", "暂无变更文件。")}
-              </p>
-            )}
-            {files.map((file, i) => (
-              <article className="diff-file" key={i}>
-                <header>
-                  <Code2 size={14} />
-                  <strong>{file.name}</strong>
-                  <span>{file.status}</span>
-                </header>
-                {file.patch ? (
-                  <pre>
-                    {file.patch.split("\n").map((line, j) => (
-                      <span
-                        className={
-                          line.startsWith("+")
-                            ? "added"
-                            : line.startsWith("-")
-                              ? "removed"
-                              : ""
-                        }
-                        key={j}
-                      >
-                        {line}
-                        {"\n"}
-                      </span>
-                    ))}
-                  </pre>
-                ) : (
-                  <p className="hint">
-                    {tr(
-                      "No text patch supplied (binary, unchanged or provider limit). Open the original to inspect it.",
-                      "平台未提供文本差异（可能是二进制文件或平台限制），请打开原文查看。",
-                    )}
-                  </p>
-                )}
-              </article>
-            ))}
-          </>
+          <ChangedFiles
+            key={itemKey(item)}
+            files={files}
+            more={more}
+            busy={busy}
+            onMore={() => setPage((p) => p + 1)}
+          />
         )}
-        {tab !== "overview" && (
+        {tab === "comments" && (
           <div className="pagination">
             <button
               disabled={page === 1 || busy}
@@ -684,10 +745,19 @@ function App() {
     [state, setState] = useState("open");
   const [search, setSearch] = useState(""),
     [submitted, setSubmitted] = useState(""),
-    [repo, setRepo] = useState(""),
-    [repositories, setRepositories] = useState<Repository[]>([]),
-    [repoPage, setRepoPage] = useState(1),
-    [repoMore, setRepoMore] = useState(false);
+    [repo, setRepo] = useState("");
+  const [repoPicker, setRepoPicker] = useState(false),
+    [filterSupport, setFilterSupport] = useState<FilterSupport | null>(null);
+  const [filters, setFilters] = useState<Filters>({});
+  const demoSupport: FilterSupport = {
+    version: 1,
+    providers: {
+      github: ["author", "label", "updated_after", "draft", "sort", "merged"],
+      gitlab: ["author", "label", "updated_after", "draft", "sort", "merged"],
+      gitea: ["author_repo", "updated_after"],
+    },
+  };
+  const support = isDemo ? demoSupport : filterSupport;
   const [items, setItems] = useState<Item[]>([]),
     [selected, setSelected] = useState<Item | null>(null),
     [busy, setBusy] = useState(false),
@@ -701,9 +771,21 @@ function App() {
     [remove, setRemove] = useState<Account | null>(null);
   const active = accounts.filter((a) => account === "all" || a.id === account),
     accountIDs = active.map((a) => a.id).join(",");
+  const [detailWidth, setDetailWidth] = useState(500);
+  const [historyOpen, setHistoryOpen] = useState(false),
+    [historySupport, setHistorySupport] = useState(false);
   const [pageURL, setPageURL] = useState("");
-  const [route, setRoute] = useState<ItemRoute | null>(null), [routeInvalid, setRouteInvalid] = useState(false), [routeAccount, setRouteAccount] = useState("");
-  const routeMatches = !isDemo && route ? accounts.filter(a => a.provider === route.provider && new URL(a.host).origin === route.host) : [];
+  const [route, setRoute] = useState<ItemRoute | null>(null),
+    [routeInvalid, setRouteInvalid] = useState(false),
+    [routeAccount, setRouteAccount] = useState("");
+  const routeMatches =
+    !isDemo && route
+      ? accounts.filter(
+          (a) =>
+            a.provider === route.provider &&
+            new URL(a.host).origin === route.host,
+        )
+      : [];
   const exampleMode = useRef(false);
   async function loadAccounts() {
     const rows = (await accountCall("list")) as Account[];
@@ -723,7 +805,21 @@ function App() {
         if (!alive) return;
         setPageURL(ctx?.page.url || "");
         setSupported(ok);
-        if (ok) await loadAccounts();
+        if (ok) {
+          if (await myco!.os!.has("forge.filters")) {
+            try {
+              const f = await myco!.os!.call<FilterSupport>(
+                "forge.filters",
+                {},
+              );
+              if (alive && f.version === 1) setFilterSupport(f);
+            } catch {
+              /* Keep baseline queries on older or unavailable hosts. */
+            }
+          }
+          if (alive) setHistorySupport(await myco!.os!.has("forge.history"));
+          await loadAccounts();
+        }
       } catch (e) {
         if (alive) setError(errorText(e));
       } finally {
@@ -737,7 +833,7 @@ function App() {
   useEffect(() => {
     setSelected(null);
     setPage(1);
-  }, [account, kind, scope, state, repo, submitted]);
+  }, [account, kind, scope, state, repo, submitted, filters]);
   useEffect(() => {
     let alive = true;
     if (!accountIDs || (scope === "repo" && !repo)) {
@@ -764,7 +860,7 @@ function App() {
               i.title.toLowerCase().includes(submitted.toLowerCase())),
         );
         if (scope === "assigned") rows = rows.slice(1);
-        setItems(rows);
+        setItems(filterDemo(rows, filters));
         setMore(false);
         setBusy(false);
         setUpdated(new Date().toLocaleTimeString());
@@ -784,6 +880,7 @@ function App() {
                 repo,
                 search: submitted,
                 page,
+                ...(support && Object.keys(filters).length ? { filters } : {}),
               }),
             };
           } catch (e) {
@@ -793,12 +890,13 @@ function App() {
       );
       if (!alive) return;
       setItems(
-        results
-          .flatMap(
+        orderItems(
+          results.flatMap(
             (r) =>
               r.result?.items.map((i) => ({ ...i, account: r.account })) || [],
-          )
-          .sort((a, b) => b.updated.localeCompare(a.updated)),
+          ),
+          filters.sort,
+        ),
       );
       setMore(results.some((r) => r.result?.has_more));
       setBusy(false);
@@ -822,47 +920,56 @@ function App() {
     return () => {
       alive = false;
     };
-  }, [accountIDs, kind, scope, state, repo, submitted, page, refresh, isDemo]);
-  useEffect(() => {
-    let alive = true;
-    setRepositories([]);
-    setRepoMore(false);
-    if (account === "all") return;
-    if (isDemo) {
-      setRepositories(demo().repositories);
-      return;
-    }
-    void query<Page<Repository>>({ account, action: "repos", page: repoPage })
-      .then((result) => {
-        if (alive) {
-          setRepositories(result.items);
-          setRepoMore(result.has_more);
-        }
-      })
-      .catch((e) => {
-        if (alive) setError(errorText(e));
-      });
-    return () => {
-      alive = false;
-    };
-  }, [account, repoPage, isDemo, refresh]);
+  }, [
+    accountIDs,
+    kind,
+    scope,
+    state,
+    repo,
+    submitted,
+    page,
+    refresh,
+    isDemo,
+    filters,
+  ]);
   useEffect(() => {
     const follow = () => {
       setSelected(null);
       setRouteAccount("");
-      try { setRoute(readItemRoute(location.hash)); setRouteInvalid(false); }
-      catch { setRoute(null); setRouteInvalid(true); }
+      try {
+        setRoute(readItemRoute(location.hash));
+        setRouteInvalid(false);
+      } catch {
+        setRoute(null);
+        setRouteInvalid(true);
+      }
     };
     follow();
     return subscribeAppRoute(follow);
   }, []);
   useEffect(() => {
     if (!route || !ready || isDemo) return;
-    const a = routeMatches.length === 1 ? routeMatches[0] : routeMatches.find(a => a.id === routeAccount);
+    const a =
+      routeMatches.length === 1
+        ? routeMatches[0]
+        : routeMatches.find((a) => a.id === routeAccount);
     if (!a) return;
-    setSelected({ account: a.id, kind: route.kind, repo: route.repo, number: route.number,
-      url: route.url, project: "", title: "", body: "", state: "", author: "", updated: "",
-      labels: [], comments: 0, draft: false });
+    setSelected({
+      account: a.id,
+      kind: route.kind,
+      repo: route.repo,
+      number: route.number,
+      url: route.url,
+      project: "",
+      title: "",
+      body: "",
+      state: "",
+      author: "",
+      updated: "",
+      labels: [],
+      comments: 0,
+      draft: false,
+    });
   }, [route, ready, accounts, isDemo, routeAccount]);
   function closeDetail() {
     setSelected(null);
@@ -873,12 +980,17 @@ function App() {
   function changeAccount(id: string) {
     setAccount(id);
     setRepo("");
-    setRepoPage(1);
+    setFilters({});
+    setState("open");
     setScope("created");
   }
   function example() {
     exampleMode.current = true;
     setIsDemo(true);
+    setFilters({});
+    setRepo("");
+    setScope("created");
+    setState("open");
     setAccounts(demo().accounts);
     setAccount("all");
     setSelected(null);
@@ -888,6 +1000,9 @@ function App() {
   async function leaveExample() {
     exampleMode.current = false;
     setIsDemo(false);
+    setFilters({});
+    setScope("created");
+    setState("open");
     setAccounts([]);
     setItems([]);
     setSelected(null);
@@ -917,9 +1032,7 @@ function App() {
   const headerActions = (
     <div className="head-actions">
       {isDemo ? (
-        <button onClick={leaveExample}>
-          {tr("Exit example", "退出示例")}
-        </button>
+        <button onClick={leaveExample}>{tr("Exit example", "退出示例")}</button>
       ) : (
         <button onClick={() => setConnect(true)} disabled={!ready}>
           <Plus size={14} />
@@ -938,7 +1051,10 @@ function App() {
     </div>
   );
   return (
-    <div className="app">
+    <div
+      className="app"
+      style={{ "--detail-width": `${detailWidth}px` } as CSSProperties}
+    >
       <aside className="sidebar">
         <div className="brand">
           <GitBranch size={21} />
@@ -959,6 +1075,8 @@ function App() {
               className={kind === "issue" ? "active" : ""}
               aria-pressed={kind === "issue"}
               onClick={() => {
+                setFilters((f) => ({ ...f, draft: undefined }));
+                if (state === "merged") setState("open");
                 setKind("issue");
                 if (scope === "review") setScope("created");
               }}
@@ -1057,14 +1175,62 @@ function App() {
             )}
           </div>
         )}
-        {routeInvalid && <div className="notice error" role="alert">{tr("This item link is invalid. Check the provider and URL.", "条目链接无效，请检查平台和地址。")}</div>}
-        {route && !selected && <section className="route-notice notice">
-          <strong>{route.repo} #{route.number}</strong>
-          {isDemo ? <button onClick={() => void leaveExample()}>{tr("Exit example to open this item", "退出示例并打开此条目")}</button>
-          : routeMatches.length === 0 ? <><p>{tr("Connect an account for this server to open the item.", "请连接此服务器的账户以打开条目。")}</p><p>{providerName(route.provider)} · {route.host}</p><button disabled={!ready} onClick={() => setConnect(true)}>{tr("Connect account", "连接账户")}</button></>
-          : <label>{tr("Choose an account to open this item", "选择账户以打开此条目")}<select value={routeAccount} onChange={e => setRouteAccount(e.target.value)}><option value="">{tr("Choose account…", "选择账户…")}</option>{routeMatches.map(a => <option key={a.id} value={a.id}>{a.name} · {a.login}</option>)}</select></label>}
-          <button className="plain" onClick={closeDetail}>{tr("Back to inbox", "返回收件箱")}</button>
-        </section>}
+        {routeInvalid && (
+          <div className="notice error" role="alert">
+            {tr(
+              "This item link is invalid. Check the provider and URL.",
+              "条目链接无效，请检查平台和地址。",
+            )}
+          </div>
+        )}
+        {route && !selected && (
+          <section className="route-notice notice">
+            <strong>
+              {route.repo} #{route.number}
+            </strong>
+            {isDemo ? (
+              <button onClick={() => void leaveExample()}>
+                {tr("Exit example to open this item", "退出示例并打开此条目")}
+              </button>
+            ) : routeMatches.length === 0 ? (
+              <>
+                <p>
+                  {tr(
+                    "Connect an account for this server to open the item.",
+                    "请连接此服务器的账户以打开条目。",
+                  )}
+                </p>
+                <p>
+                  {providerName(route.provider)} · {route.host}
+                </p>
+                <button disabled={!ready} onClick={() => setConnect(true)}>
+                  {tr("Connect account", "连接账户")}
+                </button>
+              </>
+            ) : (
+              <label>
+                {tr(
+                  "Choose an account to open this item",
+                  "选择账户以打开此条目",
+                )}
+                <select
+                  value={routeAccount}
+                  onChange={(e) => setRouteAccount(e.target.value)}
+                >
+                  <option value="">{tr("Choose account…", "选择账户…")}</option>
+                  {routeMatches.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} · {a.login}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <button className="plain" onClick={closeDetail}>
+              {tr("Back to inbox", "返回收件箱")}
+            </button>
+          </section>
+        )}
         {error && (
           <div role="alert" className="notice error">
             {error}
@@ -1121,15 +1287,16 @@ function App() {
                   ...(kind === "pull"
                     ? [["review", tr("Review requested", "待我评审")]]
                     : []),
-                  ...(account !== "all"
-                    ? [["repo", tr("Repository", "仓库")]]
-                    : []),
+                  ["repo", tr("Repository", "仓库")],
                 ].map(([value, label]) => (
                   <button
                     key={value}
                     aria-pressed={scope === value}
                     onClick={() => {
                       setScope(value);
+                      if (value === "created")
+                        setFilters((f) => ({ ...f, author: undefined }));
+                      if (value === "repo" && !repo) setRepoPicker(true);
                       if (
                         value === "review" &&
                         active.some((a) => a.provider === "gitea")
@@ -1142,6 +1309,14 @@ function App() {
                 ))}
               </div>
               <div className="filter-controls">
+                <button
+                  className="repository-trigger"
+                  title={repo || tr("Choose a repository", "选择仓库")}
+                  onClick={() => setRepoPicker(true)}
+                >
+                  <GitBranch size={14} />
+                  <span>{repo || tr("All repositories", "全部仓库")}</span>
+                </button>
                 <form
                   className="search"
                   onSubmit={(e) => {
@@ -1177,49 +1352,53 @@ function App() {
                   onChange={(e) => setState(e.target.value)}
                 >
                   <option value="open">{tr("Open", "打开")}</option>
-                  <option value="closed">
-                    {tr("Closed", "已关闭")}
-                  </option>
+                  <option value="closed">{tr("Closed", "已关闭")}</option>
+                  {kind === "pull" &&
+                    supportsFilter(support, active, "merged") && (
+                      <option value="merged">{tr("Merged", "已合并")}</option>
+                    )}
                   <option value="all">{tr("All statuses", "全部状态")}</option>
                 </select>
               </div>
             </div>
-            {account !== "all" && (
-              <div className="repo-filter">
-                <GitBranch size={14} />
-                <select
-                  disabled={
-                    scope === "review" &&
-                    active.some((a) => a.provider === "gitea")
-                  }
-                  aria-label={tr("Repository", "仓库")}
-                  value={repo}
-                  onChange={(e) => setRepo(e.target.value)}
+            <div className="query-extras">
+              {repo && (
+                <button
+                  className="repo-chip"
+                  title={tr("Clear repository", "清除仓库")}
+                  onClick={() => {
+                    setRepo("");
+                    setFilters((f) => ({ ...f, author: undefined }));
+                    if (scope === "repo") setScope("created");
+                  }}
                 >
-                  <option value="">
-                    {scope === "repo"
-                      ? tr("Select a repository", "请选择仓库")
-                      : tr("All repositories", "全部仓库")}
-                  </option>
-                  {repositories.map((r) => (
-                    <option key={r.id} value={r.name}>
-                      {r.name}
-                      {r.private ? ` · ${tr("Private", "私有")}` : ""}
-                    </option>
-                  ))}
-                </select>
-                {repoPage > 1 && (
-                  <button onClick={() => setRepoPage((p) => p - 1)}>
-                    {tr("Previous repositories", "上一页仓库")}
-                  </button>
-                )}
-                {repoMore && (
-                  <button onClick={() => setRepoPage((p) => p + 1)}>
-                    {tr("More repositories", "更多仓库")}
-                  </button>
-                )}
-              </div>
-            )}
+                  <span>{repo}</span>
+                  <X size={13} />
+                </button>
+              )}
+              {repo && account !== "all" && (
+                <button
+                  className="graph-trigger"
+                  onClick={() => setHistoryOpen(true)}
+                >
+                  <GitBranch size={14} />
+                  {tr("Commit graph", "提交图")}
+                </button>
+              )}
+              <FilterPanel
+                support={support}
+                accounts={active}
+                kind={kind}
+                repo={repo}
+                scope={scope}
+                value={filters}
+                onApply={(f) => {
+                  setFilters(f);
+                  setPage(1);
+                  if (f.author && scope === "created" && repo) setScope("repo");
+                }}
+              />
+            </div>
             <div className="results" aria-busy={busy}>
               {busy ? (
                 <Skeleton />
@@ -1250,7 +1429,10 @@ function App() {
                     <button
                       key={itemKey(item)}
                       className={`item-row ${selected && itemKey(selected) === itemKey(item) ? "selected" : ""}`}
-                      onClick={() => { closeDetail(); setSelected(item); }}
+                      onClick={() => {
+                        closeDetail();
+                        setSelected(item);
+                      }}
                     >
                       <span
                         className={`item-icon ${item.state} ${item.draft ? "draft" : ""}`}
@@ -1315,6 +1497,9 @@ function App() {
         )}
       </main>
       {selected && currentAccount && (
+        <DetailSplitter width={detailWidth} onChange={setDetailWidth} />
+      )}
+      {selected && currentAccount && (
         <Detail
           key={itemKey(selected)}
           item={selected}
@@ -1323,6 +1508,35 @@ function App() {
           close={closeDetail}
           initialTab={route?.tab}
           pageURL={pageURL}
+        />
+      )}
+      {historyOpen && active.length === 1 && (
+        <History
+          account={active[0]}
+          repo={repo}
+          supported={historySupport}
+          demo={isDemo}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
+      {repoPicker && (
+        <RepositoryPicker
+          accounts={accounts}
+          account={account}
+          repo={repo}
+          demo={isDemo}
+          onClose={() => setRepoPicker(false)}
+          onPick={(id, path) => {
+            setAccount(id);
+            setRepo(path);
+            setScope("repo");
+            setPage(1);
+            if (id !== account) {
+              setState("open");
+              setFilters({});
+            }
+            setRepoPicker(false);
+          }}
         />
       )}
       {connect && (

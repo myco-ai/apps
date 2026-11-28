@@ -59,6 +59,7 @@ export function demoData(zh: boolean) {
     url: `https://${i === 3 || i === 5 ? "gitlab.example.com" : "github.com"}/${repos[i]}/${i === 3 || i === 5 ? "-/merge_requests" : i === 4 ? "issues" : "pull"}/${[128, 126, 124, 87, 119, 81, 114][i]}`,
     state: i === 2 ? "merged" : "open",
     author: ["alex-demo", "jordan-demo", "casey-demo"][i % 3],
+    created: `2026-11-${String(20 - i).padStart(2, "0")}T12:00:00Z`,
     updated: `2026-11-27T${String(16 - i).padStart(2, "0")}:20:00Z`,
     labels: [
       ["enhancement"],
@@ -100,10 +101,25 @@ export function demoData(zh: boolean) {
         "@@ -12,3 +12,6 @@\n export function AccountPicker() {\n-  return <AccountList />;\n+  return <section>\n+    <CurrentAccount />\n+    <AccountList />\n+  </section>;\n }",
     },
   ];
+  files.push(
+    {
+      name: "src/inbox/filters.ts",
+      status: "modified",
+      patch:
+        "@@ -1,2 +1,3 @@\n export function queryItems() {\n+  return applyRepositoryConditions();\n }",
+    },
+    {
+      name: "docs/setup.md",
+      status: "added",
+      patch: zh
+        ? "+## 首次连接\n+选择账户和仓库，再查看需要的 PR 与 Issue。"
+        : "+## First connection\n+Choose an account and repository, then find the PRs and issues you need.",
+    },
+  );
   const repositories: Repository[] = [...new Set(repos)].map((name, i) => ({
     id: String(i),
     name,
-    url: `https://github.com/${name}`,
+    url: `https://${name === "acme/docs" || name === "acme/pipeline" ? "gitlab.example.com" : "github.com"}/${name}`,
     private: i > 1,
   }));
   return { accounts, items, comments, files, repositories };

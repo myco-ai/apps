@@ -26,6 +26,7 @@ export type Item = {
   state: string;
   author: string;
   updated: string;
+  created?: string;
   labels: string[];
   comments: number;
   draft: boolean;
@@ -42,7 +43,14 @@ export type Page<T> = {
 };
 export type Query = {
   account: string;
-  action: "repos" | "list" | "detail" | "comments" | "files";
+  action:
+    | "repos"
+    | "list"
+    | "detail"
+    | "comments"
+    | "files"
+    | "branches"
+    | "commits";
   kind?: "pull" | "issue";
   repo?: string;
   scope?: string;
@@ -50,6 +58,8 @@ export type Query = {
   search?: string;
   page?: number;
   number?: number;
+  ref?: string;
+  filters?: import("./filters").Filters;
 };
 export const providerName = (p: Provider) =>
   ({ github: "GitHub", gitlab: "GitLab", gitea: "Gitea / Forgejo" })[p];
@@ -81,3 +91,14 @@ export function safeLink(value: string, host: string): string | undefined {
     return undefined;
   }
 }
+
+export type Commit = {
+  sha: string;
+  parents: string[];
+  subject: string;
+  message: string;
+  author: string;
+  date: string;
+  url: string;
+};
+export type Branch = { name: string; sha: string };
