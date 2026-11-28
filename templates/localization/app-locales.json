@@ -59,6 +59,16 @@
       "description": "在本机导入 Graphify 图谱或读取代码文件夹，查看依赖、关系来源和节点之间的路径。"
     }
   },
+  "myco/code-host": {
+    "zh": {
+      "name": "代码托管",
+      "description": "连接 GitHub、GitLab 与 Gitea / Forgejo 账户，集中查看 PR、Issue、讨论和文件差异。凭证保存在本机，需要支持代码托管能力的桌面 App。"
+    },
+    "en": {
+      "name": "Code hosts",
+      "description": "Connect GitHub, GitLab and Gitea / Forgejo accounts to browse pull requests, issues, discussions and file changes. Credentials stay on this computer. Requires a desktop App with code-host support."
+    }
+  },
   "myco/dashboards": {
     "en": {
       "name": "Dashboards",

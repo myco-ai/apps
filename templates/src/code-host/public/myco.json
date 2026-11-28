@@ -1,0 +1,11 @@
+{
+  "id": "myco/code-host",
+  "name": "代码托管",
+  "version": "1.0.0",
+  "kind": "custom",
+  "category": "dev",
+  "icon": "icon.svg",
+  "description": "连接 GitHub、GitLab 与 Gitea / Forgejo 账户，集中查看 PR、Issue、讨论和文件差异。凭证保存在本机，需要支持代码托管能力的桌面 App。",
+  "os": ["codehost"],
+  "requires": {"hub": "0.23.12", "isolation": true}
+}

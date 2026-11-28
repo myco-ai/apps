@@ -18,6 +18,7 @@ The official apps that use the OS bridge declare:
 | AI Canvas | `network` |
 | Arcade | `exec`, `files`, `system` |
 | Cinema | `network` |
+| Code hosts | `codehost` (Hub 0.23.12+, desktop support required) |
 | Database | `database`, `files` |
 | Disk | `files`, `files.delete`, `system` |
 | Meeting | `files`, `files.delete`, `microphone`, `speech`, `system` |
@@ -51,3 +52,10 @@ Do not add broad local-network patterns to avoid a consent prompt.
 Browser automation and remote desktop use their dedicated bridges and grants;
 these declarations do not replace those authorization flows. Keep existing
 `permissions` for `send` and `download` separate from `os`.
+
+Code hosts uses the dedicated `codehost` group, not arbitrary `network` or `exec`.
+The App owns credential entry and storage, CLI reuse, fixed read-only API routes
+and private-network confirmation. No token is entered in or returned to the
+application page; query results stay in memory. Feature-detect `forge.accounts`
+and the interactive isolated origin. A catalog update does not add the native
+bridge to an older App.
