@@ -197,6 +197,28 @@ try {
   await app.getByRole("button", { name: "Files", exact: true }).click();
   await app.getByText("src/main.ts", { exact: true }).waitFor();
   await app.getByRole("button", { name: "Close details" }).click();
+  const beforeRepo = calls.length;
+  await app.getByRole("button", { name: "Repository", exact: true }).click();
+  await app
+    .getByRole("heading", { name: "Select a repository", exact: true })
+    .waitFor();
+  assert.ok(
+    !calls
+      .slice(beforeRepo)
+      .some(
+        (c) =>
+          c.method === "os.call" &&
+          c.args.name === "forge.query" &&
+          c.args.args.scope === "repo" &&
+          !c.args.args.repo,
+      ),
+    "unselected repository sent an invalid query",
+  );
+  await app
+    .getByRole("combobox", { name: "Repository", exact: true })
+    .selectOption("acme/widget");
+  await app.getByRole("button", { name: /Fix a real fixture/ }).waitFor();
+  await app.getByRole("button", { name: "Created by me", exact: true }).click();
   await app.getByRole("button", { name: "Next", exact: true }).click();
   await page.waitForFunction(() => true);
   await app

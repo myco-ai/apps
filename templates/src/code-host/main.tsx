@@ -699,8 +699,11 @@ function App() {
   }, [account, kind, scope, state, repo, submitted]);
   useEffect(() => {
     let alive = true;
-    if (!accountIDs) {
+    if (!accountIDs || (scope === "repo" && !repo)) {
       setItems([]);
+      setBusy(false);
+      setMore(false);
+      setError("");
       return;
     }
     setBusy(true);
@@ -1145,12 +1148,21 @@ function App() {
               ) : items.length === 0 ? (
                 <div className="list-empty">
                   <Check size={27} />
-                  <h2>{tr("Nothing here right now", "当前没有条目")}</h2>
+                  <h2>
+                    {scope === "repo" && !repo
+                      ? tr("Select a repository", "请选择仓库")
+                      : tr("Nothing here right now", "当前没有条目")}
+                  </h2>
                   <p>
-                    {tr(
-                      "Try another scope, account or status.",
-                      "可以切换范围、账户或状态。",
-                    )}
+                    {scope === "repo" && !repo
+                      ? tr(
+                          "Choose a repository above to see its items.",
+                          "请在上方选择仓库，查看其中的条目。",
+                        )
+                      : tr(
+                          "Try another scope, account or status.",
+                          "可以切换范围、账户或状态。",
+                        )}
                   </p>
                 </div>
               ) : (
