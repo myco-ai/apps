@@ -52,3 +52,37 @@ request. Direct connections pin the checked addresses; a trusted proxy may
 resolve targets itself, outside the local private-address check. Credentials
 are permanently bound to the saved web/API origins. Changing servers requires
 disconnecting and reconnecting.
+
+## Open a specific PR or issue for the person
+
+Send a deep link to this page instead of only linking its inbox. Get the page's
+actual canonical `url` with `myco page get`; never use a local App port.
+Append `#item?` and a URL-encoded parameter set:
+
+```js
+const params = new URLSearchParams({
+  provider: "github", // github, gitlab, or gitea (also Forgejo)
+  url: "https://github.com/acme/widget/pull/17",
+  tab: "files", // optional: overview (default), comments, files
+});
+const link = page.url + "#item?" + params.toString();
+```
+
+Use the canonical HTTPS item URL without a query, credentials or anchors.
+GitHub uses `/owner/repo/pull/17` or `/issues/17`; GitLab uses
+`/group/project/-/merge_requests/17` or `/-/issues/17` and supports nested groups;
+Gitea/Forgejo uses `/owner/repo/pulls/17` or `/issues/17`. `files` applies only
+to PRs/MRs. Keep private repository identifiers out of public messages.
+
+The link selects a view. It never connects an account, grants access or writes
+provider data. The person uses a locally connected account on the exact same
+provider and server. If several match, they choose one; if none match, the page
+asks them to connect. A missing or inaccessible item shows an explicit error.
+The detail header's Copy link button creates the same link for the current tab.
+The App forwards same-page and repeated link opens to the existing page.
+
+The current CLI import connects only the active `gh`/`glab` login for the chosen
+server. To add another GitHub login, the person can run
+`gh auth switch --hostname github.com --user other-demo`, then connect again.
+The app keeps both local accounts. It does not change the CLI's active login
+itself, and it does not yet provide a picker for all saved CLI identities.

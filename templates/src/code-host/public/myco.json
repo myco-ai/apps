@@ -1,7 +1,7 @@
 {
   "id": "myco/code-host",
   "name": "代码托管",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "kind": "custom",
   "category": "dev",
   "icon": "icon.svg",

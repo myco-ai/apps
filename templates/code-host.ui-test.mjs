@@ -38,12 +38,14 @@ const item = {
 let accounts = [];
 const server = createServer(async (req, res) => {
   const u = new URL(req.url, "http://localhost");
-  if (u.pathname === "/")
+  if (u.pathname === "/") {
+    const fragment = (u.searchParams.get("route") || "").replaceAll("&", "&amp;").replaceAll('"', "&quot;");
     return res
       .setHeader("content-type", "text/html")
       .end(
-        `<style>html,body,iframe{height:100%;width:100%;border:0;margin:0;display:block}</style><iframe src="/app/?myco_lang=${u.searchParams.get("lang") || "en"}"></iframe><script>const prefs=${JSON.stringify({ language: u.searchParams.get("lang") || "en", theme: u.searchParams.get("theme") || "light" })};const supported=${u.searchParams.get("old") !== "1"};const f=document.querySelector('iframe');addEventListener('message',async e=>{if(e.source!==f.contentWindow||e.data?.myco!=='call')return;const{id,method,args}=e.data;const r=await fetch('/rpc',{method:'POST',body:JSON.stringify({method,args,supported,prefs})}).then(r=>r.json());e.source.postMessage({myco:'result',id,...r},location.origin);});</script>`,
+        `<style>html,body,iframe{height:100%;width:100%;border:0;margin:0;display:block}</style><iframe src="/app/?myco_lang=${u.searchParams.get("lang") || "en"}${fragment}"></iframe><script>const prefs=${JSON.stringify({ language: u.searchParams.get("lang") || "en", theme: u.searchParams.get("theme") || "light" })};const supported=${u.searchParams.get("old") !== "1"};const f=document.querySelector('iframe');addEventListener('message',async e=>{if(e.source!==f.contentWindow||e.data?.myco!=='call')return;const{id,method,args}=e.data;const r=await fetch('/rpc',{method:'POST',body:JSON.stringify({method,args,supported,prefs})}).then(r=>r.json());e.source.postMessage({myco:'result',id,...r},location.origin);});</script>`,
       );
+  }
   if (u.pathname === "/rpc") {
     let raw = "";
     for await (const chunk of req) raw += chunk;
@@ -54,7 +56,7 @@ const server = createServer(async (req, res) => {
       code;
     if (method === "ready")
       value = {
-        page: { id: "pg_demo", name: "Code hosts" },
+        page: { id: "pg_demo", name: "Code hosts", url: "https://workspace.example/pages/pg_demo" },
         me: { name: "demo" },
         isolation: supported,
         preferences: prefs,
@@ -89,7 +91,7 @@ const server = createServer(async (req, res) => {
           value = true;
         }
       } else if (a.name === "forge.query") {
-        assert.equal(p.account, account.id);
+        assert.ok([account.id, "fixture-gh-2"].includes(p.account));
         if (p.action === "repos")
           value = {
             items: [{ id: "repo", name: "acme/widget", private: true }],
@@ -186,6 +188,19 @@ try {
     .last()
     .click();
   await app.getByRole("button", { name: /Fix a real fixture/ }).waitFor();
+  await page.setViewportSize({ width: 662, height: 720 });
+  await app.locator(".account-row button").first().click();
+  await app.getByRole("button", { name: /Fix a real fixture/ }).waitFor();
+  const compactFrame = page.frames().find((f) => f.url().includes("/app/"));
+  const firstTop = await compactFrame.locator(".item-row").first().evaluate((el) => el.getBoundingClientRect().top);
+  assert.ok(firstTop <= 220, `connected inbox starts too low: ${firstTop}`);
+  assert.equal(await app.getByRole("button", { name: "Refresh", exact: true }).count(), 1);
+  await app.getByRole("button", { name: "Refresh", exact: true }).click();
+  await app.getByRole("button", { name: /Fix a real fixture/ }).waitFor();
+  await app.getByRole("button", { name: "Connect account", exact: true }).click();
+  await app.locator(".connect-dialog").waitFor();
+  await app.locator(".connect-dialog button.icon").click();
+  await page.setViewportSize({ width: 1320, height: 860 });
   await app.getByRole("button", { name: /Fix a real fixture/ }).click();
   await app.getByRole("heading", { name: "Description" }).waitFor();
   assert.equal(await app.locator(".markdown iframe").count(), 0);
@@ -245,6 +260,8 @@ try {
     ["en", "dark", 1320],
     ["en", "light", 390],
     ["zh", "dark", 760],
+    ["zh", "dark", 662],
+    ["en", "light", 662],
   ]) {
     await page.setViewportSize({ width, height: 860 });
     await page.goto(`${origin}/?lang=${lang}&theme=${theme}`);
@@ -255,6 +272,33 @@ try {
     await app
       .getByRole("button", { name: zh ? /为新用户简化/ : /Simplify the first/ })
       .waitFor();
+    if (width <= 800) {
+      await app.locator(".account-row button").first().click();
+    }
+    const listFrame = page.frames().find((f) => f.url().includes("/app/"));
+    const layout = await listFrame.evaluate(() => {
+      const row = document.querySelector(".item-row");
+      return {
+        firstTop: row.getBoundingClientRect().top,
+        titleFont: parseFloat(getComputedStyle(row.querySelector("strong")).fontSize),
+        metaFont: parseFloat(getComputedStyle(row.querySelector("p")).fontSize),
+        width: document.documentElement.scrollWidth,
+      };
+    });
+    assert.ok(layout.titleFont >= 15, `small title at ${width}: ${layout.titleFont}`);
+    assert.ok(layout.metaFont >= 12, `small metadata at ${width}: ${layout.metaFont}`);
+    assert.ok(layout.width <= width + 1, `list overflow at ${width}`);
+    if (width <= 800) {
+      assert.ok(layout.firstTop <= (width <= 440 ? 290 : 260),
+        `inbox pushed below compact controls at ${width}: ${layout.firstTop}`);
+      assert.equal(await app.getByRole("button", { name: zh ? "刷新" : "Refresh", exact: true }).count(), 1);
+      await app.getByRole("button", { name: zh ? "刷新" : "Refresh", exact: true }).click();
+      await app.getByRole("button", { name: zh ? /为新用户简化/ : /Simplify the first/ }).waitFor();
+    }
+    console.log(`LAYOUT ${lang}/${theme}/${width}`, JSON.stringify(layout));
+    await page.screenshot({
+      path: new URL(`inbox-${lang}-${theme}-${width}.png`, shots).pathname,
+    });
     const before = calls.length;
     await app
       .getByRole("button", { name: zh ? /为新用户简化/ : /Simplify the first/ })
@@ -283,6 +327,52 @@ try {
       path: new URL(`${lang}-${theme}-${width}.png`, shots).pathname,
     });
   }
+  // A fresh URL opens the exact item, with skeletons while its private read is pending.
+  const route = "#item?" + new URLSearchParams({provider:"github",url:item.url});
+  const filesRoute = route + "&tab=files";
+  accounts = [account];
+  let finishDetail;
+  holdDetail = new Promise(resolve => { finishDetail = resolve; });
+  await page.setViewportSize({width:662,height:720});
+  await page.goto(`${origin}/?route=${encodeURIComponent(route)}`);
+  await app.locator(".detail .skeleton-detail").waitFor();
+  await page.screenshot({path:new URL("detail-loading-en-light-662.png",shots).pathname});
+  finishDetail(); holdDetail = null;
+  await app.getByRole("heading", {name:"Description"}).waitFor();
+  assert.ok(await app.locator(".detail .markdown").evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15));
+  await app.getByRole("button", {name:"Close details"}).click();
+  await page.evaluate(fragment => document.querySelector("iframe").contentWindow.postMessage({myco:"page-route",fragment},location.origin),filesRoute);
+  await app.getByText("src/main.ts",{exact:true}).waitFor();
+  await app.getByRole("button",{name:"Copy link",exact:true}).click();
+  const shared = await app.locator(".share-box input").inputValue();
+  assert.ok(shared.startsWith("https://workspace.example/pages/pg_demo#item?"));
+  assert.equal(new URLSearchParams(new URL(shared).hash.split("?")[1]).get("tab"),"files");
+  await Promise.all([
+    page.waitForResponse(response => response.url().endsWith("/rpc") && response.request().postData()?.includes('"action":"files"')),
+    page.evaluate(fragment => document.querySelector("iframe").contentWindow.postMessage({myco:"page-route",fragment},location.origin),filesRoute),
+  ]);
+  await app.getByText("src/main.ts",{exact:true}).waitFor();
+  await app.getByRole("button",{name:"Close details"}).click();
+  assert.equal(await app.locator(".detail").count(),0);
+  // Multiple local identities require a deliberate account choice.
+  accounts = [account, {...account,id:"fixture-gh-2",login:"other-demo",name:"Other account"}];
+  await page.goto(`${origin}/?route=${encodeURIComponent(route)}`);
+  await app.locator(".route-notice select").waitFor();
+  assert.equal(await app.locator(".detail").count(),0);
+  await app.locator(".route-notice select").selectOption("fixture-gh-2");
+  await app.getByRole("heading", {name:"Description"}).waitFor();
+  assert.ok(calls.some(c=>c.method==="os.call" && c.args.args.action==="detail" && c.args.args.account==="fixture-gh-2"));
+  // No matching local credential: keep the target visible and ask the person to connect.
+  accounts = [];
+  const beforeMissing = calls.length;
+  await page.goto(`${origin}/?route=${encodeURIComponent(route)}`);
+  await app.getByText("Connect an account for this server to open the item.",{exact:true}).waitFor();
+  assert.ok(!calls.slice(beforeMissing).some(c=>c.method==="os.call" && c.args.args.action==="detail"));
+  await app.locator(".route-notice").getByRole("button",{name:"Connect account",exact:true}).click();
+  assert.equal(await app.getByLabel("Server", { exact: true }).inputValue(),"https://github.com");
+  await app.locator(".connect-dialog button.icon").click();
+  await page.goto(`${origin}/?route=${encodeURIComponent("#item?provider=github&url=javascript%3Aalert(1)")}`);
+  await app.getByText("This item link is invalid. Check the provider and URL.",{exact:true}).waitFor();
   await page.goto(`${origin}/?old=1`);
   await app.getByRole("button", { name: "Connect your first account" }).click();
   await app
@@ -300,7 +390,7 @@ try {
     "private data used shared records",
   );
   console.log(
-    "PASS code-host: account connection, read queries, safe rendering, failure, pagination, disconnect, example isolation and six layouts",
+    "PASS code-host: account connection, read queries, safe rendering, failure, pagination, disconnect, example isolation, readable text, eight compact layouts, skeletons and private PR deep links",
   );
 } finally {
   await browser.close();

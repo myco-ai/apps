@@ -14,7 +14,7 @@
   background: var(--bg);
   color: var(--ink);
   font:
-    13px/1.5 -apple-system,
+    14px/1.5 -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
@@ -61,7 +61,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-height: 28px;
+  min-height: 32px;
   padding: 4px 9px;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -98,8 +98,8 @@ button.plain,
 }
 .icon {
   padding: 4px;
-  min-width: 28px;
-  min-height: 28px;
+  min-width: 32px;
+  min-height: 32px;
   flex-shrink: 0;
 }
 .danger {
@@ -123,17 +123,17 @@ svg {
   flex-shrink: 0;
 }
 h1 {
-  font-size: 23px;
+  font-size: 22px;
   letter-spacing: -0.6px;
   line-height: 1.3;
 }
 h2 {
-  font-size: 19px;
+  font-size: 20px;
   line-height: 1.45;
   letter-spacing: -0.25px;
 }
 h3 {
-  font-size: 14px;
+  font-size: 16px;
 }
 small,
 .hint,
@@ -147,7 +147,7 @@ small,
   overflow: hidden;
 }
 .sidebar {
-  width: 222px;
+  width: 236px;
   flex-shrink: 0;
   background: var(--side);
   border-right: 1px solid var(--line);
@@ -161,20 +161,23 @@ small,
   align-items: center;
   gap: 8px;
   padding: 0 7px;
-  margin-bottom: 34px;
+  margin-bottom: 22px;
 }
 .brand strong {
-  font-size: 15px;
+  font-size: 16px;
   white-space: nowrap;
 }
 .read-only {
   margin-left: auto;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 1px 4px;
   white-space: nowrap;
+}
+.compact-actions {
+  display: none;
 }
 .sections,
 .account-list {
@@ -200,14 +203,14 @@ small,
   align-items: center;
   justify-content: space-between;
   margin: 30px 4px 9px 10px;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 1px;
   font-weight: 600;
   color: var(--muted);
 }
 .account-list > button small {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 12px;
 }
 .account-row {
   display: flex;
@@ -223,7 +226,7 @@ small,
   min-width: 0;
 }
 .account-row strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   display: block;
   overflow: hidden;
@@ -231,10 +234,10 @@ small,
 }
 .account-row small {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 147px;
+  max-width: 160px;
 }
 .account-row .remove {
   color: var(--red);
@@ -247,7 +250,7 @@ small,
   color: var(--muted);
   margin-top: 11px;
   padding-left: 10px;
-  font-size: 12px;
+  font-size: 14px;
 }
 .sidebar-bottom {
   display: flex;
@@ -256,7 +259,7 @@ small,
   margin: auto 7px 0;
   padding-top: 35px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   max-width: 170px;
 }
 .workspace {
@@ -269,11 +272,11 @@ small,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 26px 32px 23px;
+  padding: 18px 24px 16px;
   flex-shrink: 0;
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 1.2px;
   color: var(--muted);
   font-weight: 500;
@@ -285,10 +288,10 @@ small,
   gap: 8px;
 }
 .head-actions > button:not(.icon) {
-  font-size: 12px;
+  font-size: 14px;
 }
 .filters {
-  margin: 0 32px;
+  margin: 0 24px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -308,7 +311,7 @@ small,
   flex-wrap: wrap;
 }
 .scope-tabs button {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   background: transparent;
   padding: 5px 8px;
@@ -327,8 +330,8 @@ small,
   color: var(--muted);
 }
 .search input {
-  width: 138px;
-  font-size: 12px;
+  width: 150px;
+  font-size: 14px;
   padding: 5px 2px;
 }
 .search input:focus {
@@ -338,7 +341,7 @@ small,
   outline: 1px solid var(--muted);
 }
 .filter-controls select {
-  font-size: 12px;
+  font-size: 14px;
   max-width: 150px;
   padding: 5px 6px;
 }
@@ -346,8 +349,8 @@ small,
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 32px 0;
-  font-size: 12px;
+  padding: 10px 24px 0;
+  font-size: 14px;
 }
 .repo-filter select {
   max-width: 400px;
@@ -367,9 +370,9 @@ small,
   text-align: left;
   justify-content: flex-start;
   background: transparent;
-  padding: 17px 10px;
+  padding: 13px 10px;
   border-radius: 7px;
-  min-height: 82px;
+  min-height: 76px;
 }
 .item-row.selected {
   background: var(--soft);
@@ -392,7 +395,7 @@ small,
 }
 .item-main > strong {
   display: block;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 560;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -402,7 +405,7 @@ small,
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 5px;
   overflow: hidden;
@@ -424,11 +427,11 @@ small,
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 1px 7px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .item-meta {
-  font-size: 10px;
+  font-size: 12px;
   min-width: 92px;
   text-align: right;
   color: var(--muted);
@@ -451,7 +454,7 @@ small,
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   min-width: 26px;
   justify-content: flex-end;
@@ -463,17 +466,17 @@ small,
   padding: 12px 32px 16px;
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   gap: 10px;
 }
 .pagination {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .pagination button {
-  font-size: 11px;
+  font-size: 12px;
   min-height: 25px;
   padding: 3px 7px;
   background: transparent;
@@ -492,10 +495,10 @@ small,
   max-width: 450px;
   color: var(--muted);
   line-height: 1.8;
-  font-size: 13px;
+  font-size: 15px;
 }
 .empty h2 {
-  font-size: 23px;
+  font-size: 22px;
 }
 .empty-mark {
   display: flex;
@@ -516,11 +519,11 @@ small,
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 20px;
 }
 .upgrade {
-  font-size: 11px !important;
+  font-size: 12px !important;
   max-width: 420px !important;
 }
 .list-empty {
@@ -541,16 +544,16 @@ small,
   margin: 0 32px 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 14px;
   white-space: pre-line;
 }
 .error {
   color: var(--red);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.6;
 }
 .demo-banner {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   padding: 8px 32px;
   background: var(--side);
@@ -560,7 +563,7 @@ small,
   gap: 9px;
 }
 .demo-banner > span {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1px;
   border: 1px solid var(--line);
   padding: 1px 5px;
@@ -580,14 +583,14 @@ small,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 19px 22px 8px;
+  padding: 12px 20px 6px;
 }
 .status {
   display: flex;
   gap: 6px;
   align-items: center;
   color: var(--green);
-  font-size: 11px;
+  font-size: 12px;
 }
 .status.merged {
   color: var(--purple);
@@ -596,25 +599,25 @@ small,
   color: var(--muted);
 }
 .detail-title {
-  padding: 10px 24px 22px;
+  padding: 8px 20px 14px;
 }
 .detail-title > p {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--muted);
   overflow-wrap: anywhere;
 }
 .detail-title h2 {
   font-size: 20px;
-  margin: 9px 0;
+  margin: 6px 0;
   overflow-wrap: anywhere;
 }
 .branch {
   display: flex;
   gap: 7px;
   align-items: center;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
-  margin: 14px 0;
+  margin: 10px 0;
   min-width: 0;
   flex-wrap: wrap;
 }
@@ -631,13 +634,13 @@ small,
 .detail-tabs {
   display: flex;
   gap: 9px;
-  margin: 0 24px;
+  margin: 0 20px;
   border-bottom: 1px solid var(--line);
 }
 .detail-tabs button {
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   border-radius: 0;
   border-bottom: 2px solid transparent;
   padding: 7px 3px;
@@ -648,12 +651,12 @@ small,
 }
 .detail-content {
   overflow: auto;
-  padding: 22px 24px;
+  padding: 18px 20px;
   flex: 1;
   min-height: 0;
 }
 .markdown {
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.85;
   overflow-wrap: anywhere;
 }
@@ -662,7 +665,7 @@ small,
   white-space: pre-wrap;
 }
 .markdown h3 {
-  font-size: 13px;
+  font-size: 15px;
   margin: 18px 0 9px;
 }
 .markdown h3:first-child {
@@ -678,11 +681,11 @@ small,
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   margin-bottom: 10px;
 }
 .comment time {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .comment .markdown p {
@@ -700,7 +703,7 @@ small,
   gap: 7px;
   background: var(--soft);
   padding: 9px;
-  font-size: 10px;
+  font-size: 12px;
   min-width: 0;
 }
 .diff-file strong {
@@ -713,7 +716,7 @@ small,
 }
 .diff-file pre {
   font:
-    10px/1.8 ui-monospace,
+    13px/1.8 ui-monospace,
     SFMono-Regular,
     Consolas,
     monospace;
@@ -738,7 +741,7 @@ small,
   padding: 12px;
 }
 .hint {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
 }
 .connect-dialog {
@@ -765,7 +768,7 @@ small,
   margin-bottom: 22px;
 }
 .connect-dialog header p {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   margin-top: 4px;
 }
@@ -776,7 +779,7 @@ small,
 }
 .provider-options button {
   flex: 1;
-  font-size: 11px;
+  font-size: 12px;
   background: transparent;
   border-color: var(--line);
   padding: 8px;
@@ -789,7 +792,7 @@ small,
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 15px;
 }
 .connect-dialog input {
@@ -810,7 +813,7 @@ small,
 .seg button {
   flex: 1;
   background: transparent;
-  font-size: 12px;
+  font-size: 14px;
 }
 .seg button[aria-pressed="true"] {
   background: var(--bg);
@@ -822,11 +825,11 @@ small,
   border-radius: 6px;
 }
 .cli-hint code {
-  font-size: 11px;
+  font-size: 12px;
   word-break: break-all;
 }
 .cli-hint p {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   line-height: 1.6;
   margin-top: 6px;
@@ -838,7 +841,7 @@ small,
   padding: 12px;
   margin: 19px 0 12px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   line-height: 1.7;
 }
@@ -869,7 +872,7 @@ small,
   max-width: 440px;
 }
 .confirmation p {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   line-height: 1.8;
   margin-top: 10px;
@@ -889,7 +892,7 @@ small,
 }
 @media (max-width: 1100px) {
   .sidebar {
-    width: 195px;
+    width: 220px;
     padding-left: 10px;
     padding-right: 10px;
   }
@@ -920,7 +923,7 @@ small,
     display: none;
   }
 }
-@media (max-width: 750px) {
+@media (max-width: 800px) {
   .app {
     display: block;
     overflow: auto;
@@ -929,96 +932,122 @@ small,
   }
   .sidebar {
     width: 100%;
-    padding: 13px 16px;
+    padding: 8px 12px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
     display: block;
-    overflow: visible;
+    overflow: hidden;
   }
-  .brand {
-    margin-bottom: 13px;
+  .brand,
+  .section-heading,
+  .sidebar-bottom,
+  .connect-link,
+  .topbar {
+    display: none;
   }
-  .brand .read-only {
-    display: block;
+  .section-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
   }
   .sections {
     flex-direction: row;
+    min-width: 0;
   }
   .sections > button {
     width: auto;
+    padding: 6px 8px;
+    gap: 6px;
   }
-  .section-heading,
-  .sidebar-bottom {
-    display: none;
+  .compact-actions {
+    display: block;
+    flex-shrink: 0;
+  }
+  .head-actions {
+    gap: 4px;
+  }
+  .head-actions > button:not(.icon) {
+    padding: 5px 8px;
   }
   .account-list {
     flex-direction: row;
     overflow: auto;
     gap: 4px;
-    padding-top: 9px;
+    padding-top: 6px;
   }
   .account-list > button {
     width: auto;
     flex-shrink: 0;
-    font-size: 11px;
+    padding: 6px 8px;
   }
   .account-row {
     flex-shrink: 0;
-    max-width: 210px;
+    max-width: 310px;
   }
   .account-row > button:first-child {
     padding: 5px 8px;
   }
+  .account-row > button:first-child > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .account-row strong {
+    font-size: 14px;
+    max-width: 125px;
+    flex-shrink: 0;
+  }
   .account-row small {
-    font-size: 9px;
-  }
-  .connect-link {
-    padding: 4px 8px;
-    position: absolute;
-    right: 18px;
-    top: 49px;
-    font-size: 11px;
-    margin-top: 0;
-  }
-  .topbar {
-    padding: 22px 20px;
-  }
-  .eyebrow {
-    font-size: 9px;
+    max-width: 145px;
   }
   .workspace {
-    min-height: calc(100dvh - 158px);
+    min-height: calc(100dvh - 106px);
   }
   .filters {
-    margin: 0 20px;
-    gap: 8px;
+    margin: 0 16px;
+    padding: 8px 0;
+    gap: 6px 12px;
+  }
+  .scope-tabs {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .scope-tabs button {
+    padding: 5px 7px;
+    flex-shrink: 0;
   }
   .filter-controls {
-    width: 100%;
-    margin-top: 5px;
+    flex: 1;
+    min-width: 160px;
+    gap: 6px;
   }
   .search {
     flex: 1;
+    min-width: 0;
   }
   .search input {
     width: 100%;
   }
+  .filter-controls select {
+    max-width: 145px;
+  }
   .results {
-    padding: 8px 10px 20px;
+    padding: 4px 6px 16px;
     overflow: visible;
   }
   .item-row {
     gap: 9px;
-    min-height: 80px;
-    padding: 13px 10px;
+    min-height: 74px;
+    padding: 11px 10px;
   }
   .item-main > strong {
     white-space: normal;
     line-height: 1.5;
-    font-size: 12px;
   }
   .item-main p {
-    font-size: 9px;
     gap: 4px;
     flex-wrap: wrap;
     white-space: normal;
@@ -1027,14 +1056,13 @@ small,
     max-width: none;
   }
   .item-meta {
-    min-width: 45px;
-    font-size: 9px;
+    min-width: 54px;
   }
   .comment-count {
     display: none;
   }
   .result-footer {
-    padding: 12px 20px;
+    padding: 10px 16px;
     flex-wrap: wrap;
   }
   .detail {
@@ -1045,30 +1073,30 @@ small,
     z-index: 2;
   }
   .empty {
-    padding: 45px 22px;
+    padding: 30px 20px;
   }
   .empty h2 {
     font-size: 20px;
   }
   .demo-banner {
-    padding: 8px 20px;
+    padding: 6px 16px;
+    margin-bottom: 0;
+    gap: 6px;
   }
   .repo-filter {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding: 8px 16px 0;
     flex-wrap: wrap;
   }
-  .repo-filter button {
-    font-size: 10px;
+  .repo-filter select {
+    min-width: 100px;
   }
   .notice {
-    margin: 0 20px 12px;
+    margin: 8px 16px;
   }
   .provider-options {
     gap: 4px;
   }
   .provider-options button {
-    font-size: 10px;
     padding: 7px 4px;
   }
   .provider-options button svg {
@@ -1078,8 +1106,55 @@ small,
     padding: 20px;
   }
 }
+@media (max-width: 440px) {
+  .sections > button {
+    padding: 6px;
+    gap: 4px;
+  }
+  .sections > button svg {
+    display: none;
+  }
+  .head-actions > button:not(.icon) {
+    font-size: 12px;
+    gap: 4px;
+    padding: 5px 6px;
+  }
+  .head-actions > button:not(.icon) svg {
+    display: none;
+  }
+  .filters {
+    gap: 6px;
+  }
+  .filter-controls {
+    flex-basis: 100%;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .spin {
     animation: none;
   }
 }
+
+.route-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.route-notice p { overflow-wrap: anywhere; }
+.route-notice label { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.share-box { padding: 8px 24px; font-size: 12px; color: var(--muted); }
+.share-box label { display: flex; flex-direction: column; gap: 6px; }
+.share-box input { width: 100%; font-size: 14px; }
+.share-box p { margin-top: 6px; }
+.skeleton { color: var(--muted); }
+.skeleton-row { display: flex; gap: 12px; align-items: center; padding: 18px 10px; min-height: 76px; }
+.skeleton-row > div { flex: 1; min-width: 0; }
+.skeleton-icon { width: 18px; height: 18px; border-radius: 5px; background: var(--soft); }
+.skeleton-line { display: block; width: 78%; height: 14px; border-radius: 4px; background: linear-gradient(90deg, var(--soft) 20%, var(--hover) 45%, var(--soft) 70%); background-size: 240% 100%; animation: skeleton-shimmer 1.8s ease-in-out infinite; }
+.skeleton-line + .skeleton-line { margin-top: 10px; }
+.skeleton-line.short { width: 48%; height: 12px; }
+.skeleton-row:nth-child(2n) .skeleton-line { width: 64%; }
+.skeleton-detail .skeleton-row { padding: 8px 0 24px; }
+.skeleton-detail .skeleton-line { width: 100%; }
+.skeleton-detail .skeleton-line.short { width: 88%; }
+.detail-title h2 > .skeleton-line { height: 24px; margin: 12px 0; }
+@keyframes skeleton-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton-line { animation: none; } }
+
+.status-placeholder { width: 60px; }

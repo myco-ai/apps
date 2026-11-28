@@ -12,6 +12,7 @@ import {
   Github,
   Inbox,
   LockKeyhole,
+  Link2,
   MessageSquare,
   Plus,
   RefreshCw,
@@ -22,6 +23,8 @@ import {
 } from "lucide-react";
 import { language } from "../_lib/i18n";
 import { myco } from "../_lib/myco";
+import { subscribeAppRoute } from "../_lib/page-route";
+import { itemLink, readItemRoute, type ItemRoute } from "./route";
 import {
   accounts as accountCall,
   providerName,
@@ -144,17 +147,29 @@ function Markdown({ text }: { text: string }) {
     </div>
   );
 }
+function Skeleton({ detail = false }: { detail?: boolean }) {
+  return <div className={`skeleton ${detail ? "skeleton-detail" : "skeleton-list"}`} role="status" aria-label={tr("Loading…", "加载中…")}>
+    {Array.from({ length: detail ? 3 : 5 }, (_, i) => <div className="skeleton-row" key={i} aria-hidden="true">
+      {!detail && <span className="skeleton-icon" />}
+      <div><span className="skeleton-line" /><span className="skeleton-line short" />{detail && <span className="skeleton-line" />}</div>
+    </div>)}
+  </div>;
+}
 function ConnectDialog({
   supported,
+  initialProvider = "github",
+  initialHost = "https://github.com",
   connected,
   close,
 }: {
   supported: boolean;
+  initialProvider?: Provider;
+  initialHost?: string;
   connected: (account: Account) => void;
   close: () => void;
 }) {
-  const [provider, setProvider] = useState<Provider>("github"),
-    [host, setHost] = useState("https://github.com");
+  const [provider, setProvider] = useState<Provider>(initialProvider),
+    [host, setHost] = useState(initialHost);
   const [source, setSource] = useState("cli"),
     [name, setName] = useState("");
   const [busy, setBusy] = useState(false),
@@ -342,8 +357,8 @@ function ConnectDialog({
             <p>
               {tools.find((t) => t.cli === cli)?.installed
                 ? tr(
-                    "CLI found on this computer. Connect uses its current login for this server.",
-                    "已找到本机 CLI，连接时将使用它在此服务器的当前登录。",
+                    "CLI found on this computer. Connect imports its active account for this server. Switch accounts in the CLI, then connect again to add another.",
+                    "已找到本机 CLI，此次只导入该服务器的激活账户。要添加另一个账户，请先在 CLI 切换，再回来连接。",
                   )
                 : tr(
                     "Sign in on the computer running myco, then connect. You can also use a token without installing the CLI.",
@@ -399,29 +414,37 @@ function Detail({
   account,
   isDemo,
   close,
+  initialTab = "overview",
+  pageURL,
 }: {
   item: Item;
+  initialTab?: ItemRoute["tab"];
+  pageURL: string;
   account: Account;
   isDemo: boolean;
   close: () => void;
 }) {
   const [current, setCurrent] = useState(item),
-    [tab, setTab] = useState("overview"),
+    [tab, setTab] = useState<string>(initialTab),
     [comments, setComments] = useState<Comment[]>([]),
     [files, setFiles] = useState<FileDiff[]>([]);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [page, setPage] = useState(1),
     [more, setMore] = useState(false);
+  const [share, setShare] = useState(false), [copied, setCopied] = useState(false);
+  const shareInput = useRef<HTMLInputElement>(null);
   const generation = useRef(0);
   useEffect(() => {
     setCurrent(item);
-    setTab("overview");
+    setTab(initialTab);
+    setShare(false);
+    setCopied(false);
     setPage(1);
     setComments([]);
     setFiles([]);
     setError("");
-  }, [itemKey(item)]);
+  }, [itemKey(item), initialTab]);
   useEffect(() => {
     const id = ++generation.current;
     let alive = true;
@@ -469,15 +492,23 @@ function Detail({
       alive = false;
     };
   }, [itemKey(item), tab, page, isDemo]);
+  useEffect(() => { if (share) shareInput.current?.select(); }, [share]);
   const address = safeLink(current.url, account.host);
+  let shareURL = "";
+  try { if (pageURL && address && !isDemo) shareURL = itemLink(pageURL, account.provider, address, tab); } catch { /* The provider did not supply a canonical item URL. */ }
+  async function copyLink() {
+    setShare(true);
+    setCopied(false);
+    try { await navigator.clipboard.writeText(shareURL); setCopied(true); } catch { shareInput.current?.select(); }
+  }
   return (
     <aside className="detail" aria-label={tr("Item details", "条目详情")}>
       <header>
         <span className={`status ${current.state}`}>
-          <ItemIcon item={current} />
-          {stateText(current)}
+          {current.title ? <><ItemIcon item={current} />{stateText(current)}</> : <span className="skeleton-line status-placeholder" />}
         </span>
         <div className="head-actions">
+          {shareURL && <button className="plain" onClick={() => void copyLink()}><Link2 size={16} />{tr("Copy link", "复制链接")}</button>}
           {address && (
             <a
               href={address}
@@ -497,14 +528,18 @@ function Detail({
           </button>
         </div>
       </header>
+      {share && <div className="share-box">
+        <label>{copied ? tr("Link copied", "链接已复制") : tr("Select and copy this link", "选中并复制此链接")}
+          <input ref={shareInput} readOnly value={shareURL} onFocus={e => e.currentTarget.select()} />
+        </label>
+        <p>{tr("The recipient needs an account with access to this item.", "接收者需要连接有权访问此条目的账户。")}</p>
+      </div>}
       <div className="detail-title">
         <p>
           {current.repo} <span>#{current.number}</span>
         </p>
-        <h2>{current.title}</h2>
-        <p>
-          {current.author} · {date(current.updated)}
-        </p>
+        <h2>{current.title || <span className="skeleton-line" aria-label={tr("Loading…", "加载中…")} />}</h2>
+        {current.author && <p>{current.author}{current.updated && ` · ${date(current.updated)}`}</p>}
         {current.branch && (
           <div className="branch">
             <GitBranch size={13} />
@@ -543,7 +578,7 @@ function Detail({
             {error}
           </p>
         ) : busy ? (
-          <p className="muted">{tr("Loading…", "加载中…")}</p>
+          <Skeleton detail />
         ) : tab === "overview" ? (
           <Markdown
             text={current.body || tr("No description.", "暂无描述。")}
@@ -664,6 +699,9 @@ function App() {
     [remove, setRemove] = useState<Account | null>(null);
   const active = accounts.filter((a) => account === "all" || a.id === account),
     accountIDs = active.map((a) => a.id).join(",");
+  const [pageURL, setPageURL] = useState("");
+  const [route, setRoute] = useState<ItemRoute | null>(null), [routeInvalid, setRouteInvalid] = useState(false), [routeAccount, setRouteAccount] = useState("");
+  const routeMatches = !isDemo && route ? accounts.filter(a => a.provider === route.provider && new URL(a.host).origin === route.host) : [];
   const exampleMode = useRef(false);
   async function loadAccounts() {
     const rows = (await accountCall("list")) as Account[];
@@ -681,6 +719,7 @@ function App() {
           (await myco.os.has("forge.accounts"))
         );
         if (!alive) return;
+        setPageURL(ctx?.page.url || "");
         setSupported(ok);
         if (ok) await loadAccounts();
       } catch (e) {
@@ -805,6 +844,30 @@ function App() {
       alive = false;
     };
   }, [account, repoPage, isDemo, refresh]);
+  useEffect(() => {
+    const follow = () => {
+      setSelected(null);
+      setRouteAccount("");
+      try { setRoute(readItemRoute(location.hash)); setRouteInvalid(false); }
+      catch { setRoute(null); setRouteInvalid(true); }
+    };
+    follow();
+    return subscribeAppRoute(follow);
+  }, []);
+  useEffect(() => {
+    if (!route || !ready || isDemo) return;
+    const a = routeMatches.length === 1 ? routeMatches[0] : routeMatches.find(a => a.id === routeAccount);
+    if (!a) return;
+    setSelected({ account: a.id, kind: route.kind, repo: route.repo, number: route.number,
+      url: route.url, project: "", title: "", body: "", state: "", author: "", updated: "",
+      labels: [], comments: 0, draft: false });
+  }, [route, ready, accounts, isDemo, routeAccount]);
+  function closeDetail() {
+    setSelected(null);
+    setRoute(null);
+    setRouteInvalid(false);
+    history.replaceState(null, "", location.pathname + location.search);
+  }
   function changeAccount(id: string) {
     setAccount(id);
     setRepo("");
@@ -849,6 +912,29 @@ function App() {
   const currentAccount = selected
     ? accounts.find((a) => a.id === selected.account)
     : null;
+  const headerActions = (
+    <div className="head-actions">
+      {isDemo ? (
+        <button onClick={leaveExample}>
+          {tr("Exit example", "退出示例")}
+        </button>
+      ) : (
+        <button onClick={() => setConnect(true)} disabled={!ready}>
+          <Plus size={14} />
+          {tr("Connect account", "连接账户")}
+        </button>
+      )}
+      <button
+        className="icon"
+        aria-label={tr("Refresh", "刷新")}
+        title={tr("Refresh", "刷新")}
+        disabled={busy || !accounts.length}
+        onClick={() => setRefresh((v) => v + 1)}
+      >
+        <RefreshCw size={16} className={busy ? "spin" : ""} />
+      </button>
+    </div>
+  );
   return (
     <div className="app">
       <aside className="sidebar">
@@ -857,25 +943,30 @@ function App() {
           <strong>{tr("Code hosts", "代码托管")}</strong>
           <span className="read-only">{tr("Read only", "只读")}</span>
         </div>
-        <nav className="sections">
-          <button
-            className={kind === "pull" ? "active" : ""}
-            onClick={() => setKind("pull")}
-          >
-            <GitPullRequest size={17} />
-            {tr("Pull requests", "Pull requests")}
-          </button>
-          <button
-            className={kind === "issue" ? "active" : ""}
-            onClick={() => {
-              setKind("issue");
-              if (scope === "review") setScope("created");
-            }}
-          >
-            <CircleDot size={17} />
-            {tr("Issues", "Issues")}
-          </button>
-        </nav>
+        <div className="section-toolbar">
+          <nav className="sections">
+            <button
+              className={kind === "pull" ? "active" : ""}
+              aria-pressed={kind === "pull"}
+              onClick={() => setKind("pull")}
+            >
+              <GitPullRequest size={17} />
+              {tr("Pull requests", "Pull requests")}
+            </button>
+            <button
+              className={kind === "issue" ? "active" : ""}
+              aria-pressed={kind === "issue"}
+              onClick={() => {
+                setKind("issue");
+                if (scope === "review") setScope("created");
+              }}
+            >
+              <CircleDot size={17} />
+              {tr("Issues", "Issues")}
+            </button>
+          </nav>
+          <div className="compact-actions">{headerActions}</div>
+        </div>
         <div className="section-heading">
           <span>{tr("ACCOUNTS", "账户")}</span>
           <button
@@ -905,7 +996,7 @@ function App() {
                 <ProviderIcon provider={a.provider} />
                 <span>
                   <strong>{a.name}</strong>
-                  <small>
+                  <small title={`${a.login} · ${new URL(a.host).host}`}>
                     {a.login} · {new URL(a.host).host}
                   </small>
                 </span>
@@ -953,27 +1044,7 @@ function App() {
                 : tr("Issues", "Issues")}
             </h1>
           </div>
-          <div className="head-actions">
-            {isDemo ? (
-              <button onClick={leaveExample}>
-                {tr("Exit example", "退出示例")}
-              </button>
-            ) : accounts.length > 0 ? (
-              <button onClick={() => setConnect(true)}>
-                <Plus size={14} />
-                {tr("Account", "账户")}
-              </button>
-            ) : null}
-            <button
-              className="icon"
-              aria-label={tr("Refresh", "刷新")}
-              title={tr("Refresh", "刷新")}
-              disabled={busy || !accounts.length}
-              onClick={() => setRefresh((v) => v + 1)}
-            >
-              <RefreshCw size={16} className={busy ? "spin" : ""} />
-            </button>
-          </div>
+          {headerActions}
         </header>
         {isDemo && (
           <div className="demo-banner">
@@ -984,6 +1055,14 @@ function App() {
             )}
           </div>
         )}
+        {routeInvalid && <div className="notice error" role="alert">{tr("This item link is invalid. Check the provider and URL.", "条目链接无效，请检查平台和地址。")}</div>}
+        {route && !selected && <section className="route-notice notice">
+          <strong>{route.repo} #{route.number}</strong>
+          {isDemo ? <button onClick={() => void leaveExample()}>{tr("Exit example to open this item", "退出示例并打开此条目")}</button>
+          : routeMatches.length === 0 ? <><p>{tr("Connect an account for this server to open the item.", "请连接此服务器的账户以打开条目。")}</p><p>{providerName(route.provider)} · {route.host}</p><button disabled={!ready} onClick={() => setConnect(true)}>{tr("Connect account", "连接账户")}</button></>
+          : <label>{tr("Choose an account to open this item", "选择账户以打开此条目")}<select value={routeAccount} onChange={e => setRouteAccount(e.target.value)}><option value="">{tr("Choose account…", "选择账户…")}</option>{routeMatches.map(a => <option key={a.id} value={a.id}>{a.name} · {a.login}</option>)}</select></label>}
+          <button className="plain" onClick={closeDetail}>{tr("Back to inbox", "返回收件箱")}</button>
+        </section>}
         {error && (
           <div role="alert" className="notice error">
             {error}
@@ -1141,10 +1220,7 @@ function App() {
             )}
             <div className="results" aria-busy={busy}>
               {busy ? (
-                <div className="list-empty">
-                  <RefreshCw className="spin" size={20} />
-                  {tr("Loading your inbox…", "正在加载收件箱…")}
-                </div>
+                <Skeleton />
               ) : items.length === 0 ? (
                 <div className="list-empty">
                   <Check size={27} />
@@ -1172,7 +1248,7 @@ function App() {
                     <button
                       key={itemKey(item)}
                       className={`item-row ${selected && itemKey(selected) === itemKey(item) ? "selected" : ""}`}
-                      onClick={() => setSelected(item)}
+                      onClick={() => { closeDetail(); setSelected(item); }}
                     >
                       <span
                         className={`item-icon ${item.state} ${item.draft ? "draft" : ""}`}
@@ -1242,12 +1318,16 @@ function App() {
           item={selected}
           account={currentAccount}
           isDemo={isDemo}
-          close={() => setSelected(null)}
+          close={closeDetail}
+          initialTab={route?.tab}
+          pageURL={pageURL}
         />
       )}
       {connect && (
         <ConnectDialog
           supported={supported}
+          initialProvider={route?.provider}
+          initialHost={route?.host}
           close={() => setConnect(false)}
           connected={(a) => {
             setAccounts((rows) => [
