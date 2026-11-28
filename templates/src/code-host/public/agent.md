@@ -30,6 +30,8 @@ Other clients show the example and an explicit upgrade notice.
   status and optionally a repository. Repository scope shows that repository's
   items. Results paginate, 50 items per account per page; GitHub search has its
   provider-imposed search cap and may report incomplete results.
+- Closed uses the provider's closed state. GitLab tracks merged MRs separately;
+  choose All statuses to include them.
 - Open an item for its description, issue conversation or changed-file patches.
   Reviews, inline review comments, check runs and mutations are not implemented
   in this first version. Open the original item to perform those actions.

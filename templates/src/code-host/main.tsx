@@ -1097,7 +1097,7 @@ function App() {
                 >
                   <option value="open">{tr("Open", "打开")}</option>
                   <option value="closed">
-                    {tr("Closed / merged", "已关闭 / 已合并")}
+                    {tr("Closed", "已关闭")}
                   </option>
                   <option value="all">{tr("All statuses", "全部状态")}</option>
                 </select>
