@@ -312,6 +312,11 @@ try {
       })
       .waitFor();
     const frame = page.frames().find((f) => f.url().includes("/app/"));
+    if (width === 662) {
+      const bodyTop = await frame.locator(".detail-content").evaluate(el => el.getBoundingClientRect().top);
+      assert.ok(bodyTop <= 190, `detail header pushes body too low: ${bodyTop}`);
+      console.log(`DETAIL ${lang}/${width}`, bodyTop);
+    }
     assert.ok(
       await frame.evaluate(
         (w) => document.documentElement.scrollWidth <= w + 1,

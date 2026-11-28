@@ -583,7 +583,7 @@ small,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px 6px;
+  padding: 8px 20px 4px;
 }
 .status {
   display: flex;
@@ -599,7 +599,7 @@ small,
   color: var(--muted);
 }
 .detail-title {
-  padding: 8px 20px 14px;
+  padding: 0 20px 6px;
 }
 .detail-title > p {
   font-size: 14px;
@@ -608,7 +608,7 @@ small,
 }
 .detail-title h2 {
   font-size: 20px;
-  margin: 6px 0;
+  margin: 4px 0;
   overflow-wrap: anywhere;
 }
 .branch {
@@ -617,19 +617,23 @@ small,
   align-items: center;
   font-size: 12px;
   color: var(--muted);
-  margin: 10px 0;
+  margin: 0;
   min-width: 0;
-  flex-wrap: wrap;
+  max-width: 280px;
+  flex-wrap: nowrap;
 }
 .branch code {
   background: var(--soft);
   padding: 2px 5px;
   border-radius: 4px;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   max-width: 100%;
 }
 .labels {
-  margin-top: 12px;
+  margin-top: 0;
 }
 .detail-tabs {
   display: flex;
@@ -643,7 +647,7 @@ small,
   font-size: 14px;
   border-radius: 0;
   border-bottom: 2px solid transparent;
-  padding: 7px 3px;
+  padding: 5px 3px;
 }
 .detail-tabs button[aria-pressed="true"] {
   color: var(--ink);
@@ -651,7 +655,7 @@ small,
 }
 .detail-content {
   overflow: auto;
-  padding: 18px 20px;
+  padding: 14px 20px;
   flex: 1;
   min-height: 0;
 }
@@ -1158,3 +1162,13 @@ small,
 @media (prefers-reduced-motion: reduce) { .skeleton-line { animation: none; } }
 
 .status-placeholder { width: 60px; }
+
+.detail > header { gap: 10px; }
+.detail-context { display: flex; gap: 8px; align-items: center; min-width: 0; flex: 1; }
+.detail-context .status { flex-shrink: 0; font-size: 14px; }
+.detail-repo { font-size: 14px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.detail-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 12px; margin-top: 4px; max-height: 74px; overflow: auto; }
+.detail-meta > p { font-size: 13px; color: var(--muted); }
+.detail-meta .branch { font-size: 13px; }
+.detail-meta .labels { max-width: 100%; }
+@media (min-width: 801px) { .detail-meta .branch { max-width: 220px; } }

@@ -504,9 +504,12 @@ function Detail({
   return (
     <aside className="detail" aria-label={tr("Item details", "条目详情")}>
       <header>
-        <span className={`status ${current.state}`}>
-          {current.title ? <><ItemIcon item={current} />{stateText(current)}</> : <span className="skeleton-line status-placeholder" />}
-        </span>
+        <div className="detail-context">
+          <span className={`status ${current.state}`}>
+            {current.title ? <><ItemIcon item={current} />{stateText(current)}</> : <span className="skeleton-line status-placeholder" />}
+          </span>
+          <span className="detail-repo" title={`${current.repo} #${current.number}`}>{current.repo} #{current.number}</span>
+        </div>
         <div className="head-actions">
           {shareURL && <button className="plain" onClick={() => void copyLink()}><Link2 size={16} />{tr("Copy link", "复制链接")}</button>}
           {address && (
@@ -535,23 +538,22 @@ function Detail({
         <p>{tr("The recipient needs an account with access to this item.", "接收者需要连接有权访问此条目的账户。")}</p>
       </div>}
       <div className="detail-title">
-        <p>
-          {current.repo} <span>#{current.number}</span>
-        </p>
         <h2>{current.title || <span className="skeleton-line" aria-label={tr("Loading…", "加载中…")} />}</h2>
-        {current.author && <p>{current.author}{current.updated && ` · ${date(current.updated)}`}</p>}
-        {current.branch && (
-          <div className="branch">
-            <GitBranch size={13} />
-            <code>{current.branch}</code>
-            <span>→</span>
-            <code>{current.base}</code>
+        <div className="detail-meta">
+          {current.author && <p>{current.author}{current.updated && ` · ${date(current.updated)}`}</p>}
+          {current.branch && (
+            <div className="branch" title={`${current.branch} → ${current.base}`}>
+              <GitBranch size={13} />
+              <code>{current.branch}</code>
+              <span>→</span>
+              <code>{current.base}</code>
+            </div>
+          )}
+          <div className="labels">
+            {current.labels.map((label) => (
+              <span key={label}>{label}</span>
+            ))}
           </div>
-        )}
-        <div className="labels">
-          {current.labels.map((label) => (
-            <span key={label}>{label}</span>
-          ))}
         </div>
       </div>
       <nav className="detail-tabs">
