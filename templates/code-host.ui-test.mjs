@@ -286,6 +286,18 @@ try {
   page.on("pageerror", (e) => failures.push(e.message));
   await page.goto(origin);
   const app = page.frameLocator("iframe");
+  async function pick(label, option, find) {
+    const trigger = app.getByRole("combobox", { name: label, exact: true });
+    const box = await trigger.boundingBox();
+    assert.ok(box, `missing picker ${label}`);
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    if (find) await app.locator(".ch-picker-menu input").fill(find);
+    const row = app.getByRole("option", { name: option, exact: true });
+    await row.waitFor();
+    const at = await row.boundingBox();
+    await page.mouse.click(at.x + at.width / 2, at.y + at.height / 2);
+    assert.equal(await app.locator(".ch-picker-menu").count(), 0);
+  }
   await app.getByRole("button", { name: "Connect your first account" }).click();
   await app.getByRole("button", { name: "Access token", exact: true }).click();
   assert.equal(await app.locator("input[type=password]").count(), 0);
@@ -297,6 +309,39 @@ try {
   await page.setViewportSize({ width: 662, height: 720 });
   await app.locator(".account-row button").first().click();
   await app.getByRole("button", { name: /Fix a real fixture/ }).waitFor();
+  assert.equal(
+    await app.locator("select").count(),
+    0,
+    "app uses its own selection menus",
+  );
+  const statusPicker = app.getByRole("combobox", {
+    name: "Status",
+    exact: true,
+  });
+  await statusPicker.focus();
+  await page.keyboard.press("ArrowDown");
+  await app.getByRole("option", { name: "Open", exact: true }).waitFor();
+  await page.keyboard.press("End");
+  await Promise.all([
+    page.waitForResponse((r) => listReply(r, (p) => p.state === "all")),
+    page.keyboard.press("Enter"),
+  ]);
+  assert.equal(await statusPicker.textContent(), "All statuses");
+  await Promise.all([
+    page.waitForResponse((r) => listReply(r, (p) => p.state === "open")),
+    pick("Status", "Open"),
+  ]);
+  await statusPicker.click();
+  await page.keyboard.press("Escape");
+  assert.equal(await statusPicker.getAttribute("aria-expanded"), "false");
+  await statusPicker.press("ArrowDown");
+  await page.keyboard.press("Tab");
+  assert.equal(await statusPicker.getAttribute("aria-expanded"), "false");
+  await statusPicker.click();
+  await app
+    .getByRole("textbox", { name: "Search titles", exact: true })
+    .click();
+  assert.equal(await statusPicker.getAttribute("aria-expanded"), "false");
   const compactFrame = page.frames().find((f) => f.url().includes("/app/"));
   const firstTop = await compactFrame
     .locator(".item-row")
@@ -330,9 +375,7 @@ try {
     .waitFor();
   await app.getByRole("button", { name: "Collapse all", exact: true }).click();
   assert.equal(await app.locator(".diff-file[open]").count(), 0);
-  await app
-    .getByRole("combobox", { name: "Jump to file", exact: true })
-    .selectOption("docs/guide.md");
+  await pick("Jump to file", "docs/guide.md", "guide");
   assert.equal(
     await app.locator(".diff-file[open] strong").textContent(),
     "docs/guide.md",
@@ -442,7 +485,7 @@ try {
         c.args.args.scope === "repo",
     ),
   );
-  await app.locator(".advanced-filters summary").click();
+  await app.locator(".filter-trigger").click();
   await app
     .getByRole("textbox", { name: "Author", exact: true })
     .fill("reviewer");
@@ -452,12 +495,8 @@ try {
   await app
     .getByLabel("Updated since (UTC)", { exact: true })
     .fill("2026-11-01");
-  await app
-    .getByRole("combobox", { name: "Draft", exact: true })
-    .selectOption("exclude");
-  await app
-    .getByRole("combobox", { name: "Sort", exact: true })
-    .selectOption("created_asc");
+  await pick("Draft", "Ready for review");
+  await pick("Sort", "Oldest created");
   await Promise.all([
     page.waitForResponse((r) =>
       listReply(r, (p) => p.page === 1 && p.filters?.author === "reviewer"),
@@ -489,13 +528,13 @@ try {
     sort: "created_asc",
   });
   assert.equal(advanced.args.args.repo, "acme/not-listed");
+  await app.locator(".filter-trigger").click();
   await Promise.all([
     page.waitForResponse((r) =>
       listReply(r, (p) => p.page === 1 && !p.filters),
     ),
     app.getByRole("button", { name: "Clear filters", exact: true }).click(),
   ]);
-  await app.locator(".advanced-filters summary").click();
   await app.getByRole("button", { name: "Commit graph", exact: true }).click();
   await app.getByRole("button", { name: /Repository commit/ }).waitFor();
   await app.getByRole("button", { name: /Repository commit/ }).click();
@@ -504,9 +543,7 @@ try {
     .getByText("Fictional history", { exact: true })
     .waitFor();
   assert.equal(await app.locator(".commit-lines .unloaded").count(), 1);
-  await app
-    .getByRole("combobox", { name: "Branch", exact: true })
-    .selectOption("feature/demo");
+  await pick("Branch", "feature/demo", "feature");
   await app.getByRole("button", { name: /Feature commit/ }).waitFor();
   assert.ok(
     calls.some(
@@ -543,7 +580,7 @@ try {
   filterCap = false;
   await page.goto(origin);
   await app.getByRole("button", { name: /Fix a real fixture/ }).waitFor();
-  await app.locator(".advanced-filters summary").click();
+  await app.locator(".filter-trigger").click();
   await app
     .getByText(
       "Author, label, date, draft and sorting need a newer desktop App. Repository, scope, status and search work now.",
@@ -660,11 +697,53 @@ try {
         })
         .waitFor();
     }
-    console.log(`LAYOUT ${lang}/${theme}/${width}`, JSON.stringify(layout));
+    const controlLayout = await app
+      .locator(".filter-controls")
+      .evaluate((el) => {
+        const search = el.querySelector(".search").getBoundingClientRect();
+        const filters = el
+          .querySelector(".filter-trigger")
+          .getBoundingClientRect();
+        return {
+          searchWidth: search.width,
+          searchTop: search.top,
+          filterTop: filters.top,
+        };
+      });
+    if (width > 440) {
+      assert.ok(
+        controlLayout.searchWidth <= 161,
+        `oversized search at ${width}`,
+      );
+      assert.ok(
+        Math.abs(controlLayout.searchTop - controlLayout.filterTop) < 2,
+        `search and filters must share a row at ${width}`,
+      );
+    }
+    const statusLabel = zh ? "状态" : "Status";
+    await app.getByRole("combobox", { name: statusLabel, exact: true }).click();
+    const menu = app.locator(".ch-picker-menu");
+    const bounds = await menu.boundingBox();
+    assert.ok(
+      bounds.x >= 0 && bounds.x + bounds.width <= width + 1,
+      `menu outside ${width}`,
+    );
+    await app.locator(".ch-options").dispatchEvent("scroll");
+    assert.equal(
+      await menu.count(),
+      1,
+      "scrolling inside a menu keeps it open",
+    );
+    await page.keyboard.press("Escape");
+    assert.equal(await menu.count(), 0);
+    console.log(
+      `LAYOUT ${lang}/${theme}/${width}`,
+      JSON.stringify({ ...layout, ...controlLayout }),
+    );
     await page.screenshot({
       path: new URL(`inbox-${lang}-${theme}-${width}.png`, shots).pathname,
     });
-    await app.locator(".advanced-filters summary").click();
+    await app.locator(".filter-trigger").click();
     await app
       .getByRole("textbox", { name: zh ? "标签" : "Label", exact: true })
       .fill("enhancement");
@@ -677,10 +756,51 @@ try {
     await app
       .getByRole("button", { name: zh ? /为新用户简化/ : /Simplify the first/ })
       .waitFor();
+    await app.locator(".filter-trigger").click();
     await page.screenshot({
       path: new URL(`filters-${lang}-${theme}-${width}.png`, shots).pathname,
     });
-    await app.locator(".advanced-filters summary").click();
+    await app
+      .getByRole("combobox", { name: zh ? "草稿" : "Draft", exact: true })
+      .click();
+    await app
+      .getByRole("option", {
+        name: zh ? "排除草稿" : "Ready for review",
+        exact: true,
+      })
+      .waitFor();
+    const nested = await app.locator(".ch-picker-menu").boundingBox();
+    assert.ok(
+      nested.x >= 0 &&
+        nested.x + nested.width <= width + 1 &&
+        nested.y >= 0 &&
+        nested.y + nested.height <= 861,
+      "nested menu must fit the viewport",
+    );
+    await page.screenshot({
+      path: new URL(`menus-${lang}-${theme}-${width}.png`, shots).pathname,
+    });
+    await page.keyboard.press("Escape");
+    assert.equal(
+      await app.locator(".filter-flyout").count(),
+      1,
+      "Escape closes only the nested picker",
+    );
+    await app
+      .getByRole("combobox", { name: zh ? "草稿" : "Draft", exact: true })
+      .click();
+    await app
+      .getByRole("option", {
+        name: zh ? "排除草稿" : "Ready for review",
+        exact: true,
+      })
+      .click();
+    assert.equal(
+      await app.locator(".filter-flyout").count(),
+      1,
+      "choosing a nested option keeps the filter editor open",
+    );
+    await app.locator(".filter-trigger").click();
     if (width === 1320) {
       const graphBefore = calls.length;
       await app
@@ -782,12 +902,11 @@ try {
         exact: true,
       })
       .click();
-    await app
-      .getByRole("combobox", {
-        name: zh ? "定位文件" : "Jump to file",
-        exact: true,
-      })
-      .selectOption("src/inbox/filters.ts");
+    await pick(
+      zh ? "定位文件" : "Jump to file",
+      "src/inbox/filters.ts",
+      "filters",
+    );
     await page.screenshot({
       path: new URL(`files-${lang}-${theme}-${width}.png`, shots).pathname,
     });
@@ -871,9 +990,12 @@ try {
     },
   ];
   await page.goto(`${origin}/?route=${encodeURIComponent(route)}`);
-  await app.locator(".route-notice select").waitFor();
+  await app.locator(".route-notice .ch-picker").waitFor();
   assert.equal(await app.locator(".detail").count(), 0);
-  await app.locator(".route-notice select").selectOption("fixture-gh-2");
+  await pick(
+    "Choose an account to open this item",
+    "Other account · other-demo",
+  );
   await app.getByRole("heading", { name: "Description" }).waitFor();
   assert.ok(
     calls.some(
@@ -931,7 +1053,7 @@ try {
     "private data used shared records",
   );
   console.log(
-    "PASS code-host: account/read/privacy, repository paths and pagination, server filters, file folding/jump/search, pointer and keyboard resizing, commit graph/branches, old host fallback, eight layouts and private PR deep links",
+    "PASS code-host: account/read/privacy, repository paths and pagination, server filters, file folding/jump/search, custom menus and keyboard/outside dismissal, compact search/filter rows, pointer and keyboard resizing, commit graph/branches, old host fallback, eight layouts and private PR deep links",
   );
 } finally {
   await browser.close();

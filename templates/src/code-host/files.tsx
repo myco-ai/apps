@@ -1,3 +1,4 @@
+import { Picker } from "./picker";
 import { useRef, useState } from "react";
 import { ChevronRight, Code2, Search, X } from "lucide-react";
 import { language } from "../_lib/i18n";
@@ -66,20 +67,16 @@ export function ChangedFiles({
             {tr("Expand all", "全部展开")}
           </button>
         </div>
-        <select
+        <Picker
+          label={tr("Jump to file", "定位文件")}
           value=""
-          aria-label={tr("Jump to file", "定位文件")}
-          onChange={(e) => jump(e.target.value)}
-        >
-          <option value="" disabled>
-            {tr("Jump to file", "定位文件")} · {shown.length}
-          </option>
-          {shown.map((f) => (
-            <option key={f.name} value={f.name}>
-              {f.name}
-            </option>
-          ))}
-        </select>
+          searchable
+          className="file-picker"
+          placeholder={`${tr("Jump to file", "定位文件")} · ${shown.length}`}
+          onChange={jump}
+          options={shown.map((f) => ({ value: f.name, label: f.name }))}
+        />
+
         <span className="hint">
           {more
             ? tr(

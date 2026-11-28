@@ -1,3 +1,4 @@
+import { Picker } from "./picker";
 import { useEffect, useRef, useState } from "react";
 import { GitBranch, Search, X } from "lucide-react";
 import { language } from "../_lib/i18n";
@@ -115,23 +116,21 @@ export function RepositoryPicker({
         </header>
         <label>
           {tr("Account", "账户")}
-          <select
-            aria-label={tr("Repository account", "仓库账户")}
+          <Picker
+            label={tr("Repository account", "仓库账户")}
             value={id}
-            onChange={(e) => {
-              setID(e.target.value);
+            onChange={(next) => {
+              setID(next);
               setPage(1);
               setRows([]);
               setNeedle("");
               setMore(false);
             }}
-          >
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} · {a.login} · {new URL(a.host).host}
-              </option>
-            ))}
-          </select>
+            options={accounts.map((a) => ({
+              value: a.id,
+              label: `${a.name} · ${a.login} · ${new URL(a.host).host}`,
+            }))}
+          />
         </label>
         <label>
           {tr("Repository path", "仓库路径")}

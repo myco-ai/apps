@@ -1810,3 +1810,196 @@ small,
     max-width: 45%;
   }
 }
+
+/* Compact query row; advanced conditions are edited without moving the list. */
+.filters {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+.filter-controls {
+  flex: 1 1 400px;
+  width: auto;
+  gap: 6px;
+  align-items: center;
+}
+.filter-controls .search {
+  flex: 1 1 110px;
+  max-width: 160px;
+  min-width: 92px;
+  height: 32px;
+}
+.filter-controls .search input {
+  width: 100%;
+  min-width: 0;
+}
+.filter-controls .repository-trigger {
+  max-width: min(32%, 210px);
+  min-width: 90px;
+  font-size: 13px;
+}
+.advanced-filters {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.filter-trigger,
+.filter-controls .ch-picker,
+.graph-trigger {
+  font-size: 13px;
+  min-height: 32px;
+}
+.clear-repository {
+  min-width: 24px;
+  padding: 3px;
+}
+.filter-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px 0 0;
+}
+.filter-form .ch-picker {
+  width: 100%;
+}
+.filter-form .hint {
+  margin: 0;
+}
+.filter-flyout {
+  width: 440px;
+  padding: 12px;
+}
+.filter-flyout > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.filter-flyout > header strong {
+  font-size: 14px;
+}
+.filter-flyout > .hint {
+  margin-top: 10px;
+}
+.ch-picker {
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  text-align: left;
+  font-size: 14px;
+}
+.ch-picker > span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-picker > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.ch-picker[aria-expanded="true"] {
+  background: var(--hover);
+}
+.ch-flyout {
+  position: fixed;
+  z-index: 30;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: 0 8px 32px #0002;
+  overflow: auto;
+  outline: none;
+}
+.ch-picker-menu {
+  width: max-content;
+  min-width: 210px;
+  max-width: 420px;
+  padding: 4px;
+}
+.ch-menu-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px;
+  color: var(--muted);
+  margin: 0 !important;
+  border-bottom: 1px solid var(--line);
+}
+.ch-menu-search input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  background: transparent;
+  font-size: 14px;
+  padding: 5px 0;
+}
+.ch-menu-search input:focus-visible {
+  outline: none;
+}
+.ch-options {
+  max-height: 260px;
+  overflow: auto;
+  padding: 3px 0;
+}
+.ch-options > button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+  min-height: 34px;
+  padding: 6px 8px;
+  gap: 16px;
+  background: transparent;
+  font-size: 14px;
+  white-space: normal;
+}
+.ch-options > button > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ch-options > button > svg {
+  flex-shrink: 0;
+}
+.ch-options > button:focus {
+  background: var(--soft);
+  outline: none;
+}
+.ch-options > button[aria-selected="true"] {
+  font-weight: 550;
+}
+.ch-no-options {
+  padding: 12px 8px;
+}
+.repository-dialog .ch-picker,
+.route-notice .ch-picker {
+  width: 100%;
+}
+.history-controls .ch-picker {
+  flex: 1;
+  max-width: 360px;
+}
+.files-toolbar .file-picker {
+  flex: 1 1 130px;
+  max-width: 260px;
+  font-size: 13px;
+}
+@container (max-width: 620px) {
+  .filter-controls .repository-trigger {
+    max-width: 150px;
+  }
+  .filter-controls .graph-trigger span {
+    display: none;
+  }
+  .filter-controls .search {
+    min-width: 92px;
+  }
+}
+@media (max-width: 440px) {
+  .filter-controls .repository-trigger {
+    max-width: 140px;
+  }
+  .filter-controls .search {
+    max-width: none;
+  }
+}

@@ -1,3 +1,4 @@
+import { Picker } from "./picker";
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, GitBranch, X } from "lucide-react";
 import { language } from "../_lib/i18n";
@@ -178,23 +179,22 @@ export function History({
         <>
           <div className="history-controls">
             <GitBranch size={16} />
-            <select
-              aria-label={tr("Branch", "分支")}
+            <Picker
+              label={tr("Branch", "分支")}
               value={ref}
-              onChange={(e) => {
-                setRef(e.target.value);
+              searchable
+              onChange={(next) => {
+                setRef(next);
                 setPage(1);
                 setRows([]);
                 setSelected(null);
               }}
-            >
-              <option value="">{tr("Default branch", "默认分支")}</option>
-              {branches.map((b) => (
-                <option value={b.name} key={b.name}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: tr("Default branch", "默认分支") },
+                ...branches.map((b) => ({ value: b.name, label: b.name })),
+              ]}
+            />
+
             {branchMore && (
               <button
                 disabled={branchBusy || branches.length >= 500}

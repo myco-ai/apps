@@ -42,6 +42,7 @@ import { DetailSplitter } from "./splitter";
 import { ChangedFiles } from "./files";
 import { RepositoryPicker } from "./repositories";
 import { FilterPanel } from "./filter-panel";
+import { Picker } from "./picker";
 import {
   filterDemo,
   orderItems,
@@ -1213,17 +1214,19 @@ function App() {
                   "Choose an account to open this item",
                   "选择账户以打开此条目",
                 )}
-                <select
+                <Picker
+                  label={tr(
+                    "Choose an account to open this item",
+                    "选择账户以打开此条目",
+                  )}
                   value={routeAccount}
-                  onChange={(e) => setRouteAccount(e.target.value)}
-                >
-                  <option value="">{tr("Choose account…", "选择账户…")}</option>
-                  {routeMatches.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} · {a.login}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setRouteAccount}
+                  placeholder={tr("Choose account…", "选择账户…")}
+                  options={routeMatches.map((a) => ({
+                    value: a.id,
+                    label: `${a.name} · ${a.login}`,
+                  }))}
+                />
               </label>
             )}
             <button className="plain" onClick={closeDetail}>
@@ -1346,58 +1349,59 @@ function App() {
                     </button>
                   )}
                 </form>
-                <select
-                  aria-label={tr("Status", "状态")}
+                <Picker
+                  label={tr("Status", "状态")}
                   value={state}
-                  onChange={(e) => setState(e.target.value)}
-                >
-                  <option value="open">{tr("Open", "打开")}</option>
-                  <option value="closed">{tr("Closed", "已关闭")}</option>
-                  {kind === "pull" &&
-                    supportsFilter(support, active, "merged") && (
-                      <option value="merged">{tr("Merged", "已合并")}</option>
-                    )}
-                  <option value="all">{tr("All statuses", "全部状态")}</option>
-                </select>
-              </div>
-            </div>
-            <div className="query-extras">
-              {repo && (
-                <button
-                  className="repo-chip"
-                  title={tr("Clear repository", "清除仓库")}
-                  onClick={() => {
-                    setRepo("");
-                    setFilters((f) => ({ ...f, author: undefined }));
-                    if (scope === "repo") setScope("created");
+                  onChange={setState}
+                  options={[
+                    { value: "open", label: tr("Open", "打开") },
+                    { value: "closed", label: tr("Closed", "已关闭") },
+                    ...(kind === "pull" &&
+                    supportsFilter(support, active, "merged")
+                      ? [{ value: "merged", label: tr("Merged", "已合并") }]
+                      : []),
+                    { value: "all", label: tr("All statuses", "全部状态") },
+                  ]}
+                />
+
+                {repo && (
+                  <button
+                    className="icon clear-repository"
+                    title={tr("Clear repository", "清除仓库")}
+                    aria-label={tr("Clear repository", "清除仓库")}
+                    onClick={() => {
+                      setRepo("");
+                      setFilters((f) => ({ ...f, author: undefined }));
+                      if (scope === "repo") setScope("created");
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+                {repo && account !== "all" && (
+                  <button
+                    className="graph-trigger"
+                    onClick={() => setHistoryOpen(true)}
+                  >
+                    <GitBranch size={14} />
+                    <span>{tr("Commit graph", "提交图")}</span>
+                  </button>
+                )}
+                <FilterPanel
+                  support={support}
+                  accounts={active}
+                  kind={kind}
+                  repo={repo}
+                  scope={scope}
+                  value={filters}
+                  onApply={(f) => {
+                    setFilters(f);
+                    setPage(1);
+                    if (f.author && scope === "created" && repo)
+                      setScope("repo");
                   }}
-                >
-                  <span>{repo}</span>
-                  <X size={13} />
-                </button>
-              )}
-              {repo && account !== "all" && (
-                <button
-                  className="graph-trigger"
-                  onClick={() => setHistoryOpen(true)}
-                >
-                  <GitBranch size={14} />
-                  {tr("Commit graph", "提交图")}
-                </button>
-              )}
-              <FilterPanel
-                support={support}
-                accounts={active}
-                kind={kind}
-                repo={repo}
-                scope={scope}
-                value={filters}
-                onApply={(f) => {
-                  setFilters(f);
-                  setPage(1);
-                  if (f.author && scope === "created" && repo) setScope("repo");
-                }}
-              />
+                />
+              </div>
             </div>
             <div className="results" aria-busy={busy}>
               {busy ? (

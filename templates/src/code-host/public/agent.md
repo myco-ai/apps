@@ -106,6 +106,13 @@ is approximated by filtering one loaded page. Old desktops retain baseline
 repository/scope/status/text filters and explain which features need an update.
 Search terms, filter conditions, accounts and private results stay in memory.
 
+Search, repository, status and More filters share a compact toolbar, wrapping
+when space is limited. More filters opens a floating editor; Apply updates the
+results and closes it. Status, draft, sort, account, branch and file choices use
+app menus: Arrow keys move, Enter chooses, Escape returns to the trigger, and
+Tab moves to the next control. Branch and file menus support typing to find an
+option; longer account lists also show a search field.
+
 ## Reading details and files
 
 On wide windows, drag the separator between the inbox and details to resize.
